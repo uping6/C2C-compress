@@ -1,0 +1,56 @@
+model:
+  model_name: cachejpeg_rosetta
+  rosetta_config:
+    base_model: Qwen/Qwen3-0.6B
+    teacher_model: Qwen/Qwen3-4B
+    checkpoints_dir: C2C_Fuser/qwen3_0.6b+qwen3_4b_Fuser
+
+  cachejpeg_rosetta_config:
+    sharer_model_role: teacher
+    receiver_model_role: base
+    homo_c2c_kv_src: /data/smy/HomoC2C-KV/src
+    codec:
+      method: cachejpeg
+      anchors:
+        sink_count: 1
+        recent_count: 0
+        preserve_options: false
+      block:
+        mode: global
+        size: 64
+      quant:
+        q_global: 1.0
+        low: 1.0
+        high: 8.0
+        curve: quadratic
+        key_scale: 1.0
+        value_scale: 1.0
+        layer_group_scales:
+          early: 1.0
+          middle: 1.0
+          late: 1.0
+        clip_int16: true
+      zero_tail:
+        mode: none
+        ratio: 0.0
+        min_keep: 1
+      entropy:
+        representation: dense_int16
+        backend: zlib6
+      probe: {}
+
+  generation_config:
+    do_sample: false
+    max_new_tokens: 64
+
+output:
+  output_dir: local/final_results/cachejpeg_rosetta/qwen3_4b/mmlu-redux
+
+eval:
+  dataset: mmlu-redux
+  gpu_ids: [0]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1
+  rosetta_checkpoint_subfolder: final
