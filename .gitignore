@@ -10,6 +10,7 @@
 local/
 wandb/
 logs/
+local/
 eval_results/
 outputs/
 results/
