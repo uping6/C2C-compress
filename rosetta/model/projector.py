@@ -1027,6 +1027,11 @@ def save_projector(obj: Projector, file_path: str) -> None:
     save_object(obj, file_path)
 
 def load_projector(file_path: str, override_args: Optional[dict] = None) -> Projector:
+    # LatentKVCompressor lives in a separate module to keep this already-large
+    # file focused. Importing it here registers the built-in class before a
+    # serialized projector config is resolved.
+    from rosetta.model import latent_kv  # noqa: F401
+
     return load_object(file_path, get_projector_class, override_args)
 
 def create_projector(projector_type: str, **kwargs) -> Projector:
@@ -1040,6 +1045,9 @@ def create_projector(projector_type: str, **kwargs) -> Projector:
     Returns:
         An instance of the appropriate projector
     """
+    # Register projectors implemented in separate modules before lookup.
+    from rosetta.model import latent_kv  # noqa: F401
+
     # Prefer using the unified registry getter (handles case-insensitive keys)
     try:
         cls = get_projector_class(projector_type)

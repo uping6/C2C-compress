@@ -1,0 +1,45 @@
+model:
+  model_name: cachejpeg_rosetta
+  max_length: 12000
+  rosetta_config:
+    base_model: Qwen/Qwen3-0.6B
+    teacher_model: Qwen/Qwen2.5-1.5B-Instruct
+    is_do_alignment: false
+    alignment_strategy: longest
+    checkpoints_dir: local/checkpoints/0.6+1.5B_latent_kv_joint_longbench_e
+  cachejpeg_rosetta_config:
+    fusion_type: latent_kv_joint
+    latent_kv_bridge:
+      enabled: true
+      latent_dim: 128
+      mlp_ratio: 4.0
+      dropout: 0.0
+      use_head_scale: true
+      use_layer_gate: true
+      gate_mode: sigmoid
+      gate_init: -4.0
+      residual_scale_init: 0.0
+      layer_mapping: proportional
+      share_adapter_across_layers: false
+    sharer_model_role: teacher
+    receiver_model_role: base
+    transport: {mode: none}
+    codec:
+      method: cachejpeg
+      compute: {backend: gpu, transform_dtype: float32}
+      entropy: {representation: adaptive_int, backend: lz4}
+  generation_config: {do_sample: false, max_new_tokens: 2048}
+output:
+  output_dir: local/final_results/0.6+1.5B_latent_kv_joint
+eval:
+  dataset: longbench
+  longbench_e: true
+  rosetta_checkpoint_subfolder: final
+  skip_existing_longbench_subjects: false
+  longbench_prompt_format_path: longbench/config/dataset2prompt.json
+  longbench_maxlen_format_path: longbench/config/dataset2maxlen.json
+  gpu_ids: [0]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1

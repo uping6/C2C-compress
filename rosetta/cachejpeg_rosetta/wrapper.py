@@ -8,11 +8,19 @@ from typing import Any, Dict, Optional, Tuple
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.cache_utils import DynamicCache
 
 from rosetta.cachejpeg.wrapper import _ensure_homo_imports
 from rosetta.cachejpeg.transport import build_transport
 from rosetta.cachejpeg.transport import serialize_payload
+from rosetta.model.latent_kv import (
+    CacheAdapter,
+    CacheJPEGLatentKVPayload,
+    latent_payload_to_pseudo_kv_cache,
+    pseudo_kv_cache_to_latent_payload,
+)
 from rosetta.model.projector import load_projector
+from rosetta.model.adaptive_quant_table import AdaptiveCoefficientQuantizer
 from rosetta.utils.evaluate import apply_generation_config, load_hf_model, set_default_chat_template
 
 from .config import CacheJPEGRosettaEvalConfig, resolve_cachejpeg_rosetta_eval_config
@@ -95,6 +103,7 @@ def _load_rosetta_assets(
         teacher_tokenizer=teacher_tokenizer,
         projector_list=projector_list,
         projector_dict=projector_dict,
+        checkpoint_dir=checkpoint_dir,
     )
 
 
@@ -115,28 +124,117 @@ class CacheJPEGRosettaEvalWrapper:
         self.teacher_model = assets.teacher_model
         self.teacher_tokenizer = assets.teacher_tokenizer
         self.eval_codec_config: CacheJPEGRosettaEvalConfig = resolve_cachejpeg_rosetta_eval_config(codec_config)
-        (
-            codec_cls,
-            _codec_config_resolver,
-            self._to_dynamic_cache,
-            self._to_legacy_cache,
-        ) = _ensure_homo_imports(self.eval_codec_config.homo_c2c_kv_src)
+        self.fusion_type = self.eval_codec_config.fusion_type
+        self.split_latent_cachejpeg_enabled = (
+            self.eval_codec_config.split_latent_cachejpeg.enabled
+        )
+        split_latent_cachejpeg_raw = dict(
+            codec_config.get("split_latent_cachejpeg") or {}
+        )
+        self.split_latent_codec_config = dict(
+            split_latent_cachejpeg_raw.get("codec") or {}
+        )
         self.codec_config = {
             **codec_config.get("codec", {}),
             "homo_c2c_kv_src": self.eval_codec_config.homo_c2c_kv_src,
         }
-        if self.eval_codec_config.codec.compute.backend == "gpu":
-            from rosetta.cachejpeg.gpu_codec import GPUCacheJPEGCodec
+        if self.fusion_type == "latent_kv_split":
+            # Split mode transmits LatentKVPayload directly and therefore has no
+            # dependency on the CacheJPEG/HomoC2C codec implementation.
+            self.codec = None
+            if self.split_latent_cachejpeg_enabled:
+                codec_cls, _, _, _ = _ensure_homo_imports(
+                    self.eval_codec_config.homo_c2c_kv_src
+                )
+                if self.eval_codec_config.split_latent_cachejpeg.codec.compute.backend == "gpu":
+                    from rosetta.cachejpeg.gpu_codec import GPUCacheJPEGCodec
 
-            self.codec = GPUCacheJPEGCodec(device=next(self.teacher_model.parameters()).device)
+                    self.codec = GPUCacheJPEGCodec(
+                        device=next(self.teacher_model.parameters()).device
+                    )
+                else:
+                    self.codec = codec_cls()
+            self._to_legacy_cache = CacheAdapter.to_legacy
+
+            def to_dynamic_cache(cache):
+                if isinstance(cache, DynamicCache):
+                    return cache
+                return DynamicCache.from_legacy_cache(CacheAdapter.to_legacy(cache))
+
+            self._to_dynamic_cache = to_dynamic_cache
         else:
-            self.codec = codec_cls()
-        self.fuser_bridge = RosettaFuserBridge(assets)
+            (
+                codec_cls,
+                _codec_config_resolver,
+                self._to_dynamic_cache,
+                self._to_legacy_cache,
+            ) = _ensure_homo_imports(self.eval_codec_config.homo_c2c_kv_src)
+            if self.eval_codec_config.codec.compute.backend == "gpu":
+                from rosetta.cachejpeg.gpu_codec import GPUCacheJPEGCodec
+
+                self.codec = GPUCacheJPEGCodec(
+                    device=next(self.teacher_model.parameters()).device
+                )
+            else:
+                self.codec = codec_cls()
+        adaptive_quant_table = None
+        if self.eval_codec_config.adaptive_quant_table.enabled:
+            base_config = self.base_model.config
+            adaptive_quant_table = AdaptiveCoefficientQuantizer(
+                num_layers=int(base_config.num_hidden_layers),
+                num_kv_heads=int(
+                    getattr(
+                        self.teacher_model.config,
+                        "num_key_value_heads",
+                        self.teacher_model.config.num_attention_heads,
+                    )
+                ),
+                config=self.eval_codec_config.adaptive_quant_table,
+            )
+            state_path = Path(
+                (codec_config.get("adaptive_quant_table") or {}).get(
+                    "checkpoint_path",
+                    Path(assets.checkpoint_dir or "") / "adaptive_quant_table.pt",
+                )
+            )
+            if not state_path.is_file():
+                raise FileNotFoundError(
+                    f"Adaptive quantization-table checkpoint not found: {state_path}"
+                )
+            adaptive_quant_table.load_state_dict(
+                torch.load(state_path, map_location="cpu")
+            )
+            adaptive_quant_table.to(next(self.base_model.parameters()).device).eval()
+        self.fuser_bridge = RosettaFuserBridge(
+            assets, adaptive_quant_table=adaptive_quant_table
+        )
         transport_config = codec_config.get("transport") or (codec_config.get("codec") or {}).get("transport")
         self.transport = build_transport(dict(transport_config or {}))
         self.last_transport_stats = None
         self.last_codec_stats: dict[str, Any] | None = None
+        self.last_fusion_stats: dict[str, Any] | None = None
         self.ablation_config = dict(codec_config.get("ablation") or {})
+        if self.fusion_type in {"latent_kv_joint", "latent_kv_split"}:
+            if not assets.projector_list:
+                raise ValueError(
+                    f"fusion_type={self.fusion_type!r} requires a compatible "
+                    "latent KV checkpoint."
+                )
+            expected_class = (
+                "LatentKVCompressor"
+                if self.fusion_type == "latent_kv_joint"
+                else "SplitLatentKVProjector"
+            )
+            unexpected = [
+                projector.__class__.__name__
+                for projector in assets.projector_list
+                if projector.__class__.__name__ != expected_class
+            ]
+            if unexpected:
+                raise ValueError(
+                    f"fusion_type={self.fusion_type!r} requires {expected_class}, "
+                    f"but loaded {sorted(set(unexpected))}."
+                )
         if self.eval_codec_config.layer_streaming.enabled and not hasattr(self.codec, "encode_layer"):
             raise ValueError(
                 "cachejpeg_rosetta.layer_streaming currently requires compute.backend=gpu."
@@ -264,10 +362,14 @@ class CacheJPEGRosettaEvalWrapper:
         )
 
     def fuse_to_receiver_cache(self, decoded_teacher_cache, base_seed_cache=None):
-        return self.fuser_bridge.fuse_teacher_cache_to_base(
+        fused = self.fuser_bridge.fuse_teacher_cache_to_base(
             decoded_teacher_cache,
             base_seed_cache=base_seed_cache,
         )
+        self.last_fusion_stats = getattr(
+            self.fuser_bridge, "last_fusion_stats", None
+        )
+        return fused
 
     def generate_on_receiver(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, **generation_config):
         return self.base_model.generate(
@@ -375,7 +477,197 @@ class CacheJPEGRosettaEvalWrapper:
         )
         return torch.cat([base_input_ids, generated], dim=1)
 
+    def _generate_with_split_latent(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+        generation_config: dict[str, Any],
+    ) -> torch.Tensor:
+        """Transmit only sharer-produced latent tensors, then fuse at receiver."""
+
+        # Keep compatibility with lightweight wrappers created via ``__new__``
+        # in callers that predate the optional CacheJPEG path.
+        split_latent_cachejpeg_enabled = bool(
+            getattr(self, "split_latent_cachejpeg_enabled", False)
+        )
+
+        base_input_ids, teacher_input_ids, base_attention_mask, teacher_attention_mask = (
+            self._split_aligned_inputs(input_ids, attention_mask)
+        )
+        sharer_outputs = self.prefill_on_sharer(
+            input_ids=teacher_input_ids, attention_mask=teacher_attention_mask
+        )
+        receiver_seed_outputs = self.prefill_on_receiver(
+            input_ids=base_input_ids, attention_mask=base_attention_mask
+        )
+        legacy_sharer_cache = self._to_legacy_cache(sharer_outputs.past_key_values)
+        original_kv_bytes = sum(
+            int(key.numel() * key.element_size() + value.numel() * value.element_size())
+            for key, value in legacy_sharer_cache
+        )
+
+        teacher_device = next(self.teacher_model.parameters()).device
+        if teacher_device.type == "cuda":
+            torch.cuda.synchronize(teacher_device)
+        encode_started = time.perf_counter()
+        latent_payload = self.fuser_bridge.encode_teacher_cache_to_latents(
+            sharer_outputs.past_key_values,
+            move_to_cpu=not split_latent_cachejpeg_enabled,
+        )
+        if teacher_device.type == "cuda":
+            torch.cuda.synchronize(teacher_device)
+        encode_seconds = time.perf_counter() - encode_started
+
+        latent_bytes = sum(
+            int(layer.latent.numel() * layer.latent.element_size())
+            for layer in latent_payload.layers
+        )
+        cachejpeg_encode_seconds = 0.0
+        wire_payload = latent_payload
+        cachejpeg_summary = None
+        if split_latent_cachejpeg_enabled:
+            pseudo_cache = latent_payload_to_pseudo_kv_cache(latent_payload)
+            if not getattr(self.codec, "uses_gpu_transform", False):
+                pseudo_cache = self._cache_to_codec_dtype(pseudo_cache)
+            if teacher_device.type == "cuda":
+                torch.cuda.synchronize(teacher_device)
+            cachejpeg_encode_started = time.perf_counter()
+            encoded_payload = self.codec.encode(
+                pseudo_cache, self.split_latent_codec_config
+            )
+            if teacher_device.type == "cuda":
+                torch.cuda.synchronize(teacher_device)
+            cachejpeg_encode_seconds = (
+                time.perf_counter() - cachejpeg_encode_started
+            )
+            cachejpeg_summary = dict(
+                getattr(encoded_payload, "local_summary", {}) or {}
+            )
+            wire_payload = CacheJPEGLatentKVPayload(
+                encoded_payload=encoded_payload,
+                layers=[
+                    (
+                        int(layer.receiver_layer),
+                        int(layer.sharer_layer),
+                        int(layer.projector_idx),
+                    )
+                    for layer in latent_payload.layers
+                ],
+                latent_dim=latent_payload.latent_dim,
+                sequence_length=latent_payload.sequence_length,
+                source_dtype=latent_payload.source_dtype,
+                entropy_backend=(
+                    self.eval_codec_config.split_latent_cachejpeg.codec.entropy.backend
+                ),
+            )
+
+        payload_bytes = len(serialize_payload(wire_payload))
+        transport = getattr(self, "transport", None)
+        received_payload = (
+            transport.roundtrip(wire_payload)
+            if transport is not None
+            else wire_payload
+        )
+        self.last_transport_stats = (
+            transport.last_stats if transport is not None else None
+        )
+
+        cachejpeg_decode_seconds = 0.0
+        decoder_payload = received_payload
+        receiver_device = next(self.base_model.parameters()).device
+        if split_latent_cachejpeg_enabled:
+            if not isinstance(received_payload, CacheJPEGLatentKVPayload):
+                raise TypeError(
+                    "Expected CacheJPEGLatentKVPayload after split transport, got "
+                    f"{type(received_payload)!r}."
+                )
+            if receiver_device.type == "cuda":
+                torch.cuda.synchronize(receiver_device)
+            cachejpeg_decode_started = time.perf_counter()
+            reconstructed_pseudo_cache = self.codec.decode(
+                received_payload.encoded_payload,
+                self.split_latent_codec_config,
+            )
+            if receiver_device.type == "cuda":
+                torch.cuda.synchronize(receiver_device)
+            cachejpeg_decode_seconds = (
+                time.perf_counter() - cachejpeg_decode_started
+            )
+            decoder_payload = pseudo_kv_cache_to_latent_payload(
+                reconstructed_pseudo_cache, received_payload
+            )
+
+        if receiver_device.type == "cuda":
+            torch.cuda.synchronize(receiver_device)
+        decode_started = time.perf_counter()
+        fused_receiver_cache = self.fuser_bridge.fuse_latents_to_base(
+            decoder_payload,
+            base_seed_cache=receiver_seed_outputs.past_key_values,
+        )
+        if receiver_device.type == "cuda":
+            torch.cuda.synchronize(receiver_device)
+        decode_seconds = time.perf_counter() - decode_started
+        self.last_fusion_stats = self.fuser_bridge.last_fusion_stats
+        self.last_codec_stats = {
+            "mode": (
+                "latent_kv_split_cachejpeg"
+                if split_latent_cachejpeg_enabled
+                else "latent_kv_split"
+            ),
+            "quantized": split_latent_cachejpeg_enabled,
+            "entropy_backend": (
+                self.eval_codec_config.split_latent_cachejpeg.codec.entropy.backend
+                if split_latent_cachejpeg_enabled
+                else None
+            ),
+            "original_kv_bytes": original_kv_bytes,
+            "latent_bytes": latent_bytes,
+            "metadata_bytes": (
+                None
+                if split_latent_cachejpeg_enabled
+                else max(0, payload_bytes - latent_bytes)
+            ),
+            "payload_bytes": payload_bytes,
+            "compression_factor": (
+                float(original_kv_bytes / payload_bytes) if payload_bytes else 0.0
+            ),
+            "latent_compression_factor": (
+                float(latent_bytes / payload_bytes) if payload_bytes else 0.0
+            ),
+            "latent_element_compression_factor": (
+                float(
+                    sum(key.numel() + value.numel() for key, value in legacy_sharer_cache)
+                    / sum(layer.latent.numel() for layer in latent_payload.layers)
+                )
+                if latent_payload.layers
+                else 0.0
+            ),
+            "encode_seconds": float(
+                encode_seconds + cachejpeg_encode_seconds
+            ),
+            "decode_seconds": float(
+                cachejpeg_decode_seconds + decode_seconds
+            ),
+            "latent_encode_seconds": float(encode_seconds),
+            "cachejpeg_encode_seconds": float(cachejpeg_encode_seconds),
+            "cachejpeg_decode_seconds": float(cachejpeg_decode_seconds),
+            "receiver_decode_seconds": float(decode_seconds),
+            "cachejpeg_summary": cachejpeg_summary,
+        }
+        generated = self._decode_from_receiver_cache(
+            last_token=base_input_ids[:, -1:],
+            past_key_values=fused_receiver_cache,
+            max_new_tokens=int(generation_config.get("max_new_tokens", 16)),
+            do_sample=bool(generation_config.get("do_sample", False)),
+            temperature=float(generation_config.get("temperature", 0.0)),
+        )
+        return torch.cat([base_input_ids, generated], dim=1)
+
     def generate(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, **generation_config):
+        if getattr(self, "fusion_type", "original") == "latent_kv_split":
+            return self._generate_with_split_latent(
+                input_ids, attention_mask, generation_config
+            )
         streaming_config = getattr(getattr(self, "eval_codec_config", None), "layer_streaming", None)
         if streaming_config is not None and streaming_config.enabled:
             return self._generate_with_layer_streaming(

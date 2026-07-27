@@ -11,6 +11,7 @@ from transformers.modeling_outputs import CausalLMOutputWithPast
 import json
 
 from rosetta.model.projector import Projector
+from rosetta.model.adaptive_quant_table import AdaptiveCoefficientQuantizer
 from rosetta.model.sampling import sample_token
 from transformers.utils import ModelOutput
 try:
@@ -76,7 +77,7 @@ class RosettaModel(nn.Module):
     """
     Drop in replacement for the standard transformers LLM models, like Qwen3ForCausalLM
     """
-    def __init__(self, model_list: List[PreTrainedModel], base_model_idx = 0, projector_list: List[Projector] = [], include_response: bool = False, multi_source_fusion_mode: str = "parallel"):
+    def __init__(self, model_list: List[PreTrainedModel], base_model_idx = 0, projector_list: List[Projector] = [], include_response: bool = False, multi_source_fusion_mode: str = "parallel", adaptive_quant_table: Optional[AdaptiveCoefficientQuantizer] = None):
         super().__init__()
         # model list: a list of model, model 0 by default is the base model
         # projector list: a list of projector
@@ -90,10 +91,18 @@ class RosettaModel(nn.Module):
         device = model_list[base_model_idx].device
         dtype = model_list[base_model_idx].dtype
         self.projector_list = nn.ModuleList(projector_list).to(device=device, dtype=dtype)
+        self.adaptive_quant_table = adaptive_quant_table
+        if self.adaptive_quant_table is not None:
+            # Keep allocator/entropy parameters in FP32 while allowing its output
+            # cache to return to the receiver cache dtype.
+            self.adaptive_quant_table.to(device=device)
+        self.adaptive_quant_table_step = 0
+        self.last_adaptive_quant_table_metrics = None
 
         self.projector_dict = {}
         self.kv_cache_dict = {}
         self._generation_hook_handlers = []
+        self.last_fusion_stats = None
 
         # Multi-source fusion mode: 
         # "sequential" (default): each source updates base cache iteratively
@@ -102,6 +111,11 @@ class RosettaModel(nn.Module):
         if multi_source_fusion_mode not in ["sequential", "parallel"]:
             raise ValueError(f"multi_source_fusion_mode must be 'sequential' or 'parallel', got '{multi_source_fusion_mode}'")
         self.multi_source_fusion_mode = multi_source_fusion_mode
+
+    def update_adaptive_quant_table_schedule(self, step: int) -> None:
+        self.adaptive_quant_table_step = max(0, int(step))
+        if self.adaptive_quant_table is not None:
+            self.adaptive_quant_table.update_temperature(self.adaptive_quant_table_step)
 
     @property
     def device(self):
@@ -430,6 +444,7 @@ class RosettaModel(nn.Module):
             section_starts.append(section_starts[-1] + l)
         
         curr_base_kv_cache = past_key_values
+        total_adaptive_payload_bits = None
 
         for i in range(num_sections):
             start = section_starts[i]
@@ -558,6 +573,49 @@ class RosettaModel(nn.Module):
                                 # Parallel: always project from the clean cloned base cache
                                 base_cache_ref = base_cache
 
+                            quantized_source_by_target = None
+                            if self.adaptive_quant_table is not None:
+                                expected_layers = list(range(self.adaptive_quant_table.num_layers))
+                                layer_map = self.projector_dict[self.base_model_idx][source_model_idx]
+                                actual_layers = sorted(int(layer_idx) for layer_idx in layer_map)
+                                if actual_layers != expected_layers:
+                                    raise ValueError(
+                                        "adaptive_quant_table requires one routed source cache for "
+                                        f"every receiver layer; expected {expected_layers}, got {actual_layers}."
+                                    )
+                                routed_source = []
+                                for target_layer_idx in expected_layers:
+                                    pair_list = layer_map[target_layer_idx]
+                                    if len(pair_list) != 1:
+                                        raise ValueError(
+                                            "Pre-projector adaptive quantization requires exactly one "
+                                            "source layer per receiver layer."
+                                        )
+                                    source_layer_idx, _ = pair_list[0]
+                                    source_key, source_value = self.kv_cache_dict[
+                                        self.base_model_idx
+                                    ][source_model_idx][source_layer_idx]
+                                    routed_source.append(
+                                        (
+                                            source_key[:, :, start:end, :],
+                                            source_value[:, :, start:end, :],
+                                        )
+                                    )
+                                quantized_source = self.adaptive_quant_table(tuple(routed_source))
+                                quantized_source_by_target = {
+                                    layer_idx: reconstructed
+                                    for layer_idx, reconstructed in enumerate(
+                                        quantized_source.past_key_values
+                                    )
+                                }
+                                total_adaptive_payload_bits = (
+                                    quantized_source.estimated_payload_bits
+                                    if total_adaptive_payload_bits is None
+                                    else total_adaptive_payload_bits
+                                    + quantized_source.estimated_payload_bits
+                                )
+
+                            projected_by_layer = {}
                             for target_layer_idx, entry in self.projector_dict[self.base_model_idx][source_model_idx].items():
                                 # Get base KV cache slice for projection
                                 base_key_cache, base_value_cache = base_cache_ref[target_layer_idx]
@@ -570,10 +628,16 @@ class RosettaModel(nn.Module):
                                 projected_kv_list = []
                                 source_kv_list = []
                                 for source_model_layer_idx, projector_idx in pair_list:
-                                    source_key_cache, source_value_cache = self.kv_cache_dict[self.base_model_idx][source_model_idx][source_model_layer_idx]
-                                    new_source_key_cache = source_key_cache[:, :, start:end, :]
-                                    new_source_value_cache = source_value_cache[:, :, start:end, :]
-                                    new_source_kv_cache = (new_source_key_cache, new_source_value_cache)
+                                    if quantized_source_by_target is not None:
+                                        new_source_kv_cache = quantized_source_by_target[
+                                            int(target_layer_idx)
+                                        ]
+                                    else:
+                                        source_key_cache, source_value_cache = self.kv_cache_dict[self.base_model_idx][source_model_idx][source_model_layer_idx]
+                                        new_source_kv_cache = (
+                                            source_key_cache[:, :, start:end, :],
+                                            source_value_cache[:, :, start:end, :],
+                                        )
                                     projected_key, projected_value = self.projector_list[projector_idx].forward(
                                         new_source_kv_cache,
                                         new_base_kv_cache
@@ -584,6 +648,15 @@ class RosettaModel(nn.Module):
                                 # Use first projector result
                                 agg_key, agg_value = projected_kv_list[0]
 
+                                projected_by_layer[int(target_layer_idx)] = (
+                                    (agg_key, agg_value),
+                                    new_base_kv_cache,
+                                )
+
+                            for target_layer_idx, (
+                                (agg_key, agg_value),
+                                new_base_kv_cache,
+                            ) in projected_by_layer.items():
                                 # Collect or apply projection based on mode
                                 if self.multi_source_fusion_mode == "sequential":
                                     # Sequential: apply immediately so next source sees updated cache
@@ -611,7 +684,62 @@ class RosettaModel(nn.Module):
                                 curr_base_kv_cache.value_cache[target_layer_idx][:, :, start:end, :] = base_value_slice + delta_value
 
                 output.past_key_values = curr_base_kv_cache
+
+        if self.adaptive_quant_table is not None and total_adaptive_payload_bits is not None:
+            rate_weight = self.adaptive_quant_table.rate_weight(
+                self.adaptive_quant_table_step
+            )
+            rate_loss = total_adaptive_payload_bits * rate_weight
+            if output.loss is not None:
+                output.loss = output.loss + rate_loss
+            result = self.adaptive_quant_table.last_result
+            self.last_adaptive_quant_table_metrics = {
+                "estimated_payload_bits": float(
+                    total_adaptive_payload_bits.detach().item()
+                ),
+                "rate_weight": float(rate_weight),
+                "rate_loss": float(rate_loss.detach().item()),
+                "temperature": float(
+                    self.adaptive_quant_table.gumbel_temperature.item()
+                ),
+                "mean_alpha": (
+                    float(result.alpha.detach().float().mean().item())
+                    if result is not None
+                    else None
+                ),
+            }
+        else:
+            self.last_adaptive_quant_table_metrics = None
                                                                              
+        latent_layer_stats = []
+        for projector_idx, projector in enumerate(self.projector_list):
+            projector_stats = getattr(projector, "last_stats", None)
+            if projector_stats is not None:
+                latent_layer_stats.append(
+                    {"projector_idx": projector_idx, **dict(projector_stats)}
+                )
+        if latent_layer_stats:
+            first_projector = self.projector_list[0]
+            fusion_type = (
+                "latent_kv_split"
+                if first_projector.__class__.__name__ == "SplitLatentKVProjector"
+                else "latent_kv_joint"
+            )
+            self.last_fusion_stats = {
+                "fusion_type": fusion_type,
+                "latent_dim": getattr(first_projector, "latent_dim", None),
+                "joint_input_dim": getattr(first_projector, "joint_input_dim", None),
+                "trainable_parameter_count": sum(
+                    parameter.numel()
+                    for projector in self.projector_list
+                    for parameter in projector.parameters()
+                    if parameter.requires_grad
+                ),
+                "layers": latent_layer_stats,
+            }
+        else:
+            self.last_fusion_stats = None
+
         return output
     
     @torch.no_grad()

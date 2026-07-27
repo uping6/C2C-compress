@@ -32,6 +32,14 @@ from rosetta.train.dataset_adapters import ChatDataset, AlignedChatDataset, Rose
 from rosetta.model.aligner import TokenAligner, AlignmentStrategy
 from rosetta.train.model_utils import k_nearest_sources, last_aligned_sources
 from rosetta.model.projector import AllInOneProjector
+from rosetta.model.latent_kv import (
+    resolve_latent_kv_bridge_config,
+    resolve_layer_mapping,
+)
+from rosetta.model.adaptive_quant_table import (
+    AdaptiveCoefficientQuantizer,
+    resolve_adaptive_quant_table_config,
+)
 from rosetta.utils.evaluate import set_default_chat_template
 
 # PEFT imports for LoRA (baseline mode)
@@ -328,6 +336,14 @@ def load_resume_checkpoint(
                 raise FileNotFoundError(f"Missing projector checkpoint: {projector_path}")
             projector_state = torch.load(projector_path, map_location=device)
             projector.load_state_dict(projector_state)
+        if model_ref.adaptive_quant_table is not None:
+            quantizer_path = os.path.join(checkpoint_dir, "adaptive_quant_table.pt")
+            if not os.path.isfile(quantizer_path):
+                raise FileNotFoundError(
+                    f"Missing adaptive quantization-table checkpoint: {quantizer_path}"
+                )
+            quantizer_state = torch.load(quantizer_path, map_location=device)
+            model_ref.adaptive_quant_table.load_state_dict(quantizer_state)
         logger.info("Loaded Rosetta projector weights from: %s", checkpoint_dir)
     else:
         model_state_path = os.path.join(checkpoint_dir, "model.pt")
@@ -361,6 +377,44 @@ def load_resume_checkpoint(
         training_state.get("epoch", 0),
     )
     return training_state
+
+
+def load_initial_projector_checkpoint(
+    checkpoint_dir: str,
+    model: RosettaModel,
+    device: str,
+    logger: logging.Logger,
+) -> None:
+    """Warm-start projectors only, leaving optimizer and optional codec fresh."""
+
+    resolved_dir = os.path.abspath(os.path.expanduser(checkpoint_dir))
+    if not os.path.isdir(resolved_dir):
+        raise FileNotFoundError(
+            f"initial_projector_checkpoint is not a directory: {resolved_dir}"
+        )
+    for index, projector in enumerate(model.projector_list):
+        projector_path = os.path.join(resolved_dir, f"projector_{index}.pt")
+        if not os.path.isfile(projector_path):
+            raise FileNotFoundError(
+                f"Missing warm-start projector checkpoint: {projector_path}"
+            )
+        state = torch.load(projector_path, map_location=device)
+        projector.load_state_dict(state, strict=True)
+
+    mapping_path = os.path.join(resolved_dir, "projector_config.json")
+    if os.path.isfile(mapping_path):
+        with open(mapping_path, "r", encoding="utf-8") as handle:
+            loaded_mapping = RosettaModel._convert_dict_keys_to_ints(json.load(handle))
+        if loaded_mapping != model.projector_dict:
+            raise ValueError(
+                "initial_projector_checkpoint layer mapping does not match the "
+                "current training configuration."
+            )
+    logger.info(
+        "Warm-started %s projectors from Stage 1 checkpoint: %s",
+        len(model.projector_list),
+        resolved_dir,
+    )
      
 def setup_models(model_config: Dict[str, Any], training_mode: str, device: str = "cuda", dtype: torch.dtype = torch.bfloat16):
     """Setup models based on training mode (baseline or rosetta)"""
@@ -443,45 +497,88 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
         slm_num_layers = base_model.config.num_hidden_layers
         llm_num_layers = teacher_model.config.num_hidden_layers
         
-        # Create projector from config
-        projector_config = model_config["projector"]
-        projector_params = projector_config["params"].copy()
-        projector_params["dtype"] = dtype
-        projector_list = []
-        # Only M projectors (share projector across sources): one per target layer
-        num_projectors = slm_num_layers
-
-        # shared_key_projection=build_shared_mlp(
-        #     source_dim=teacher_dim,
-        #     hidden_dim=projector_params["hidden_dim"],
-        #     target_dim=base_dim,
-        #     num_layers=projector_params["num_layers"],
-        #     use_layer_norm=projector_params["use_layer_norm"],
-        #     dropout=projector_params["dropout"],
-        #     dtype=dtype
-        # )
-        # shared_value_projection=build_shared_mlp(
-        #     source_dim=teacher_dim,
-        #     hidden_dim=projector_params["hidden_dim"],
-        #     target_dim=base_dim,
-        #     num_layers=projector_params["num_layers"],
-        #     use_layer_norm=projector_params["use_layer_norm"],
-        #     dropout=projector_params["dropout"],
-        #     dtype=dtype
-        # )
-        for _ in range(num_projectors):
-            projector = create_projector(
-                projector_config["type"],
-                source_dim=teacher_dim,
-                target_dim=base_dim,
-                source_num_heads=teacher_num_heads,
-                target_num_heads=base_num_heads,
-                # shared_key_projection=shared_key_projection,
-                # shared_value_projection=shared_value_projection,
-                **projector_params
+        # Create either the original C2C projectors or the first-stage joint
+        # latent bottleneck. Existing configs default to the original path.
+        fusion_type = str(model_config.get("fusion_type", "original")).lower()
+        if fusion_type not in {"original", "latent_kv_joint", "latent_kv_split"}:
+            raise ValueError(
+                "model.fusion_type must be 'original', 'latent_kv_joint', "
+                "or 'latent_kv_split'."
             )
-            projector_list.append(projector.to(device))
+        projector_list = []
+        source_target_mapping = None
+
+        if fusion_type in {"latent_kv_joint", "latent_kv_split"}:
+            latent_config = resolve_latent_kv_bridge_config(
+                model_config.get("latent_kv_bridge")
+            )
+            if not latent_config.enabled:
+                raise ValueError(
+                    f"fusion_type={fusion_type!r} requires "
+                    "model.latent_kv_bridge.enabled=true."
+                )
+            resolved_mapping = resolve_layer_mapping(
+                latent_config.layer_mapping,
+                num_sharer_layers=llm_num_layers,
+                num_receiver_layers=slm_num_layers,
+            )
+            source_target_mapping = {
+                target_idx: [source_idx]
+                for target_idx, source_idx in enumerate(resolved_mapping)
+            }
+            num_projectors = (
+                1 if latent_config.share_adapter_across_layers else slm_num_layers
+            )
+            for _ in range(num_projectors):
+                projector = create_projector(
+                    (
+                        "LatentKVCompressor"
+                        if fusion_type == "latent_kv_joint"
+                        else "SplitLatentKVProjector"
+                    ),
+                    sharer_num_kv_heads=teacher_num_heads,
+                    sharer_head_dim=teacher_dim,
+                    receiver_num_kv_heads=base_num_heads,
+                    receiver_head_dim=base_dim,
+                    latent_dim=latent_config.latent_dim,
+                    mlp_ratio=latent_config.mlp_ratio,
+                    dropout=latent_config.dropout,
+                    use_layer_gate=latent_config.use_layer_gate,
+                    use_head_scale=latent_config.use_head_scale,
+                    init_residual_scale=latent_config.residual_scale_init,
+                    gate_init=latent_config.gate_init,
+                    dtype=dtype,
+                )
+                projector_list.append(projector.to(device))
+        else:
+            projector_config = model_config["projector"]
+            projector_params = projector_config["params"].copy()
+            projector_params["dtype"] = dtype
+            # Only M projectors (share projector across sources): one per target layer
+            num_projectors = slm_num_layers
+
+            for _ in range(num_projectors):
+                projector = create_projector(
+                    projector_config["type"],
+                    source_dim=teacher_dim,
+                    target_dim=base_dim,
+                    source_num_heads=teacher_num_heads,
+                    target_num_heads=base_num_heads,
+                    **projector_params
+                )
+                projector_list.append(projector.to(device))
         
+        adaptive_quant_config = resolve_adaptive_quant_table_config(
+            model_config.get("adaptive_quant_table")
+        )
+        adaptive_quant_table = None
+        if adaptive_quant_config.enabled:
+            adaptive_quant_table = AdaptiveCoefficientQuantizer(
+                num_layers=slm_num_layers,
+                num_kv_heads=teacher_num_heads,
+                config=adaptive_quant_config,
+            ).to(device)
+
         # Init RosettaModel
         K = 1
 
@@ -490,18 +587,23 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
             base_model_idx=0,
             projector_list=projector_list,
             include_response=model_config.get("include_response", False),
-            multi_source_fusion_mode=model_config.get("multi_source_fusion_mode", "sequential")
+            multi_source_fusion_mode=model_config.get("multi_source_fusion_mode", "sequential"),
+            adaptive_quant_table=adaptive_quant_table,
         ).to(device).eval()
         
         
-        # mapping stretegy
-        if model_config["mapping"] == "last_aligned":
-            source_target_mapping = last_aligned_sources(slm_num_layers, llm_num_layers, K)
-        elif model_config["mapping"] == "k_nearest":
-            source_target_mapping = k_nearest_sources(slm_num_layers, llm_num_layers, K)
+        # Mapping strategy for original projectors. Latent fusion resolved its
+        # explicit/proportional mapping above.
+        if source_target_mapping is None:
+            if model_config["mapping"] == "last_aligned":
+                source_target_mapping = last_aligned_sources(slm_num_layers, llm_num_layers, K)
+            elif model_config["mapping"] == "k_nearest":
+                source_target_mapping = k_nearest_sources(slm_num_layers, llm_num_layers, K)
+            else:
+                raise ValueError(f"Invalid mapping strategy: {model_config['mapping']}")
+            print(f"Using {model_config['mapping']} mapping strategy (target: [sources])")
         else:
-            raise ValueError(f"Invalid mapping strategy: {model_config['mapping']}")
-        print(f"Using {model_config['mapping']} mapping strategy (target: [sources])")
+            print("Using latent_kv_bridge layer mapping (target: [sources])")
 
         # set projector
         for target_layer_idx, src_list in source_target_mapping.items():
@@ -511,7 +613,12 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
                     source_model_layer_idx=source_layer_idx,
                     target_model_idx=0,  # Base model
                     target_model_layer_idx=target_layer_idx,
-                    projector_idx=target_layer_idx,  # share projector per target layer
+                    projector_idx=(
+                        0
+                        if fusion_type in {"latent_kv_joint", "latent_kv_split"}
+                        and latent_config.share_adapter_across_layers
+                        else target_layer_idx
+                    ),
                 )
 
         # Optional aligner construction (used by collator)
@@ -677,6 +784,13 @@ def main():
     
     model, main_tokenizer, aligner, llm_tokenizer = setup_models(model_config, training_mode, device, torch.bfloat16)
     model = model.to(device)
+    if training_mode == "rosetta" and model_config.get("initial_projector_checkpoint"):
+        load_initial_projector_checkpoint(
+            str(model_config["initial_projector_checkpoint"]),
+            model,
+            device,
+            logger,
+        )
 
     # Apply freezing/training configuration based on mode
     if training_mode == "baseline":
@@ -932,6 +1046,7 @@ def main():
             for proj in model_to_use.projector_list:
                 if hasattr(proj, 'update_temperature') and callable(proj.update_temperature):
                     proj.update_temperature(global_step)
+            model_to_use.update_adaptive_quant_table_schedule(global_step)
 
         if is_main_process:
             logger.info(
@@ -1018,6 +1133,7 @@ def main():
                     for proj in model_to_use.projector_list:
                         if hasattr(proj, 'update_temperature') and callable(proj.update_temperature):
                             proj.update_temperature(global_step)
+                    model_to_use.update_adaptive_quant_table_schedule(global_step)
 
             # Progress bar and logging
             if is_main_process and did_step:
@@ -1033,14 +1149,28 @@ def main():
                 progress_bar.set_postfix(postfix)
                 progress_bar.update(1)
 
+                train_metrics = {
+                    "loss": avg_window_loss,
+                    "lr": scheduler.get_last_lr()[0],
+                    "grad_norm": grad_norm_value,
+                    "epoch": fractional_epoch,
+                }
+                if training_mode == "rosetta":
+                    model_to_use = model.module if hasattr(model, "module") else model
+                    quant_metrics = model_to_use.last_adaptive_quant_table_metrics
+                    if quant_metrics is not None:
+                        train_metrics.update(
+                            {
+                                f"adaptive_quant_{key}": value
+                                for key, value in quant_metrics.items()
+                                if value is not None
+                            }
+                        )
                 log_metrics(
                     logger,
                     "train",
                     step=global_step,
-                    loss=avg_window_loss,
-                    lr=scheduler.get_last_lr()[0],
-                    grad_norm=grad_norm_value,
-                    epoch=fractional_epoch,
+                    **train_metrics,
                 )
 
                 # reset window accumulators
@@ -1082,6 +1212,11 @@ def main():
                                 torch.save(proj.state_dict(), os.path.join(checkpoint_dir, f"projector_{i}.pt"))
                                 save_projector(proj, os.path.join(checkpoint_dir, f"projector_{i}.json"))
                             base_model_ref.save_projector_config(os.path.join(checkpoint_dir, "projector_config.json"))
+                            if base_model_ref.adaptive_quant_table is not None:
+                                torch.save(
+                                    base_model_ref.adaptive_quant_table.state_dict(),
+                                    os.path.join(checkpoint_dir, "adaptive_quant_table.pt"),
+                                )
 
                         torch.save({
                             "step": global_step,
@@ -1156,6 +1291,11 @@ def main():
                 torch.save(proj.state_dict(), os.path.join(final_dir, f"projector_{i}.pt"))
                 save_projector(proj, os.path.join(final_dir, f"projector_{i}.json"))
             base_model_ref.save_projector_config(os.path.join(final_dir, "projector_config.json"))
+            if base_model_ref.adaptive_quant_table is not None:
+                torch.save(
+                    base_model_ref.adaptive_quant_table.state_dict(),
+                    os.path.join(final_dir, "adaptive_quant_table.pt"),
+                )
 
     if is_main_process:
         logger.info("Training completed!")

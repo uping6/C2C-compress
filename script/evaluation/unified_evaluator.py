@@ -411,6 +411,37 @@ class UnifiedEvaluator:
             
             # Remember whether we are evaluating LongBench-E.
             self.is_longbench_e = self.eval_config.get("longbench_e", False)
+            subset_cfg = self.eval_config.get("longbench_e_test_subset", {})
+            if subset_cfg is None:
+                subset_cfg = {}
+            if isinstance(subset_cfg, int):
+                subset_cfg = {"enabled": True, "size": subset_cfg}
+            if not isinstance(subset_cfg, dict):
+                raise ValueError(
+                    "eval.longbench_e_test_subset must be a mapping, integer, or null."
+                )
+            self.longbench_e_test_subset_enabled = bool(
+                subset_cfg.get("enabled", False)
+            )
+            self.longbench_e_test_subset_size = int(subset_cfg.get("size", 200))
+            self.longbench_e_test_subset_seed = int(subset_cfg.get("seed", 42))
+            self.longbench_e_test_subset_ids: Dict[str, set[str]] = {}
+            self.longbench_e_test_subset_counts: Dict[str, int] = {}
+            if self.longbench_e_test_subset_enabled:
+                if not self.is_longbench_e:
+                    raise ValueError(
+                        "longbench_e_test_subset requires eval.longbench_e=true."
+                    )
+                if self.longbench_e_test_subset_size <= 0:
+                    raise ValueError("longbench_e_test_subset.size must be positive.")
+                if int(self.eval_config.get("sample_interval", 1)) != 1:
+                    raise ValueError(
+                        "longbench_e_test_subset requires sample_interval=1."
+                    )
+                if self.eval_config.get("limit") is not None:
+                    raise ValueError(
+                        "Do not combine longbench_e_test_subset with eval.limit."
+                    )
             
             # Tokenizer is assigned later inside evaluate_subject.
             self.tokenizer = None
@@ -528,6 +559,69 @@ class UnifiedEvaluator:
 
         # Fall back to Hugging Face datasets
         return load_dataset(self.dataset_config["dataset_name"], subject)
+
+    def _prepare_longbench_e_test_subset(self, subjects: List[str]) -> None:
+        """Select an exact, deterministic held-out subset across LongBench-E subjects."""
+
+        if not getattr(self, "longbench_e_test_subset_enabled", False):
+            return
+        candidates: list[tuple[int, str, str]] = []
+        split_name = self.dataset_config["test_split"]
+        for subject in subjects:
+            if not str(subject).endswith("_e"):
+                raise ValueError(
+                    "The LongBench-E test subset can contain only *_e subjects."
+                )
+            test_data = self._load_longbench_dataset(subject)[split_name]
+            for example in test_data:
+                example_id = str(example["_id"])
+                heldout_hash = int(
+                    hashlib.sha256(example_id.encode("utf-8")).hexdigest(), 16
+                )
+                # Training uses hash % 4 != 1, so the selectable test subset
+                # must be drawn exclusively from the complementary partition.
+                if heldout_hash % 4 != 1:
+                    continue
+                rank_key = (
+                    f"{self.longbench_e_test_subset_seed}:{subject}:{example_id}"
+                )
+                rank_hash = int(
+                    hashlib.sha256(rank_key.encode("utf-8")).hexdigest(), 16
+                )
+                candidates.append((rank_hash, str(subject), example_id))
+
+        requested_size = self.longbench_e_test_subset_size
+        if len(candidates) < requested_size:
+            raise ValueError(
+                "LongBench-E held-out partition contains only "
+                f"{len(candidates)} samples for the selected subjects, fewer than "
+                f"the requested subset size {requested_size}."
+            )
+        selected = sorted(candidates, key=lambda item: item[0])[:requested_size]
+        selected_ids: Dict[str, set[str]] = defaultdict(set)
+        for _, subject, example_id in selected:
+            selected_ids[subject].add(example_id)
+        self.longbench_e_test_subset_ids = dict(selected_ids)
+        self.longbench_e_test_subset_counts = {
+            subject: len(ids) for subject, ids in selected_ids.items()
+        }
+        if sum(self.longbench_e_test_subset_counts.values()) != requested_size:
+            raise RuntimeError("LongBench-E subset construction did not produce the requested size.")
+        print(
+            "Prepared deterministic LongBench-E held-out subset: "
+            f"size={requested_size}, seed={self.longbench_e_test_subset_seed}, "
+            f"per_subject={dict(sorted(self.longbench_e_test_subset_counts.items()))}"
+        )
+
+    def _longbench_prediction_split_dir(self, is_longbench_e: bool) -> str:
+        if not is_longbench_e:
+            return "pred"
+        if getattr(self, "longbench_e_test_subset_enabled", False):
+            return (
+                f"pred_e_subset_{self.longbench_e_test_subset_size}"
+                f"_seed_{self.longbench_e_test_subset_seed}"
+            )
+        return "pred_e"
 
     @staticmethod
     def _normalize_text(text: Any) -> str:
@@ -1440,7 +1534,7 @@ class UnifiedEvaluator:
             if is_longbench_e:
                 # LongBench-E subjects are saved under pred_e/ and drop the _e suffix.
                 subject_name = subject[:-2]
-                output_base_dir = self.output_dir / "pred_e" / self.model_config["model_name"].split("/")[-1]
+                output_base_dir = self.output_dir / self._longbench_prediction_split_dir(True) / self.model_config["model_name"].split("/")[-1]
             else:
                 # Standard LongBench subjects are saved under pred/.
                 subject_name = subject
@@ -1457,6 +1551,22 @@ class UnifiedEvaluator:
         # Sampling configuration
         sample_interval = self.eval_config.get("sample_interval", 1)
         sample_indices = list(range(0, len(test_data), sample_interval))
+
+        if (
+            self.dataset_name == "longbench"
+            and is_longbench_e
+            and getattr(self, "longbench_e_test_subset_enabled", False)
+        ):
+            if not self.longbench_e_test_subset_ids:
+                raise RuntimeError(
+                    "LongBench-E test subset was not prepared before subject evaluation."
+                )
+            selected_ids = self.longbench_e_test_subset_ids.get(str(subject), set())
+            sample_indices = [
+                index
+                for index in sample_indices
+                if str(test_data[index]["_id"]) in selected_ids
+            ]
 
         # Apply virtual split window for datasets without native subjects
         if is_virtual_split and total_splits > 1:
@@ -1813,9 +1923,17 @@ class UnifiedEvaluator:
                         "_id": example["_id"],
                         
                     }
+                    if getattr(self, "longbench_e_test_subset_enabled", False):
+                        output_entry["longbench_e_test_subset"] = {
+                            "size": self.longbench_e_test_subset_size,
+                            "seed": self.longbench_e_test_subset_seed,
+                        }
                     cachejpeg_stats = getattr(model, "last_codec_stats", None)
                     if cachejpeg_stats is not None:
                         output_entry["cachejpeg_stats"] = dict(cachejpeg_stats)
+                    fusion_stats = getattr(model, "last_fusion_stats", None)
+                    if fusion_stats is not None:
+                        output_entry["fusion_stats"] = dict(fusion_stats)
                     if sharer_shuffle_metadata is not None:
                         output_entry["sharer_cache_shuffle"] = dict(
                             sharer_shuffle_metadata
@@ -2467,6 +2585,7 @@ class UnifiedEvaluator:
         # For LongBench, check if we're evaluating on LongBench-E
         if self.dataset_name == "longbench" and self.eval_config.get("longbench_e", False):
             subjects = [f"{s}_e" for s in subjects]
+            self._prepare_longbench_e_test_subset(subjects)
         if(self.dataset_name == "longbench"):
             longbench_subject_metrics = []
             longbench_length_stats = []
@@ -2477,7 +2596,7 @@ class UnifiedEvaluator:
             for subject in subjects:
                 is_longbench_e = subject.endswith("_e")
                 subject_name = subject[:-2] if is_longbench_e else subject
-                pred_dir = self.output_dir / ("pred_e" if is_longbench_e else "pred") / model_name_for_file
+                pred_dir = self.output_dir / self._longbench_prediction_split_dir(is_longbench_e) / model_name_for_file
                 output_file = pred_dir / f"{subject_name}.jsonl"
                 if skip_existing and self._has_valid_longbench_output(output_file):
                     print(f"Skipping existing LongBench subject: {subject} -> {output_file}")
@@ -2529,7 +2648,7 @@ class UnifiedEvaluator:
                 for subject in pending_subjects:
                     is_longbench_e = subject.endswith("_e")
                     subject_name = subject[:-2] if is_longbench_e else subject
-                    pred_dir = self.output_dir / ("pred_e" if is_longbench_e else "pred") / model_name_for_file
+                    pred_dir = self.output_dir / self._longbench_prediction_split_dir(is_longbench_e) / model_name_for_file
                     output_file = pred_dir / f"{subject_name}.jsonl"
                     longbench_subject_metrics.append(self._score_longbench_subject(subject, output_file))
             else:
