@@ -1,0 +1,163 @@
+{
+  "model": "cachejpeg_rosetta",
+  "dataset": "longbench",
+  "answer_method": "generate",
+  "overall_accuracy": 0.36362267080745336,
+  "subjects": {
+    "qasper_e": {
+      "metric": "f1",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "multifieldqa_en_e": {
+      "metric": "f1",
+      "score": 1.0,
+      "num_samples": 1,
+      "length_buckets": {
+        "0-4k": {
+          "score": 1.0,
+          "num_samples": 1
+        }
+      }
+    },
+    "hotpotqa_e": {
+      "metric": "f1",
+      "score": 0.3333333333333333,
+      "num_samples": 3,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.0,
+          "num_samples": 2
+        },
+        "0-4k": {
+          "score": 1.0,
+          "num_samples": 1
+        }
+      }
+    },
+    "2wikimqa_e": {
+      "metric": "f1",
+      "score": 0.3333333333333333,
+      "num_samples": 3,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.3333333333333333,
+          "num_samples": 3
+        }
+      }
+    },
+    "gov_report_e": {
+      "metric": "rouge_l",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "multi_news_e": {
+      "metric": "rouge_l",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "trec_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 2,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.0,
+          "num_samples": 1
+        },
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 1
+        }
+      }
+    },
+    "triviaqa_e": {
+      "metric": "f1",
+      "score": 1.0,
+      "num_samples": 2,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 1.0,
+          "num_samples": 2
+        }
+      }
+    },
+    "samsum_e": {
+      "metric": "rouge_l",
+      "score": 0.31811335403726704,
+      "num_samples": 4,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.40372670807453415,
+          "num_samples": 2
+        },
+        "4k-8k": {
+          "score": 0.2325,
+          "num_samples": 2
+        }
+      }
+    },
+    "passage_count_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 1,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 1
+        }
+      }
+    },
+    "passage_retrieval_en_e": {
+      "metric": "em",
+      "score": 1.0,
+      "num_samples": 1,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 1.0,
+          "num_samples": 1
+        }
+      }
+    },
+    "lcc_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 2,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 2
+        }
+      }
+    },
+    "repobench-p_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 1,
+      "length_buckets": {
+        "8k+": {
+          "score": 0.0,
+          "num_samples": 1
+        }
+      }
+    }
+  },
+  "final_score": 0.36362267080745336,
+  "length_buckets": {
+    "0-4k": {
+      "score": 0.35093167701863354,
+      "num_samples": 8
+    },
+    "4k-8k": {
+      "score": 0.4059090909090909,
+      "num_samples": 11
+    },
+    "8k+": {
+      "score": 0.0,
+      "num_samples": 1
+    }
+  }
+}

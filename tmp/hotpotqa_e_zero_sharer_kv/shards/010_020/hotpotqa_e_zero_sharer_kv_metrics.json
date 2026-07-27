@@ -1,0 +1,49 @@
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.14828264208909372,
+  "num_samples": 5,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.14828264208909372,
+      "num_samples": 5
+    }
+  },
+  "details": [
+    {
+      "_id": "4bed97d5daa9f4078353a6cd57e7427f4a854bffa5c09234",
+      "score": 0.16,
+      "input_length": 6164,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "c5b67fae3f50b2c27eaa6248ea92ba04b917aca24810ab36",
+      "score": 0.28571428571428575,
+      "input_length": 5404,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "88a86128267b1d8a14f97c64a5b03ad6c0aa0cb6d02c4336",
+      "score": 0.16666666666666669,
+      "input_length": 5316,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "88ecef6a544abe95c7d7b3130586c02359d2a3efa43fd1f5",
+      "score": 0.0,
+      "input_length": 5627,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "b0f42fe35532a3195281456d38184da20c1eba239afb0c9c",
+      "score": 0.12903225806451613,
+      "input_length": 5367,
+      "length_bucket": "4k-8k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/010_020/pred_e/cachejpeg/hotpotqa.jsonl"
+}

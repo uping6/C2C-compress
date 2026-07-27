@@ -1,0 +1,270 @@
+{
+  "model": "cachejpeg_rosetta",
+  "dataset": "longbench",
+  "answer_method": "generate",
+  "overall_accuracy": 0.31413454028749493,
+  "subjects": {
+    "qasper_e": {
+      "metric": "f1",
+      "score": 0.3472288216488267,
+      "num_samples": 48,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.35675628456276276,
+          "num_samples": 32
+        },
+        "0-4k": {
+          "score": 0.3517330164388988,
+          "num_samples": 9
+        },
+        "8k+": {
+          "score": 0.29788359788359786,
+          "num_samples": 7
+        }
+      }
+    },
+    "multifieldqa_en_e": {
+      "metric": "f1",
+      "score": 0.4140917685867129,
+      "num_samples": 34,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.7873015873015873,
+          "num_samples": 6
+        },
+        "4k-8k": {
+          "score": 0.33739878179349625,
+          "num_samples": 12
+        },
+        "8k+": {
+          "score": 0.3316578266635475,
+          "num_samples": 16
+        }
+      }
+    },
+    "hotpotqa_e": {
+      "metric": "f1",
+      "score": 0.3912859050430208,
+      "num_samples": 93,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.525421626984127,
+          "num_samples": 32
+        },
+        "0-4k": {
+          "score": 0.606060606060606,
+          "num_samples": 11
+        },
+        "8k+": {
+          "score": 0.2581886087768441,
+          "num_samples": 50
+        }
+      }
+    },
+    "2wikimqa_e": {
+      "metric": "f1",
+      "score": 0.31115638419009206,
+      "num_samples": 89,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.3736842105263158,
+          "num_samples": 38
+        },
+        "0-4k": {
+          "score": 0.4444444444444444,
+          "num_samples": 9
+        },
+        "8k+": {
+          "score": 0.22602186173614744,
+          "num_samples": 42
+        }
+      }
+    },
+    "gov_report_e": {
+      "metric": "rouge_l",
+      "score": 0.13319886339368972,
+      "num_samples": 90,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.12716239907826438,
+          "num_samples": 31
+        },
+        "0-4k": {
+          "score": 0.1383928692033616,
+          "num_samples": 23
+        },
+        "8k+": {
+          "score": 0.13507853728690444,
+          "num_samples": 36
+        }
+      }
+    },
+    "multi_news_e": {
+      "metric": "rouge_l",
+      "score": 0.07782472530515679,
+      "num_samples": 75,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.11421286492943468,
+          "num_samples": 22
+        },
+        "4k-8k": {
+          "score": 0.06300988511512687,
+          "num_samples": 21
+        },
+        "8k+": {
+          "score": 0.06253011818817288,
+          "num_samples": 32
+        }
+      }
+    },
+    "trec_e": {
+      "metric": "em",
+      "score": 0.6086956521739131,
+      "num_samples": 69,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.5555555555555556,
+          "num_samples": 18
+        },
+        "0-4k": {
+          "score": 0.5,
+          "num_samples": 20
+        },
+        "8k+": {
+          "score": 0.7096774193548387,
+          "num_samples": 31
+        }
+      }
+    },
+    "triviaqa_e": {
+      "metric": "f1",
+      "score": 0.6942363290697806,
+      "num_samples": 83,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.617063492063492,
+          "num_samples": 24
+        },
+        "0-4k": {
+          "score": 0.725,
+          "num_samples": 12
+        },
+        "8k+": {
+          "score": 0.7257891809205951,
+          "num_samples": 47
+        }
+      }
+    },
+    "samsum_e": {
+      "metric": "rouge_l",
+      "score": 0.2618571765819264,
+      "num_samples": 81,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.3220060957645143,
+          "num_samples": 19
+        },
+        "4k-8k": {
+          "score": 0.30657026775028917,
+          "num_samples": 13
+        },
+        "8k+": {
+          "score": 0.22667146944605124,
+          "num_samples": 49
+        }
+      }
+    },
+    "passage_count_e": {
+      "metric": "em",
+      "score": 0.016666666666666666,
+      "num_samples": 60,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 9
+        },
+        "4k-8k": {
+          "score": 0.047619047619047616,
+          "num_samples": 21
+        },
+        "8k+": {
+          "score": 0.0,
+          "num_samples": 30
+        }
+      }
+    },
+    "passage_retrieval_en_e": {
+      "metric": "em",
+      "score": 0.7941176470588235,
+      "num_samples": 68,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.7647058823529411,
+          "num_samples": 34
+        },
+        "0-4k": {
+          "score": 1.0,
+          "num_samples": 3
+        },
+        "8k+": {
+          "score": 0.8064516129032258,
+          "num_samples": 31
+        }
+      }
+    },
+    "lcc_e": {
+      "metric": "em",
+      "score": 0.07142857142857142,
+      "num_samples": 84,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.08,
+          "num_samples": 25
+        },
+        "8k+": {
+          "score": 0.05263157894736842,
+          "num_samples": 57
+        },
+        "4k-8k": {
+          "score": 0.5,
+          "num_samples": 2
+        }
+      }
+    },
+    "repobench-p_e": {
+      "metric": "em",
+      "score": 0.0410958904109589,
+      "num_samples": 73,
+      "length_buckets": {
+        "8k+": {
+          "score": 0.03636363636363636,
+          "num_samples": 55
+        },
+        "4k-8k": {
+          "score": 0.058823529411764705,
+          "num_samples": 17
+        },
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 1
+        }
+      }
+    }
+  },
+  "final_score": 0.31413454028749493,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.3713174840682843,
+      "num_samples": 295
+    },
+    "0-4k": {
+      "score": 0.31994028507737826,
+      "num_samples": 169
+    },
+    "8k+": {
+      "score": 0.27717773017398945,
+      "num_samples": 483
+    }
+  }
+}

@@ -1,0 +1,35 @@
+model:
+  model_name: cachejpeg_rosetta
+  max_length: 12000
+  rosetta_config:
+    base_model: Qwen/Qwen3-0.6B
+    base_model_path: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
+    teacher_model: Qwen/Qwen2.5-Math-1.5B
+    teacher_model_path: /data/smy/lmy/C2C-compress-master/local/models/Qwen2.5-Math-1.5B
+    is_do_alignment: false
+    alignment_strategy: longest
+    checkpoints_dir: /data/smy/lmy/C2C-compress-master/local/checkpoints/0.6+1.5B_C2C_longbench_e
+  cachejpeg_rosetta_config:
+    sharer_model_role: teacher
+    receiver_model_role: base
+    transport: {mode: none}
+    codec:
+      method: cachejpeg
+      compute: {backend: gpu, transform_dtype: float32}
+      entropy: {representation: adaptive_int, backend: lz4}
+  generation_config: {do_sample: false, max_new_tokens: 2048}
+output:
+  output_dir: local/final_results/0.6+1.5B_C2C_longbench_e_final_jpegcache_rosetta_new
+eval:
+  dataset: longbench
+  longbench_e: true
+  longbench_local_data_dir: /data/smy/KVCache-Factory/data/LongBench
+  rosetta_checkpoint_subfolder: final
+  skip_existing_longbench_subjects: false
+  longbench_prompt_format_path: longbench/config/dataset2prompt.json
+  longbench_maxlen_format_path: longbench/config/dataset2maxlen.json
+  gpu_ids: [0]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1

@@ -1,0 +1,14 @@
+{
+  "num_timed_samples": 947,
+  "end_to_end_total_seconds": 12064.40222675597,
+  "end_to_end_avg_ms": 12739.601084219617,
+  "end_to_end_p50_ms": 1904.2858989560045,
+  "end_to_end_p95_ms": 82769.20405779962,
+  "longbench_e_score": 0.2813842959129951,
+  "avg_layer_encode_ms": null,
+  "avg_layer_prefill_ms": null,
+  "per_layer_avg_encode_ms": [],
+  "per_layer_avg_prefill_ms": [],
+  "avg_pipeline_ms": null,
+  "avg_payload_bytes": 16117400.381203802
+}

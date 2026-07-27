@@ -1,0 +1,102 @@
+{
+  "model": "cachejpeg_rosetta",
+  "dataset": "longbench",
+  "answer_method": "generate",
+  "overall_accuracy": 0.0,
+  "subjects": {
+    "qasper_e": {
+      "metric": "f1",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "multifieldqa_en_e": {
+      "metric": "f1",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "hotpotqa_e": {
+      "metric": "f1",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "2wikimqa_e": {
+      "metric": "f1",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "gov_report_e": {
+      "metric": "rouge_l",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "multi_news_e": {
+      "metric": "rouge_l",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "trec_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "triviaqa_e": {
+      "metric": "f1",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "samsum_e": {
+      "metric": "rouge_l",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "passage_count_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "passage_retrieval_en_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "lcc_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    },
+    "repobench-p_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 0,
+      "length_buckets": {}
+    }
+  },
+  "final_score": 0.0,
+  "length_buckets": {},
+  "performance": {
+    "num_timed_samples": 0,
+    "end_to_end_total_seconds": 0.0,
+    "end_to_end_avg_ms": null,
+    "end_to_end_p50_ms": null,
+    "end_to_end_p95_ms": null,
+    "longbench_e_score": 0.0,
+    "avg_layer_encode_ms": null,
+    "avg_layer_prefill_ms": null,
+    "per_layer_avg_encode_ms": [],
+    "per_layer_avg_prefill_ms": [],
+    "avg_pipeline_ms": null,
+    "avg_payload_bytes": null
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "dataset": "qasper",
+  "sample_index": 2,
+  "sample_id": "e419f2bff9d2ab7c3b60b3250caccd2d9ae1285ec3e8e818",
+  "input_token_count": 4471,
+  "device": "cuda:1",
+  "num_layers": 28,
+  "num_heads": 8,
+  "head_dimension": 128,
+  "quant_dtype": "int16",
+  "bands": [
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5"
+  ],
+  "block_mode": "global",
+  "quantization": {
+    "q_global": 1.0,
+    "low": 1.0,
+    "high": 8.0,
+    "curve": "quadratic"
+  }
+}

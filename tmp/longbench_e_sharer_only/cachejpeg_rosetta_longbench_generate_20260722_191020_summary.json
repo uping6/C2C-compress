@@ -1,0 +1,278 @@
+{
+  "model": "cachejpeg_rosetta",
+  "dataset": "longbench",
+  "answer_method": "generate",
+  "overall_accuracy": 0.17632097778552597,
+  "subjects": {
+    "qasper_e": {
+      "metric": "f1",
+      "score": 0.24157957031181634,
+      "num_samples": 48,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.23673523978075778,
+          "num_samples": 32
+        },
+        "0-4k": {
+          "score": 0.3630161803617182,
+          "num_samples": 9
+        },
+        "8k+": {
+          "score": 0.10759229696106773,
+          "num_samples": 7
+        }
+      }
+    },
+    "multifieldqa_en_e": {
+      "metric": "f1",
+      "score": 0.3999681118445933,
+      "num_samples": 34,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.6514263907601966,
+          "num_samples": 6
+        },
+        "4k-8k": {
+          "score": 0.43027193914658085,
+          "num_samples": 12
+        },
+        "8k+": {
+          "score": 0.28294338677475134,
+          "num_samples": 16
+        }
+      }
+    },
+    "hotpotqa_e": {
+      "metric": "f1",
+      "score": 0.2726018150912799,
+      "num_samples": 93,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.24387962711635144,
+          "num_samples": 32
+        },
+        "0-4k": {
+          "score": 0.23025441581591313,
+          "num_samples": 11
+        },
+        "8k+": {
+          "score": 0.30030044323581473,
+          "num_samples": 50
+        }
+      }
+    },
+    "2wikimqa_e": {
+      "metric": "f1",
+      "score": 0.2611825935685817,
+      "num_samples": 89,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.3330298786181139,
+          "num_samples": 38
+        },
+        "0-4k": {
+          "score": 0.3555555555555555,
+          "num_samples": 8
+        },
+        "8k+": {
+          "score": 0.18013188362025573,
+          "num_samples": 43
+        }
+      }
+    },
+    "gov_report_e": {
+      "metric": "rouge_l",
+      "score": 0.1683992137612468,
+      "num_samples": 90,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.17223652616669438,
+          "num_samples": 32
+        },
+        "0-4k": {
+          "score": 0.18038340619849524,
+          "num_samples": 22
+        },
+        "8k+": {
+          "score": 0.15766459624475274,
+          "num_samples": 36
+        }
+      }
+    },
+    "multi_news_e": {
+      "metric": "rouge_l",
+      "score": 0.12288719776564089,
+      "num_samples": 75,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.1418608092258714,
+          "num_samples": 22
+        },
+        "4k-8k": {
+          "score": 0.11868595533302521,
+          "num_samples": 21
+        },
+        "8k+": {
+          "score": 0.1125999052331364,
+          "num_samples": 32
+        }
+      }
+    },
+    "trec_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 69,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.0,
+          "num_samples": 18
+        },
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 20
+        },
+        "8k+": {
+          "score": 0.0,
+          "num_samples": 31
+        }
+      }
+    },
+    "triviaqa_e": {
+      "metric": "f1",
+      "score": 0.5101362967245554,
+      "num_samples": 83,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.5440229205082953,
+          "num_samples": 24
+        },
+        "0-4k": {
+          "score": 0.5917483660130719,
+          "num_samples": 12
+        },
+        "8k+": {
+          "score": 0.47199536476132226,
+          "num_samples": 47
+        }
+      }
+    },
+    "samsum_e": {
+      "metric": "rouge_l",
+      "score": 0.2403732031486863,
+      "num_samples": 81,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.2950082498056672,
+          "num_samples": 19
+        },
+        "4k-8k": {
+          "score": 0.23040219246847646,
+          "num_samples": 13
+        },
+        "8k+": {
+          "score": 0.2218335552376677,
+          "num_samples": 49
+        }
+      }
+    },
+    "passage_count_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 60,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 8
+        },
+        "4k-8k": {
+          "score": 0.0,
+          "num_samples": 21
+        },
+        "8k+": {
+          "score": 0.0,
+          "num_samples": 31
+        }
+      }
+    },
+    "passage_retrieval_en_e": {
+      "metric": "em",
+      "score": 0.10294117647058823,
+      "num_samples": 68,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 0.11428571428571428,
+          "num_samples": 35
+        },
+        "0-4k": {
+          "score": 0.5,
+          "num_samples": 2
+        },
+        "8k+": {
+          "score": 0.06451612903225806,
+          "num_samples": 31
+        }
+      }
+    },
+    "lcc_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 84,
+      "length_buckets": {
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 25
+        },
+        "8k+": {
+          "score": 0.0,
+          "num_samples": 57
+        },
+        "4k-8k": {
+          "score": 0.0,
+          "num_samples": 2
+        }
+      }
+    },
+    "repobench-p_e": {
+      "metric": "em",
+      "score": 0.0,
+      "num_samples": 73,
+      "length_buckets": {
+        "8k+": {
+          "score": 0.0,
+          "num_samples": 55
+        },
+        "4k-8k": {
+          "score": 0.0,
+          "num_samples": 17
+        },
+        "0-4k": {
+          "score": 0.0,
+          "num_samples": 1
+        }
+      }
+    }
+  },
+  "final_score": 0.17632097778552597,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.20624184138576368,
+      "num_samples": 297
+    },
+    "0-4k": {
+      "score": 0.20211185978204083,
+      "num_samples": 165
+    },
+    "8k+": {
+      "score": 0.149224087025329,
+      "num_samples": 485
+    }
+  },
+  "performance": {
+    "num_timed_samples": 0,
+    "end_to_end_total_seconds": 0.0,
+    "end_to_end_avg_ms": null,
+    "end_to_end_p50_ms": null,
+    "end_to_end_p95_ms": null,
+    "longbench_e_score": 0.17632097778552597
+  }
+}

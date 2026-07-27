@@ -1,0 +1,55 @@
+model:
+  # model_name: Qwen/Qwen3-0.6B
+  model_name: Rosetta
+  rosetta_config:  # Only needed for Rosetta models
+    base_model: Qwen/Qwen3-0.6B
+    teacher_model: Qwen/Qwen2.5-0.5B-Instruct
+    is_do_alignment: false
+    alignment_strategy: "longest"
+    # Checkpoint root directory. The actual subfolder is selected by eval.rosetta_checkpoint_subfolder.
+    # For matrix evaluation, this field is overwritten per teacher model by bash/eval/run_unified_eval_matrix.sh.
+    checkpoints_dir: C2C_Fuser/qwen3_0.6b+qwen2.5_0.5b_Fuser
+  
+  # Two stage
+  # model_name: "two_stage"  # Use two-stage pipeline
+  # answer_model_path: "Qwen/Qwen3-0.6B" # Second LLM for answering
+  # context_model_path: "Qwen/Qwen3-4B"
+  # background_prompt: "In one clear sentence, describe the most essential background knowledge needed to answer the question: {question}"
+
+  # Generation configuration - applied to all models during evaluation
+  generation_config:
+    do_sample: false  # Whether to use sampling (true) or greedy decoding (false)
+    max_new_tokens: 64  # Maximum number of tokens to generate
+    # Sampling parameters (only used when do_sample=true):
+    # temperature: 0.7  # Controls randomness (0.0 = deterministic, higher = more random)
+    # top_p: 0.8  # Nucleus sampling threshold
+    # top_k: 20  # Top-k sampling threshold
+    # # min_p: 0.05  # Minimum probability threshold
+    # # repetition_penalty: 1.0  # Penalty for repeating tokens
+    # presence_penalty: 1.5  # Penalty for repeating tokens
+    # frequency_penalty: 1.0
+
+output:
+  # All evaluation artifacts are written under this directory.
+  # For matrix evaluation, this field is overwritten per dataset x teacher combination.
+  output_dir: local/final_results/0.6+0.5B_C2C_general_again
+
+eval:
+  # Supported values in the current unified evaluator include:
+  # mmlu-redux, openbookqa, ai2-arc, ceval, longbench, math-500, gsm8k, gpqa, mmmlu, mmlu-pro
+  dataset: mmlu-redux
+  gpu_ids: [1]  # GPUs to use for evaluation
+  answer_method: generate  # 'generate' or 'logits'
+  use_cot: false  # Enable chain-of-thought reasoning
+  use_template: true
+  sample_interval: 1  # Sample every N examples
+  # When evaluating Rosetta, read checkpoints from this subfolder under model.rosetta_config.checkpoints_dir.
+  rosetta_checkpoint_subfolder: final
+  # In bash/eval/run_unified_eval_matrix.sh, dataset/gpu_ids/answer_method are overwritten automatically.
+  # LongBench-specific options are ignored unless eval.dataset == "longbench".
+  skip_existing_longbench_subjects: true
+  # longbench_local_data_dir: /path/to/local/longbench/jsonl
+  # limit:   # Limit examples per subject (null for all)
+  # subjects: ["nutrition"] # Optional: specify specific subjects to evaluate
+  # response_text: ""
+  math_grading_method: "comprehensive"

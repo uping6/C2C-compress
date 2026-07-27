@@ -1,0 +1,202 @@
+[
+  {
+    "subject": "multifieldqa_en_e",
+    "question_id": 3,
+    "input_length": 1777,
+    "gen_length": 15,
+    "length_ratio": 0.008441193021947102,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "hotpotqa_e",
+    "question_id": 0,
+    "input_length": 6436,
+    "gen_length": 5,
+    "length_ratio": 0.0007768800497203232,
+    "is_correct": null,
+    "pred": "D",
+    "true_answer": null
+  },
+  {
+    "subject": "hotpotqa_e",
+    "question_id": 1,
+    "input_length": 5467,
+    "gen_length": 3,
+    "length_ratio": 0.000548747027620267,
+    "is_correct": null,
+    "pred": "A",
+    "true_answer": null
+  },
+  {
+    "subject": "hotpotqa_e",
+    "question_id": 3,
+    "input_length": 1227,
+    "gen_length": 19,
+    "length_ratio": 0.015484922575387123,
+    "is_correct": null,
+    "pred": "A",
+    "true_answer": null
+  },
+  {
+    "subject": "2wikimqa_e",
+    "question_id": 1,
+    "input_length": 4815,
+    "gen_length": 7,
+    "length_ratio": 0.0014537902388369677,
+    "is_correct": null,
+    "pred": "C",
+    "true_answer": null
+  },
+  {
+    "subject": "2wikimqa_e",
+    "question_id": 2,
+    "input_length": 5927,
+    "gen_length": 25,
+    "length_ratio": 0.004217985490129914,
+    "is_correct": null,
+    "pred": "B",
+    "true_answer": null
+  },
+  {
+    "subject": "2wikimqa_e",
+    "question_id": 3,
+    "input_length": 4626,
+    "gen_length": 11,
+    "length_ratio": 0.0023778642455685255,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "trec_e",
+    "question_id": 1,
+    "input_length": 4608,
+    "gen_length": 59,
+    "length_ratio": 0.012803819444444444,
+    "is_correct": null,
+    "pred": "A",
+    "true_answer": null
+  },
+  {
+    "subject": "trec_e",
+    "question_id": 3,
+    "input_length": 1534,
+    "gen_length": 49,
+    "length_ratio": 0.031942633637548894,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "triviaqa_e",
+    "question_id": 1,
+    "input_length": 4162,
+    "gen_length": 4,
+    "length_ratio": 0.0009610764055742432,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "triviaqa_e",
+    "question_id": 2,
+    "input_length": 4593,
+    "gen_length": 3,
+    "length_ratio": 0.0006531678641410843,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "samsum_e",
+    "question_id": 0,
+    "input_length": 2896,
+    "gen_length": 21,
+    "length_ratio": 0.007251381215469613,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "samsum_e",
+    "question_id": 1,
+    "input_length": 5789,
+    "gen_length": 78,
+    "length_ratio": 0.01347382967697357,
+    "is_correct": null,
+    "pred": "A",
+    "true_answer": null
+  },
+  {
+    "subject": "samsum_e",
+    "question_id": 2,
+    "input_length": 2435,
+    "gen_length": 2048,
+    "length_ratio": 0.8410677618069815,
+    "is_correct": null,
+    "pred": "A",
+    "true_answer": null
+  },
+  {
+    "subject": "samsum_e",
+    "question_id": 3,
+    "input_length": 5818,
+    "gen_length": 67,
+    "length_ratio": 0.011515984874527329,
+    "is_correct": null,
+    "pred": "C",
+    "true_answer": null
+  },
+  {
+    "subject": "passage_count_e",
+    "question_id": 2,
+    "input_length": 2644,
+    "gen_length": 2,
+    "length_ratio": 0.0007564296520423601,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "passage_retrieval_en_e",
+    "question_id": 1,
+    "input_length": 4915,
+    "gen_length": 4,
+    "length_ratio": 0.0008138351983723296,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "lcc_e",
+    "question_id": 1,
+    "input_length": 1666,
+    "gen_length": 2048,
+    "length_ratio": 1.2292917166866746,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "lcc_e",
+    "question_id": 2,
+    "input_length": 3734,
+    "gen_length": 738,
+    "length_ratio": 0.19764327798607392,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  },
+  {
+    "subject": "repobench-p_e",
+    "question_id": 3,
+    "input_length": 10366,
+    "gen_length": 64,
+    "length_ratio": 0.006174030484275516,
+    "is_correct": null,
+    "pred": null,
+    "true_answer": null
+  }
+]

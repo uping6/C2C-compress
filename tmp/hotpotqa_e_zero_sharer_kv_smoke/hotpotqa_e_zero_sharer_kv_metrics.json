@@ -1,0 +1,25 @@
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.0,
+  "num_samples": 1,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.0,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "1dae9ec530a93f43f85bd215a5c0e6737dbcf226cd3541d8",
+      "score": 0.0,
+      "input_length": 6402,
+      "length_bucket": "4k-8k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv_smoke/pred_e/cachejpeg/hotpotqa.jsonl"
+}
