@@ -1,0 +1,32 @@
+{
+  "matched_samples": 947,
+  "zero_only_predictions": 0,
+  "original_only_predictions": 0,
+  "definitions": {
+    "token_repetition_rate": "mean(1 - unique normalized output tokens / normalized output tokens)",
+    "question_copy_ratio": "mean(output tokens also appearing in the raw LongBench question / output tokens)",
+    "answer_wrapped_or_explained_rate": "output wraps a reference answer with extra text, or contains an explanation discourse cue",
+    "empty_or_missing_rate": "empty normalized output or missing stored generation length; EOS finish reasons are not stored",
+    "max_length_rate": "stored gen_length >= configured max generation length"
+  },
+  "zero": {
+    "samples": 947,
+    "average_output_tokens": 577.610348468849,
+    "median_output_tokens": 14,
+    "max_length_rate": 0.26610348468849,
+    "token_repetition_rate": 0.3348469380325702,
+    "question_copy_ratio": 0.30111576977742305,
+    "answer_wrapped_or_explained_rate": 0.16367476240760295,
+    "empty_or_missing_rate": 0.0021119324181626186
+  },
+  "original": {
+    "samples": 947,
+    "average_output_tokens": 578.5269271383315,
+    "median_output_tokens": 14,
+    "max_length_rate": 0.26715945089757126,
+    "token_repetition_rate": 0.3319351862308411,
+    "question_copy_ratio": 0.3040368086049448,
+    "answer_wrapped_or_explained_rate": 0.1562829989440338,
+    "empty_or_missing_rate": 0.0021119324181626186
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "model": "cachejpeg_rosetta",
+  "dataset": "longbench",
+  "answer_method": "generate",
+  "overall_accuracy": 0.5714285714285714,
+  "subjects": {
+    "qasper_e": {
+      "metric": "f1",
+      "score": 0.5714285714285714,
+      "num_samples": 2,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 1.0,
+          "num_samples": 1
+        },
+        "0-4k": {
+          "score": 0.14285714285714285,
+          "num_samples": 1
+        }
+      }
+    }
+  },
+  "final_score": 0.5714285714285714,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 1.0,
+      "num_samples": 1
+    },
+    "0-4k": {
+      "score": 0.14285714285714285,
+      "num_samples": 1
+    }
+  },
+  "performance": {
+    "num_timed_samples": 2,
+    "end_to_end_total_seconds": 1.6116969439899549,
+    "end_to_end_avg_ms": 805.8484719949774,
+    "end_to_end_p50_ms": 805.8484719949774,
+    "end_to_end_p95_ms": 1064.1111841134261,
+    "longbench_e_score": 0.5714285714285714,
+    "avg_encode_ms": 107.81037001288496,
+    "avg_decode_ms": 71.83488097507507,
+    "avg_payload_bytes": 12191488.5
+  },
+  "length_statistics": {
+    "subjects": {
+      "qasper_e": {
+        "avg_input_length": 4575.5,
+        "avg_gen_length": 2.0,
+        "avg_length_ratio": 0.0004534874328329659,
+        "accuracy": null,
+        "total_samples": 2
+      }
+    }
+  }
+}

@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import os
+
 import json
 import yaml
 import csv
@@ -43,10 +44,11 @@ from rosetta.utils.evaluate import (
 from rosetta.utils.matheval import GSM8KEvaluator, MATH500Evaluator
 from rosetta.model.wrapper import RosettaModel
 from rosetta.model.aligner import TokenAligner, AlignmentStrategy
-from rosetta.train.dataset_adapters import generate_kv_cache_index
 from transformers import AutoTokenizer
 from rosetta.utils.evaluate import set_default_chat_template
 from rosetta.baseline.multi_stage import TwoStageInference, TwoStageRosetta
+from rosetta.cachejpeg.wrapper import load_cachejpeg_model
+from rosetta.cachejpeg_rosetta.wrapper import load_cachejpeg_rosetta_model
 
 # Dataset-specific configurations
 DATASET_CONFIGS = {
@@ -229,6 +231,142 @@ DATASET_CONFIGS = {
 
 class UnifiedEvaluator:
     """Unified evaluator for multiple benchmark datasets."""
+
+    @staticmethod
+    def _resolve_model_ref(model_ref: Any, local_path_keys: tuple[str, ...], model_cfg: Dict[str, Any]) -> Any:
+        """Prefer an existing local path; otherwise keep the HF model id."""
+        if isinstance(model_ref, dict):
+            return {
+                key: UnifiedEvaluator._resolve_model_ref(value, local_path_keys, model_cfg)
+                for key, value in model_ref.items()
+            }
+        if not isinstance(model_ref, str):
+            return model_ref
+
+        candidates: list[str] = []
+        for key in local_path_keys:
+            candidate = model_cfg.get(key)
+            if candidate:
+                candidates.append(str(candidate))
+        candidates.append(model_ref)
+
+        for candidate in candidates:
+            candidate_path = Path(str(candidate)).expanduser()
+            if candidate_path.exists():
+                return str(candidate_path)
+        return model_ref
+
+    @staticmethod
+    def _build_sharer_shuffle_pairs(
+        sample_indices: List[int],
+        *,
+        seed: int,
+        subject: str,
+    ) -> Dict[int, int]:
+        """Build a deterministic no-self-match permutation for one subject."""
+        if len(sample_indices) < 2:
+            raise ValueError(
+                "shuffle_sharer_cache requires at least two evaluated samples "
+                f"for subject {subject!r}; got {len(sample_indices)}"
+            )
+        stable_subject_seed = int(
+            hashlib.sha256(str(subject).encode("utf-8")).hexdigest()[:16], 16
+        )
+        rng = random.Random(int(seed) ^ stable_subject_seed)
+        offset = rng.randrange(1, len(sample_indices))
+        shuffled = sample_indices[offset:] + sample_indices[:offset]
+        pairs = dict(zip(sample_indices, shuffled))
+        if any(receiver_idx == sharer_idx for receiver_idx, sharer_idx in pairs.items()):
+            raise AssertionError("Internal error: sharer shuffle produced a self-match")
+        return pairs
+
+    @staticmethod
+    def _compose_shuffled_sharer_inputs(
+        receiver_inputs: Dict[str, Any],
+        sharer_inputs: Dict[str, Any],
+        *,
+        teacher_pad_token_id: int,
+    ) -> Tuple[Dict[str, Any], Dict[str, int]]:
+        """
+        Keep receiver sample i unchanged and replace only its teacher stream with
+        sample j. The teacher stream is resized to the receiver cache length,
+        which is required by the position-wise Rosetta projector.
+        """
+        receiver_ids_value = receiver_inputs["input_ids"]
+        receiver_mask_value = receiver_inputs.get("attention_mask")
+        sharer_ids_value = sharer_inputs["input_ids"]
+        sharer_mask_value = sharer_inputs.get("attention_mask")
+
+        receiver_ids = (
+            receiver_ids_value[0]
+            if isinstance(receiver_ids_value, (list, tuple))
+            else receiver_ids_value
+        )
+        receiver_mask = (
+            receiver_mask_value[0]
+            if isinstance(receiver_mask_value, (list, tuple))
+            else receiver_mask_value
+        )
+        teacher_ids = (
+            sharer_ids_value[1]
+            if isinstance(sharer_ids_value, (list, tuple))
+            else sharer_ids_value
+        )
+        teacher_mask = (
+            sharer_mask_value[1]
+            if isinstance(sharer_mask_value, (list, tuple))
+            else sharer_mask_value
+        )
+
+        if receiver_ids.ndim != 2 or teacher_ids.ndim != 2:
+            raise ValueError("Shuffled receiver/sharer input_ids must be rank-2 tensors")
+        if receiver_ids.shape[0] != 1 or teacher_ids.shape[0] != 1:
+            raise ValueError("shuffle_sharer_cache currently expects per-sample batch size 1")
+        if receiver_mask is None:
+            receiver_mask = torch.ones_like(receiver_ids)
+        if teacher_mask is None:
+            teacher_mask = torch.ones_like(teacher_ids)
+
+        receiver_length = int(receiver_ids.shape[1])
+        original_teacher_length = int(teacher_ids.shape[1])
+        if original_teacher_length < receiver_length:
+            pad_length = receiver_length - original_teacher_length
+            teacher_ids = torch.nn.functional.pad(
+                teacher_ids,
+                (pad_length, 0),
+                value=int(teacher_pad_token_id),
+            )
+            teacher_mask = torch.nn.functional.pad(
+                teacher_mask,
+                (pad_length, 0),
+                value=0,
+            )
+        elif original_teacher_length > receiver_length:
+            # Match LongBench's existing long-input policy: retain both ends.
+            prefix_length = receiver_length // 2
+            suffix_length = receiver_length - prefix_length
+            teacher_ids = torch.cat(
+                [teacher_ids[:, :prefix_length], teacher_ids[:, -suffix_length:]],
+                dim=1,
+            )
+            teacher_mask = torch.cat(
+                [teacher_mask[:, :prefix_length], teacher_mask[:, -suffix_length:]],
+                dim=1,
+            )
+
+        if teacher_ids.shape[1] != receiver_ids.shape[1]:
+            raise AssertionError("Shuffled sharer stream was not aligned to receiver length")
+        return (
+            {
+                "input_ids": [receiver_ids, teacher_ids],
+                "attention_mask": [receiver_mask, teacher_mask],
+            },
+            {
+                "receiver_cache_length": receiver_length,
+                "sharer_original_length": original_teacher_length,
+                "sharer_used_length": int(teacher_ids.shape[1]),
+            },
+        )
     
     def __init__(self, config: Dict[str, Any]):
         """
@@ -240,6 +378,17 @@ class UnifiedEvaluator:
         self.model_config = config["model"]
         self.output_config = config["output"]
         self.eval_config = config["eval"]
+        self.model_name_normalized = str(self.model_config["model_name"]).lower()
+        self.is_cachejpeg_model = self.model_name_normalized == "cachejpeg"
+        self.is_cachejpeg_rosetta_model = self.model_name_normalized == "cachejpeg_rosetta"
+        cachejpeg_rosetta_cfg = self.model_config.get("cachejpeg_rosetta_config") or {}
+        ablation_cfg = cachejpeg_rosetta_cfg.get("ablation") or {}
+        self.shuffle_sharer_cache = bool(ablation_cfg.get("shuffle_sharer_cache", False))
+        self.shuffle_sharer_cache_seed = int(ablation_cfg.get("shuffle_seed", 0))
+        if self.shuffle_sharer_cache and not self.is_cachejpeg_rosetta_model:
+            raise ValueError(
+                "shuffle_sharer_cache is supported only when model_name=cachejpeg_rosetta"
+            )
         self.dataset_name = self.eval_config.get("dataset", "mmlu-redux")
         
         # Extract generation config if provided
@@ -255,15 +404,16 @@ class UnifiedEvaluator:
             prompt_format_path = self.eval_config.get("longbench_prompt_format_path", 
                                                     "longbench/config/dataset2prompt.json")
             
-            self.dataset_prompt_formats = json.load(open(prompt_format_path, "r"))
+            self.dataset_prompt_formats = json.load(open(prompt_format_path, "r", encoding="utf-8-sig"))
             maxlen_format_path = self.eval_config.get("longbench_maxlen_format_path", 
-                                                "longbench/config/dataset2maxlen.json")  # 闇€涓庣浜屾浠ｇ爜鐨?config 璺緞涓€鑷?            self.dataset_maxlen = json.load(open(maxlen_format_path, "r"))
+                                                "longbench/config/dataset2maxlen.json")
+            self.dataset_maxlen = json.load(open(maxlen_format_path, "r", encoding="utf-8-sig"))
             
-            # 3. 鏂板锛氳褰曞綋鍓嶆槸鍚︿负 LongBench-E 妯″紡锛堢敤浜庝换鍔＄被鍨嬪悗缂€锛?            self.is_longbench_e = self.eval_config.get("longbench_e", False)
+            # Remember whether we are evaluating LongBench-E.
+            self.is_longbench_e = self.eval_config.get("longbench_e", False)
             
-            # 4. 鏂板锛氬姞杞?tokenizer锛堢敤浜庡悗缁埅鏂紝闇€鎻愬墠鍒濆鍖栵級
-            # 娉細姝ゅ澶嶇敤 evaluator 鍚庣画鍔犺浇鐨?tokenizer锛岄渶璋冩暣鍒濆鍖栭『搴忥紝鎴栧湪 format 鏃朵紶鍏?tokenizer
-            self.tokenizer = None  # 鍚庣画鍦?evaluate_subject 涓祴鍊?       
+            # Tokenizer is assigned later inside evaluate_subject.
+            self.tokenizer = None
             
         # Setup output directory
         self.output_dir = Path(self.output_config["output_dir"])
@@ -273,7 +423,7 @@ class UnifiedEvaluator:
         self.cuda_launch_blocking = bool(self.eval_config.get("cuda_launch_blocking", False))
         
         # Check if using two-stage based on model_name
-        self.use_two_stage = self.model_config["model_name"].lower() in ["two_stage", "two_stage_rosetta"]
+        self.use_two_stage = self.model_name_normalized in ["two_stage", "two_stage_rosetta"]
         if self.use_two_stage:
             self.context_model_path = self.model_config.get("context_model_path")
             self.background_prompt = self.model_config.get(
@@ -281,19 +431,36 @@ class UnifiedEvaluator:
                 "Briefly describe the most useful background to solve the problem:\n\n{question}"
             )
             
-            if self.model_config["model_name"].lower() == "two_stage":
+            if self.model_name_normalized == "two_stage":
                 self.answer_model_path = self.model_config.get("answer_model_path")
                 print(f"Two-stage mode enabled:")
                 print(f"  Context model: {self.context_model_path}")
                 print(f"  Answer model: {self.answer_model_path}")
-            elif self.model_config["model_name"].lower() == "two_stage_rosetta":
+            elif self.model_name_normalized == "two_stage_rosetta":
                 self.rosetta_checkpoint_dir = self.model_config.get("rosetta_checkpoint_dir")
                 self.rosetta_subfolder = self.model_config.get("rosetta_subfolder", "final")
+                self.rosetta_checkpoint_subfolder = self.eval_config.get("rosetta_checkpoint_subfolder", None)
                 print(f"Two-stage Rosetta mode enabled:")
                 print(f"  Context model: {self.context_model_path}")
                 print(f"  Rosetta checkpoint: {self.rosetta_checkpoint_dir}")
                 print(f"  Rosetta subfolder: {self.rosetta_subfolder}")
-        
+                if self.rosetta_checkpoint_subfolder is not None:
+                    print(f"  Rosetta checkpoint subfolder override: {self.rosetta_checkpoint_subfolder}")
+
+        # Resolve local model paths when available; fall back to HF ids otherwise.
+        rosetta_cfg = self.model_config.get("rosetta_config", {})
+        if isinstance(rosetta_cfg, dict) and rosetta_cfg:
+            self.model_config["rosetta_config"]["base_model"] = self._resolve_model_ref(
+                rosetta_cfg.get("base_model"),
+                ("base_model_path", "base_model_local_dir"),
+                rosetta_cfg,
+            )
+            self.model_config["rosetta_config"]["teacher_model"] = self._resolve_model_ref(
+                rosetta_cfg.get("teacher_model"),
+                ("teacher_model_path", "teacher_model_local_dir"),
+                rosetta_cfg,
+            )
+
         print(f"Evaluating on dataset: {self.dataset_name}")
         print(f"Available GPUs: {torch.cuda.device_count()}")
         print(f"Requested GPU IDs: {self.eval_config['gpu_ids']}")
@@ -327,6 +494,40 @@ class UnifiedEvaluator:
             print(f"Saved bad sample to {dump_path}")
         except Exception as e:
             print(f"Failed to dump bad sample for {subject} #{question_id}: {e}")
+
+    def _load_longbench_dataset(self, subject: str):
+        """Load a LongBench subject from a local json/jsonl directory or the HF hub."""
+        local_data_dir = self.eval_config.get("longbench_local_data_dir", None)
+        if local_data_dir:
+            normalized_subject = re.sub(r"_e$", "", subject)
+            candidate_files = [
+                Path(local_data_dir) / f"{subject}.jsonl",
+                Path(local_data_dir) / f"{subject}.json",
+                Path(local_data_dir) / f"{normalized_subject}.jsonl",
+                Path(local_data_dir) / f"{normalized_subject}.json",
+            ]
+            for file_path in candidate_files:
+                if file_path.exists():
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        if file_path.suffix.lower() == ".jsonl":
+                            rows = [json.loads(line) for line in f if line.strip()]
+                        else:
+                            rows = json.load(f)
+
+                    if isinstance(rows, dict):
+                        for key in ("data", "examples", "items"):
+                            if key in rows and isinstance(rows[key], list):
+                                rows = rows[key]
+                                break
+                    if not isinstance(rows, list):
+                        raise ValueError(f"Unsupported LongBench local file format: {file_path}")
+
+                    from datasets import Dataset, DatasetDict
+                    dataset = Dataset.from_list(rows)
+                    return DatasetDict({self.dataset_config["test_split"]: dataset})
+
+        # Fall back to Hugging Face datasets
+        return load_dataset(self.dataset_config["dataset_name"], subject)
 
     @staticmethod
     def _normalize_text(text: Any) -> str:
@@ -417,12 +618,34 @@ class UnifiedEvaluator:
             return answers[0] if answers else ""
         return str(answers)
 
+    @staticmethod
+    def _longbench_length_bucket(input_length: Optional[int]) -> str:
+        """Bucket LongBench samples by actual model input token length."""
+        if input_length is None:
+            return "unknown"
+        try:
+            length = int(input_length)
+        except (TypeError, ValueError):
+            return "unknown"
+        if length < 4096:
+            return "0-4k"
+        if length < 8192:
+            return "4k-8k"
+        return "8k+"
+
     def _score_longbench_subject(self, subject: str, output_file: Path) -> Dict[str, Any]:
         metric_type = self._longbench_metric_type(subject)
         scores = []
         rows = []
+        bucket_scores: Dict[str, List[float]] = defaultdict(list)
         if not output_file.exists():
-            return {"subject": subject, "metric": metric_type, "score": 0.0, "num_samples": 0}
+            return {
+                "subject": subject,
+                "metric": metric_type,
+                "score": 0.0,
+                "num_samples": 0,
+                "length_buckets": {},
+            }
         with open(output_file, "r", encoding="utf-8") as f:
             for line in f:
                 if not line.strip():
@@ -443,14 +666,43 @@ class UnifiedEvaluator:
                 else:
                     sample_score = max(self._exact_match_score(pred, g) for g in gold_list) if gold_list else 0.0
                 scores.append(sample_score)
-                rows.append({"_id": row.get("_id"), "score": sample_score})
+                length_bucket = row.get("length_bucket")
+                if length_bucket is None:
+                    length_bucket = self._longbench_length_bucket(row.get("input_length", row.get("length")))
+                bucket_scores[length_bucket].append(sample_score)
+                rows.append({
+                    "_id": row.get("_id"),
+                    "score": sample_score,
+                    "input_length": row.get("input_length"),
+                    "length_bucket": length_bucket,
+                })
         return {
             "subject": subject,
             "metric": metric_type,
             "score": float(np.mean(scores)) if scores else 0.0,
             "num_samples": len(scores),
+            "length_buckets": {
+                bucket: {
+                    "score": float(np.mean(values)) if values else 0.0,
+                    "num_samples": len(values),
+                }
+                for bucket, values in bucket_scores.items()
+            },
             "details": rows,
         }
+
+    def _has_valid_longbench_output(self, output_file: Path) -> bool:
+        """Return True only when the subject output file exists and contains at least one non-empty line."""
+        if not output_file.exists() or output_file.stat().st_size == 0:
+            return False
+        try:
+            with open(output_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        return True
+        except Exception:
+            return False
+        return False
     
     def format_example(self, example: Dict[str, Any], use_cot: bool = True) -> str:
         """
@@ -847,7 +1099,7 @@ class UnifiedEvaluator:
         return extract_answer_from_content(content)
 
     def _measure_latency_ms(self, run_fn, device: torch.device) -> Tuple[Any, float]:
-        """Measure latency in milliseconds using CUDA events if available, fallback to CPU timer.
+        """Measure end-to-end wall latency, including CPU transport and waits.
 
         Args:
             run_fn: Callable that performs the inference and returns outputs
@@ -856,24 +1108,15 @@ class UnifiedEvaluator:
         Returns:
             (result, latency_ms)
         """
-        use_cuda_events = isinstance(device, torch.device) and device.type == "cuda" and torch.cuda.is_available()
-        if use_cuda_events:
-            start_event = torch.cuda.Event(enable_timing=True)
-            end_event = torch.cuda.Event(enable_timing=True)
-            # Ensure previous work on this device is done
-            torch.cuda.synchronize()
-            start_event.record()
-            result = run_fn()
-            end_event.record()
-            # Wait for kernels to finish and measure time
-            torch.cuda.synchronize()
-            elapsed_ms = start_event.elapsed_time(end_event)
-            return result, float(elapsed_ms)
-        else:
-            t0 = time.perf_counter()
-            result = run_fn()
-            elapsed_ms = (time.perf_counter() - t0) * 1000.0
-            return result, float(elapsed_ms)
+        use_cuda = isinstance(device, torch.device) and device.type == "cuda" and torch.cuda.is_available()
+        if use_cuda:
+            torch.cuda.synchronize(device)
+        t0 = time.perf_counter()
+        result = run_fn()
+        if use_cuda:
+            torch.cuda.synchronize(device)
+        elapsed_ms = (time.perf_counter() - t0) * 1000.0
+        return result, float(elapsed_ms)
 
     def create_segmented_kv_cache_index(self, instruction_length: int, response_length: int, 
                                        proportion: float, order_mode: str, device: torch.device) -> List[torch.Tensor]:
@@ -967,7 +1210,10 @@ class UnifiedEvaluator:
         """
         messages = [{"role": "user", "content": prompt}]
 
-        use_aligner = (model_type == "rosetta") and (llm_tokenizer is not None)
+        use_aligner = (
+            model_type in {"rosetta", "cachejpeg_rosetta"}
+            and llm_tokenizer is not None
+        )
 
         # Build chat-formatted text
         if not use_aligner:
@@ -1093,13 +1339,18 @@ class UnifiedEvaluator:
             attention_mask = [slm_attention_mask.to(device), llm_attention_mask.to(device)]
             position_ids = torch.arange(slm_ids.shape[1]).unsqueeze(0).to(device)
 
+            aligned_inputs = {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+            }
+            # RosettaModel consumes segmentation metadata. CacheJPEG-Rosetta
+            # fuses the complete aligned teacher cache and only needs the two
+            # model-specific aligned input streams.
+            if model_type == "rosetta":
+                aligned_inputs["position_ids"] = position_ids
+                aligned_inputs["kv_cache_index"] = kv_cache_list
             outputs = {
-                "inputs": {
-                    "input_ids": input_ids,
-                    "attention_mask": attention_mask,
-                    "position_ids": position_ids,
-                    "kv_cache_index": kv_cache_list,
-                },
+                "inputs": aligned_inputs,
                 "printable_text": (details["slm_text"], details["llm_text"])
             }
 
@@ -1150,13 +1401,16 @@ class UnifiedEvaluator:
             dataset = load_dataset(self.dataset_config["dataset_name"])
         elif self.dataset_name == "ceval":
             dataset = load_dataset(self.dataset_config["dataset_name"], subject)
+        elif self.dataset_name == "longbench":
+            dataset = self._load_longbench_dataset(subject)
         else:
             dataset = load_dataset(self.dataset_config["dataset_name"], subject)
         # dataset = load_from_disk("local/teacher_datasets/MMMLU")
         test_data = dataset[self.dataset_config["test_split"]]
         
         self.current_evaluating_subject = subject
-        # 鏂板锛氬皢 tokenizer 璧嬪€肩粰 evaluator 瀹炰緥锛堜緵鎴柇浣跨敤锛?        self.tokenizer = tokenizer
+        # Store the tokenizer on the evaluator instance for later use.
+        self.tokenizer = tokenizer
  
         # For LongBench, we don't use option token IDs
         num_options = 10 if self.dataset_name == "mmlu-pro" else 4
@@ -1179,26 +1433,27 @@ class UnifiedEvaluator:
         printed_example = False
 
         if self.dataset_name == "longbench":
-            # 妫€鏌ュ绉戝悕绉版槸鍚︿互-e缁撳熬
+            # Check whether this subject uses the LongBench-E suffix.
             is_longbench_e = subject.endswith("_e")
             
-            # 鏍规嵁瀛︾绫诲瀷纭畾杈撳嚭鍩虹鐩綍
+            # Choose the output base directory based on the subject type.
             if is_longbench_e:
-                # 瀵逛簬浠?e缁撳熬鐨勫绉戯紝浣跨敤pred_e鐩綍锛屽苟绉婚櫎瀛︾鍚嶄腑鐨?e鍚庣紑
-                subject_name = subject[:-2]  # 绉婚櫎鏈熬鐨?e
+                # LongBench-E subjects are saved under pred_e/ and drop the _e suffix.
+                subject_name = subject[:-2]
                 output_base_dir = self.output_dir / "pred_e" / self.model_config["model_name"].split("/")[-1]
             else:
-                # 鏅€氬绉戜娇鐢╬red鐩綍
+                # Standard LongBench subjects are saved under pred/.
                 subject_name = subject
                 output_base_dir = self.output_dir / "pred" / self.model_config["model_name"].split("/")[-1]
             
             output_base_dir.mkdir(parents=True, exist_ok=True)
-            # 浣跨敤澶勭悊鍚庣殑瀛︾鍚嶄綔涓烘枃浠跺悕锛堢Щ闄や簡-e鍚庣紑锛?            output_file = output_base_dir / f"{subject_name}.jsonl"
+            # Use the normalized subject name as the output filename.
+            output_file = output_base_dir / f"{subject_name}.jsonl"
             
-            # 濡傛灉鏂囦欢宸插瓨鍦紝鍏堝垹闄わ紙纭繚姣忔杩愯閮芥槸鏂扮殑锛?            if output_file.exists():
+            # Remove any previous output so each run starts cleanly.
+            if output_file.exists():
                 output_file.unlink()
 
-               
         # Sampling configuration
         sample_interval = self.eval_config.get("sample_interval", 1)
         sample_indices = list(range(0, len(test_data), sample_interval))
@@ -1219,10 +1474,36 @@ class UnifiedEvaluator:
             start = 0 if start is None else int(start)
             end = len(test_data) if end is None else int(end)
             sample_indices = [i for i in sample_indices if start <= i < end]
+
+        sharer_shuffle_pairs: Dict[int, int] = {}
+        if self.shuffle_sharer_cache:
+            if self.dataset_name != "longbench":
+                raise ValueError("shuffle_sharer_cache is currently supported only for LongBench")
+            if model_type != "cachejpeg_rosetta":
+                raise ValueError(
+                    "shuffle_sharer_cache requires the CacheJPEG-Rosetta wrapper"
+                )
+            if self.eval_config["answer_method"] != "generate":
+                raise ValueError("shuffle_sharer_cache requires answer_method=generate")
+            retained_indices = []
+            for sample_idx in sample_indices:
+                retained_example = test_data[sample_idx]
+                retained_hash = int(
+                    hashlib.sha256(str(retained_example["_id"]).encode("utf-8")).hexdigest(),
+                    16,
+                )
+                if retained_hash % 4 == 1:
+                    retained_indices.append(sample_idx)
+            sharer_shuffle_pairs = self._build_sharer_shuffle_pairs(
+                retained_indices,
+                seed=self.shuffle_sharer_cache_seed,
+                subject=subject,
+            )
         
         for i in tqdm(sample_indices, desc=f"Evaluating {subject} ({self.eval_config['answer_method']})"):
             try:
                 example = test_data[i]
+                sharer_shuffle_metadata = None
                 
                 if self.dataset_name != "longbench":
                     true_answer = self.parse_answer(example)
@@ -1361,6 +1642,49 @@ class UnifiedEvaluator:
                         proportion=proportion,
                         order_mode=order_mode
                     )
+                    if self.shuffle_sharer_cache:
+                        sharer_sample_index = sharer_shuffle_pairs[i]
+                        sharer_example = test_data[sharer_sample_index]
+                        sharer_prompt = self._format_longbench_example(
+                            sharer_example, tokenizer
+                        )
+                        prepared_sharer = self.prepare_model_inputs(
+                            prompt=sharer_prompt,
+                            tokenizer=tokenizer,
+                            device=device,
+                            model_type=model_type,
+                            llm_tokenizer=llm_tokenizer,
+                            answer_method=self.eval_config["answer_method"],
+                            proportion=proportion,
+                            order_mode=order_mode,
+                        )
+                        teacher_tokenizer = (
+                            llm_tokenizer if llm_tokenizer is not None else tokenizer
+                        )
+                        teacher_pad_token_id = teacher_tokenizer.pad_token_id
+                        if teacher_pad_token_id is None:
+                            teacher_pad_token_id = teacher_tokenizer.eos_token_id
+                        if teacher_pad_token_id is None:
+                            raise ValueError(
+                                "A teacher pad/eos token is required for sharer cache shuffling"
+                            )
+                        shuffled_inputs, shuffle_lengths = (
+                            self._compose_shuffled_sharer_inputs(
+                                prepared["inputs"],
+                                prepared_sharer["inputs"],
+                                teacher_pad_token_id=int(teacher_pad_token_id),
+                            )
+                        )
+                        prepared["inputs"] = shuffled_inputs
+                        sharer_shuffle_metadata = {
+                            "enabled": True,
+                            "receiver_sample_index": int(i),
+                            "receiver_sample_id": str(example["_id"]),
+                            "sharer_sample_index": int(sharer_sample_index),
+                            "sharer_sample_id": str(sharer_example["_id"]),
+                            "seed": int(self.shuffle_sharer_cache_seed),
+                            **shuffle_lengths,
+                        }
                     
                     if self.eval_config["answer_method"] == 'logits':
                         # Forward for logits
@@ -1396,8 +1720,14 @@ class UnifiedEvaluator:
                             generated_ids = generated_ids[input_length:]
 
                         else:
-                            generated_ids = outputs[0][prepared['inputs']["input_ids"].shape[1]:]
-                            input_length = prepared['inputs']["input_ids"].shape[1]
+                            prepared_input_ids = prepared['inputs']["input_ids"]
+                            base_input_ids = (
+                                prepared_input_ids[0]
+                                if isinstance(prepared_input_ids, list)
+                                else prepared_input_ids
+                            )
+                            input_length = base_input_ids.shape[1]
+                            generated_ids = outputs[0][input_length:]
                         content = tokenizer.decode(generated_ids, skip_special_tokens=True).strip("\n")
                         # Default values for non-MATH datasets
                         pred = None
@@ -1469,20 +1799,35 @@ class UnifiedEvaluator:
                         'pred': pred,
                         'true_answer': true_answer if self.dataset_name != "longbench" else None
                     })
-            # 瀵逛簬LongBench锛岀珛鍗充繚瀛樼粨鏋?                if self.dataset_name == "longbench":
+            # Save LongBench predictions immediately for post-processing.
+                if self.dataset_name == "longbench":
+                    length_bucket = self._longbench_length_bucket(input_length)
                     output_entry = {
-                        #"input":prepared.get("printable_text", ""),
-                        #"context": example["context"],
-                        #"question": example["input"],
                         "pred": content, 
                         "answers": example["answers"],
                         "all_classes": example["all_classes"],
                         "length": example["length"],
+                        "input_length": int(input_length) if input_length is not None else None,
+                        "gen_length": int(gen_length) if gen_length is not None else None,
+                        "length_bucket": length_bucket,
                         "_id": example["_id"],
                         
                     }
+                    cachejpeg_stats = getattr(model, "last_codec_stats", None)
+                    if cachejpeg_stats is not None:
+                        output_entry["cachejpeg_stats"] = dict(cachejpeg_stats)
+                    if sharer_shuffle_metadata is not None:
+                        output_entry["sharer_cache_shuffle"] = dict(
+                            sharer_shuffle_metadata
+                        )
+                    output_entry["end_to_end_latency_ms"] = (
+                        float(latency_ms) if latency_ms is not None else None
+                    )
+                    transport_stats = getattr(model, "last_transport_stats", None)
+                    if transport_stats is not None:
+                        output_entry["transport_stats"] = dict(vars(transport_stats))
                 
-                # 杩藉姞鍐欏叆鏂囦欢
+                # Append the prediction to the subject output file.
                     with open(output_file, "a", encoding='utf-8') as f:
                         json.dump(output_entry, f, ensure_ascii=False)
                         f.write('\n')
@@ -1501,6 +1846,10 @@ class UnifiedEvaluator:
                     'cot_output': cot_text,
                     'answer_latency_ms': float(latency_ms) if 'latency_ms' in locals() and latency_ms is not None else None
                 }
+                if self.dataset_name == "longbench" and cachejpeg_stats is not None:
+                    cot_log_entry["cachejpeg_stats"] = dict(cachejpeg_stats)
+                    if transport_stats is not None:
+                        cot_log_entry["transport_stats"] = dict(vars(transport_stats))
                 
                 # Add question and choices based on dataset format
                 if self.dataset_name == "mmmlu":
@@ -1672,10 +2021,11 @@ class UnifiedEvaluator:
         
         # Load model
         if "two_stage_rosetta" == self.model_config["model_name"].lower():
+            rosetta_subfolder = self.rosetta_checkpoint_subfolder or self.rosetta_subfolder
             model = TwoStageRosetta(
                 context_model_path=self.context_model_path,
                 rosetta_checkpoint_dir=self.rosetta_checkpoint_dir,
-                rosetta_subfolder=self.rosetta_subfolder,
+                rosetta_subfolder=rosetta_subfolder,
                 device=device,
                 max_new_tokens=self.generation_config.get("max_new_tokens", self.eval_config.get("max_new_tokens", 2048)),
                 background_prompt=self.background_prompt,
@@ -1700,7 +2050,33 @@ class UnifiedEvaluator:
             model_type = "two_stage"
             llm_tokenizer = None
             print(f"Initialized two-stage pipeline on GPU {gpu_id}")
-        elif "rosetta" in self.model_config["model_name"].lower():
+        elif self.is_cachejpeg_rosetta_model:
+            model, tokenizer = load_cachejpeg_rosetta_model(
+                self.model_config,
+                self.eval_config,
+                device=device,
+                generation_config=self.generation_config,
+            )
+            model_type = "cachejpeg_rosetta"
+            rosetta_cfg = self.model_config.get("rosetta_config", {})
+            is_do_alignment = self.model_config.get(
+                "is_do_alignment", rosetta_cfg.get("is_do_alignment", False)
+            )
+            # A full CacheJPEG-Rosetta wrapper owns the tokenizer loaded with
+            # the teacher. Single-model ablations intentionally do not expose
+            # it and therefore remain on their native one-tokenizer path.
+            llm_tokenizer = (
+                getattr(model, "teacher_tokenizer", None) if is_do_alignment else None
+            )
+        elif self.is_cachejpeg_model:
+            model, tokenizer = load_cachejpeg_model(
+                self.model_config,
+                device=device,
+                generation_config=self.generation_config,
+            )
+            model_type = "cachejpeg"
+            llm_tokenizer = None
+        elif "rosetta" in self.model_name_normalized:
             model, tokenizer = load_rosetta_model(self.model_config, self.eval_config, device=device, generation_config=self.generation_config)
             # Load LLM tokenizer only if alignment is enabled via eval or model config
             rosetta_cfg = self.model_config.get("rosetta_config", {})
@@ -1792,7 +2168,7 @@ class UnifiedEvaluator:
         return all_cors, subject_cors, subcat_cors, cat_cors, all_length_stats, all_cot_logs
     
     def save_results(self, all_cors, subject_cors, subcat_cors, cat_cors, 
-                    all_length_stats, all_cot_logs):
+                    all_length_stats, all_cot_logs, longbench_subject_metrics: Optional[List[Dict[str, Any]]] = None):
         """
         Save evaluation results.
         
@@ -1800,10 +2176,21 @@ class UnifiedEvaluator:
             Various result arrays and dictionaries
         """
         # Calculate overall accuracy (skip for LongBench)
+        longbench_final_score = None
         if self.dataset_name != "longbench":
             overall_accuracy = np.mean(np.concatenate(all_cors)) if all_cors else 0
         else:
             overall_accuracy = 0
+            if longbench_subject_metrics:
+                total_weight = sum(int(item.get("num_samples", 0)) for item in longbench_subject_metrics)
+                if total_weight > 0:
+                    longbench_final_score = sum(
+                        float(item.get("score", 0.0)) * int(item.get("num_samples", 0))
+                        for item in longbench_subject_metrics
+                    ) / total_weight
+                else:
+                    longbench_final_score = 0.0
+                overall_accuracy = longbench_final_score
         
         # Prepare summary
         summary = {
@@ -1813,6 +2200,107 @@ class UnifiedEvaluator:
             "overall_accuracy": overall_accuracy,
             "subjects": subject_cors
         }
+
+        if self.dataset_name == "longbench" and longbench_subject_metrics is not None:
+            summary["final_score"] = longbench_final_score if longbench_final_score is not None else overall_accuracy
+            summary["subjects"] = {
+                item["subject"]: {
+                    "metric": item.get("metric"),
+                    "score": item.get("score", 0.0),
+                    "num_samples": item.get("num_samples", 0),
+                    "length_buckets": item.get("length_buckets", {}),
+                }
+                for item in longbench_subject_metrics
+            }
+            bucket_weighted_scores: Dict[str, List[Tuple[float, int]]] = defaultdict(list)
+            for item in longbench_subject_metrics:
+                for bucket_name, bucket_metric in item.get("length_buckets", {}).items():
+                    num_samples = int(bucket_metric.get("num_samples", 0))
+                    if num_samples <= 0:
+                        continue
+                    bucket_weighted_scores[bucket_name].append((float(bucket_metric.get("score", 0.0)), num_samples))
+            summary["length_buckets"] = {
+                bucket_name: {
+                    "score": sum(score * count for score, count in values) / sum(count for _, count in values),
+                    "num_samples": sum(count for _, count in values),
+                }
+                for bucket_name, values in bucket_weighted_scores.items()
+                if sum(count for _, count in values) > 0
+            }
+            latency_values = [
+                float(item["answer_latency_ms"])
+                for item in all_cot_logs
+                if item.get("answer_latency_ms") is not None
+            ]
+            codec_rows = [
+                item["cachejpeg_stats"]
+                for item in all_cot_logs
+                if isinstance(item.get("cachejpeg_stats"), dict)
+            ]
+
+            def _mean_field(name: str):
+                values = [float(row[name]) for row in codec_rows if row.get(name) is not None]
+                return float(np.mean(values)) if values else None
+
+            def _mean_layer_series(name: str):
+                series = [row[name] for row in codec_rows if isinstance(row.get(name), list)]
+                if not series:
+                    return []
+                layer_count = max(len(values) for values in series)
+                return [
+                    float(np.mean([
+                        float(values[layer_idx])
+                        for values in series
+                        if layer_idx < len(values) and values[layer_idx] is not None
+                    ]))
+                    for layer_idx in range(layer_count)
+                ]
+
+            layer_encode_seconds = _mean_layer_series("layer_encode_seconds")
+            layer_prefill_seconds = _mean_layer_series("layer_prefill_seconds")
+            performance = {
+                "num_timed_samples": len(latency_values),
+                "end_to_end_total_seconds": float(sum(latency_values) / 1000.0),
+                "end_to_end_avg_ms": float(np.mean(latency_values)) if latency_values else None,
+                "end_to_end_p50_ms": float(np.percentile(latency_values, 50)) if latency_values else None,
+                "end_to_end_p95_ms": float(np.percentile(latency_values, 95)) if latency_values else None,
+                "longbench_e_score": float(overall_accuracy),
+            }
+            # Codec timings are optional.  A non-streaming CacheJPEG run reports
+            # whole-cache encode/decode times, while layer-streaming additionally
+            # reports per-layer and pipeline timings.  Baseline Rosetta and
+            # receiver-only runs have no codec, so do not write misleading null
+            # codec fields for those modes.
+            if codec_rows:
+                encode_seconds = _mean_field("encode_seconds")
+                decode_seconds = _mean_field("decode_seconds")
+                payload_bytes = _mean_field("payload_bytes")
+                if encode_seconds is not None:
+                    performance["avg_encode_ms"] = encode_seconds * 1000.0
+                if decode_seconds is not None:
+                    performance["avg_decode_ms"] = decode_seconds * 1000.0
+                if payload_bytes is not None:
+                    performance["avg_payload_bytes"] = payload_bytes
+
+                if layer_encode_seconds:
+                    performance["avg_layer_encode_ms"] = float(
+                        np.mean(layer_encode_seconds) * 1000.0
+                    )
+                    performance["per_layer_avg_encode_ms"] = [
+                        value * 1000.0 for value in layer_encode_seconds
+                    ]
+                if layer_prefill_seconds:
+                    performance["avg_layer_prefill_ms"] = float(
+                        np.mean(layer_prefill_seconds) * 1000.0
+                    )
+                    performance["per_layer_avg_prefill_ms"] = [
+                        value * 1000.0 for value in layer_prefill_seconds
+                    ]
+                pipeline_seconds = _mean_field("pipeline_seconds")
+                if pipeline_seconds is not None:
+                    performance["avg_pipeline_ms"] = pipeline_seconds * 1000.0
+
+            summary["performance"] = performance
         
         # Add categories and subcategories for MMLU-Redux
         if self.dataset_name == "mmlu-redux":
@@ -1839,6 +2327,28 @@ class UnifiedEvaluator:
         with open(summary_file, "w") as f:
             json.dump(summary, f, indent=2)
         print(f"Summary saved to {summary_file}")
+        if summary.get("performance") is not None:
+            performance_file = self.output_dir / (
+                f"{model_name_for_file}_{self.dataset_name}_{self.eval_config['answer_method']}_"
+                f"{timestamp}_performance.json"
+            )
+            with open(performance_file, "w") as f:
+                json.dump(summary["performance"], f, indent=2)
+            perf = summary["performance"]
+            print(f"Performance summary saved to {performance_file}")
+            perf_parts = [
+                f"End-to-end avg: {perf.get('end_to_end_avg_ms') or 0.0:.2f} ms",
+                f"LongBench-E score: {perf.get('longbench_e_score') or 0.0:.4f}",
+            ]
+            if perf.get("avg_encode_ms") is not None:
+                perf_parts.append(f"avg encode: {perf['avg_encode_ms']:.2f} ms")
+            if perf.get("avg_decode_ms") is not None:
+                perf_parts.append(f"avg decode: {perf['avg_decode_ms']:.2f} ms")
+            if perf.get("avg_layer_encode_ms") is not None:
+                perf_parts.append(f"avg layer encode: {perf['avg_layer_encode_ms']:.2f} ms")
+            if perf.get("avg_layer_prefill_ms") is not None:
+                perf_parts.append(f"avg layer prefill: {perf['avg_layer_prefill_ms']:.2f} ms")
+            print(" | ".join(perf_parts))
         
         # Save detailed length statistics
         if all_length_stats:
@@ -1869,6 +2379,8 @@ class UnifiedEvaluator:
         print(f"\nEvaluation complete!")
         if self.dataset_name != "longbench":
             print(f"Overall accuracy: {overall_accuracy*100:.2f}%")
+        elif longbench_subject_metrics is not None:
+            print(f"Final score: {overall_accuracy*100:.2f}%")
     
     def _compute_length_statistics(self, length_stats: List[Dict]) -> Dict:
         """
@@ -1880,6 +2392,14 @@ class UnifiedEvaluator:
         Returns:
             Summary dictionary
         """
+        def mean_accuracy(stats: List[Dict]) -> Optional[float]:
+            values = [
+                float(stat["is_correct"])
+                for stat in stats
+                if stat.get("is_correct") is not None
+            ]
+            return float(np.mean(values)) if values else None
+
         if self.dataset_name == "mmlu-redux":
             # Group by subcategory
             subcat_stats = defaultdict(list)
@@ -1895,7 +2415,7 @@ class UnifiedEvaluator:
                         "avg_input_length": np.mean([s['input_length'] for s in stats]),
                         "avg_gen_length": np.mean([s['gen_length'] for s in stats]),
                         "avg_length_ratio": np.mean([s['length_ratio'] for s in stats]),
-                        "accuracy": np.mean([s['is_correct'] for s in stats]),
+                        "accuracy": mean_accuracy(stats),
                         "total_samples": len(stats)
                     }
         else:
@@ -1911,7 +2431,9 @@ class UnifiedEvaluator:
                         "avg_input_length": np.mean([s['input_length'] for s in stats]),
                         "avg_gen_length": np.mean([s['gen_length'] for s in stats]),
                         "avg_length_ratio": np.mean([s['length_ratio'] for s in stats]),
-                        "accuracy": np.mean([s['is_correct'] for s in stats]) if 'is_correct' in stats[0] else None,
+                        # LongBench records is_correct=None because its F1/EM/
+                        # ROUGE score is computed from the prediction file later.
+                        "accuracy": mean_accuracy(stats),
                         "total_samples": len(stats)
                     }
         
@@ -1928,42 +2450,115 @@ class UnifiedEvaluator:
         
         # Get subjects for this dataset
         subjects = self.dataset_config["subjects"]
+        if self.dataset_name == "longbench" and self.eval_config.get("longbench_e", False):
+            subjects = self.dataset_config["subjects_e"]
         if self.dataset_name in ["math-500", "gsm8k", "openbookqa", "gpqa", "ai2-arc", "mmlu-pro"]:
             # Create virtual subject splits to distribute across GPUs
             subjects = self._make_subject_splits(num_gpus)
         
         # Filter subjects if specified in config
         if "subjects" in self.eval_config and self.eval_config["subjects"] is not None:
-            subjects = [s for s in subjects if s in self.eval_config["subjects"]]
+            requested_subjects = {
+                str(subject)[:-2] if str(subject).endswith("_e") else str(subject)
+                for subject in self.eval_config["subjects"]
+            }
+            subjects = [s for s in subjects if s in requested_subjects]
         
         # For LongBench, check if we're evaluating on LongBench-E
-            if self.dataset_name == "longbench" and self.eval_config.get("longbench_e", False):
-                subjects = [f"{s}_e" for s in self.eval_config["subjects"]]
-        
         if self.dataset_name == "longbench" and self.eval_config.get("longbench_e", False):
-            subjects = [f"{s}_e" for s in self.dataset_config["subjects_e"]]
-        # Distribute subjects across GPUs
-        subject_chunks = [subjects[i::num_gpus] for i in range(num_gpus)]
-        
-        # Launch multi-process evaluation
-        manager = mp.Manager()
-        return_dict = manager.dict()
-        processes = []
-        
-        for rank, gpu_id in enumerate(gpu_ids):
-            p = mp.Process(
-                target=self.evaluate_on_gpu,
-                args=(rank, gpu_id, subject_chunks[rank], return_dict)
-            )
-            p.start()
-            processes.append(p)
-        
-        for p in processes:
-            p.join()
+            subjects = [f"{s}_e" for s in subjects]
         if(self.dataset_name == "longbench"):
-            print("LongBench evaluation completed. Predictions are saved in respective files.")
+            longbench_subject_metrics = []
+            longbench_length_stats = []
+            longbench_cot_logs = []
+            model_name_for_file = self.model_config["model_name"].split("/")[-1]
+            skip_existing = bool(self.eval_config.get("skip_existing_longbench_subjects", True))
+            pending_subjects = []
+            for subject in subjects:
+                is_longbench_e = subject.endswith("_e")
+                subject_name = subject[:-2] if is_longbench_e else subject
+                pred_dir = self.output_dir / ("pred_e" if is_longbench_e else "pred") / model_name_for_file
+                output_file = pred_dir / f"{subject_name}.jsonl"
+                if skip_existing and self._has_valid_longbench_output(output_file):
+                    print(f"Skipping existing LongBench subject: {subject} -> {output_file}")
+                    longbench_subject_metrics.append(self._score_longbench_subject(subject, output_file))
+                    continue
+                if not skip_existing and output_file.exists():
+                    # The evaluator appends samples while running; clear an old
+                    # subject file so repeated benchmark commands do not double-count it.
+                    output_file.unlink()
+                pending_subjects.append(subject)
+
+            if pending_subjects:
+                print(f"LongBench pending subjects: {pending_subjects}")
+                subject_chunks = [pending_subjects[i::num_gpus] for i in range(num_gpus)]
+                run_in_current_process = bool(
+                    self.eval_config.get("run_in_current_process", False)
+                )
+                if run_in_current_process:
+                    if num_gpus != 1:
+                        raise ValueError(
+                            "run_in_current_process requires exactly one configured GPU"
+                        )
+                    return_dict = {}
+                    self.evaluate_on_gpu(
+                        0, gpu_ids[0], subject_chunks[0], return_dict
+                    )
+                else:
+                    manager = mp.Manager()
+                    return_dict = manager.dict()
+                    processes = []
+
+                    for rank, gpu_id in enumerate(gpu_ids):
+                        if not subject_chunks[rank]:
+                            continue
+                        p = mp.Process(
+                            target=self.evaluate_on_gpu,
+                            args=(rank, gpu_id, subject_chunks[rank], return_dict)
+                        )
+                        p.start()
+                        processes.append(p)
+
+                    for p in processes:
+                        p.join()
+
+                merged = self.merge_results(return_dict)
+                longbench_length_stats = merged[4]
+                longbench_cot_logs = merged[5]
+
+                for subject in pending_subjects:
+                    is_longbench_e = subject.endswith("_e")
+                    subject_name = subject[:-2] if is_longbench_e else subject
+                    pred_dir = self.output_dir / ("pred_e" if is_longbench_e else "pred") / model_name_for_file
+                    output_file = pred_dir / f"{subject_name}.jsonl"
+                    longbench_subject_metrics.append(self._score_longbench_subject(subject, output_file))
+            else:
+                print("All requested LongBench subjects already have valid jsonl outputs; skipping generation.")
+
+            self.save_results(
+                [], {}, {}, {}, longbench_length_stats, longbench_cot_logs,
+                longbench_subject_metrics=longbench_subject_metrics,
+            )
             return
         else:
+        # Distribute subjects across GPUs
+            subject_chunks = [subjects[i::num_gpus] for i in range(num_gpus)]
+            
+            # Launch multi-process evaluation
+            manager = mp.Manager()
+            return_dict = manager.dict()
+            processes = []
+            
+            for rank, gpu_id in enumerate(gpu_ids):
+                p = mp.Process(
+                    target=self.evaluate_on_gpu,
+                    args=(rank, gpu_id, subject_chunks[rank], return_dict)
+                )
+                p.start()
+                processes.append(p)
+            
+            for p in processes:
+                p.join()
         # Merge and save results
             results = self.merge_results(return_dict)
             self.save_results(*results)
@@ -1978,15 +2573,61 @@ def main():
         default="eval_recipe/unified_eval.yaml",
         help="Path to YAML config file"
     )
+    parser.add_argument(
+        "--cachejpeg-bandwidth-mbps",
+        type=float,
+        default=None,
+        help="Override CacheJPEG transport bandwidth in decimal MB/s.",
+    )
+    parser.add_argument(
+        "--cachejpeg-entropy-backend",
+        type=str,
+        default=None,
+        help=(
+            "Override CacheJPEG entropy backend. Supported examples: zlib1, lz4, "
+            "zigzag_rle, zigzag_rle_lz4."
+        ),
+    )
     args = parser.parse_args()
     
     # Load configuration
     with open(args.config, "r") as f:
         config = yaml.safe_load(f)
+
+    if args.cachejpeg_entropy_backend is not None:
+        model_config = config.setdefault("model", {})
+        if "cachejpeg_config" in model_config:
+            model_config["cachejpeg_config"].setdefault("entropy", {})["backend"] = args.cachejpeg_entropy_backend
+        elif "cachejpeg_rosetta_config" in model_config:
+            codec_config = model_config["cachejpeg_rosetta_config"].setdefault("codec", {})
+            codec_config.setdefault("entropy", {})["backend"] = args.cachejpeg_entropy_backend
+        else:
+            parser.error("--cachejpeg-entropy-backend requires a CacheJPEG model configuration.")
+
+    if args.cachejpeg_bandwidth_mbps is not None:
+        if args.cachejpeg_bandwidth_mbps <= 0:
+            parser.error("--cachejpeg-bandwidth-mbps must be positive.")
+        model_config = config.setdefault("model", {})
+        bandwidth_bytes_per_sec = float(args.cachejpeg_bandwidth_mbps) * 1_000_000.0
+        if "cachejpeg_config" in model_config:
+            model_config["cachejpeg_config"].setdefault("transport", {})[
+                "bandwidth_bytes_per_sec"
+            ] = bandwidth_bytes_per_sec
+        elif "cachejpeg_rosetta_config" in model_config:
+            model_config["cachejpeg_rosetta_config"].setdefault("transport", {})[
+                "bandwidth_bytes_per_sec"
+            ] = bandwidth_bytes_per_sec
+        else:
+            parser.error("--cachejpeg-bandwidth-mbps requires a CacheJPEG model configuration.")
     
     print("Using config: ", args.config)
+    if args.cachejpeg_entropy_backend is not None:
+        print("CacheJPEG entropy backend override: ", args.cachejpeg_entropy_backend)
+    if args.cachejpeg_bandwidth_mbps is not None:
+        print("CacheJPEG transport bandwidth override (MB/s): ", args.cachejpeg_bandwidth_mbps)
 
-    # Remove CUDA_VISIBLE_DEVICES to use all GPUs
+    # Preserve the evaluator's historical physical-GPU indexing semantics.
+    # GPU selection is controlled by eval.gpu_ids in the YAML.
     os.environ.pop("CUDA_VISIBLE_DEVICES", None)
     
     # Create and run evaluator
@@ -1999,4 +2640,3 @@ if __name__ == "__main__":
     dynamo.config.cache_size_limit = 64 # you can expand this as needed
     mp.set_start_method("spawn", force=True)
     main()
-

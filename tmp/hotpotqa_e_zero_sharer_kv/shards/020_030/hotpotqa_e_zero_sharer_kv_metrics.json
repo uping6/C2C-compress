@@ -1,0 +1,35 @@
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.17647058823529413,
+  "num_samples": 2,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.0,
+      "num_samples": 1
+    },
+    "0-4k": {
+      "score": 0.35294117647058826,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "6a19ad6f564ebfc50447ee4315ab9a246aeb472906728777",
+      "score": 0.0,
+      "input_length": 5829,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "a5b6031f24f2af89a8ea917c39ba1652e5608649660bb138",
+      "score": 0.35294117647058826,
+      "input_length": 4019,
+      "length_bucket": "0-4k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/020_030/pred_e/cachejpeg/hotpotqa.jsonl"
+}

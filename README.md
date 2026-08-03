@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> end2end commit
 <div align="center">
   <img src="resource/logo.png" alt="Cache-to-Cache Logo" width="100"/>
   
@@ -355,3 +359,10 @@ Explore more efficient LLM projects from us:
 </td>
 </tr>
 </table>
+<<<<<<< HEAD
+=======
+=======
+# C2C-compress
+multi-agent communication , cache-to-cache, Frequent Compress
+>>>>>>> 26b96965fb4c0362fa12169f8621bf0eec3d1e5a
+>>>>>>> end2end commit

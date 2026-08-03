@@ -1,0 +1,188 @@
+{
+  "receiver_model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "teacher_model": "local/models/Qwen2.5-1.5B-Instruct",
+  "fuser_checkpoint": "/data/smy_data/local/checkpoints/0.6+1.5B_instruct_longbench_e/final",
+  "device": "cuda:0",
+  "alignment_strategy": "longest",
+  "prompt": "Read the passage carefully and answer briefly: What is the central claim of the passage?",
+  "aligned_sequence_length": 50,
+  "receiver_layers": 28,
+  "fused_layers": 28,
+  "projector_mapping": {
+    "0": {
+      "1": {
+        "0": [
+          [
+            0,
+            0
+          ]
+        ],
+        "1": [
+          [
+            1,
+            1
+          ]
+        ],
+        "2": [
+          [
+            2,
+            2
+          ]
+        ],
+        "3": [
+          [
+            3,
+            3
+          ]
+        ],
+        "4": [
+          [
+            4,
+            4
+          ]
+        ],
+        "5": [
+          [
+            5,
+            5
+          ]
+        ],
+        "6": [
+          [
+            6,
+            6
+          ]
+        ],
+        "7": [
+          [
+            7,
+            7
+          ]
+        ],
+        "8": [
+          [
+            8,
+            8
+          ]
+        ],
+        "9": [
+          [
+            9,
+            9
+          ]
+        ],
+        "10": [
+          [
+            10,
+            10
+          ]
+        ],
+        "11": [
+          [
+            11,
+            11
+          ]
+        ],
+        "12": [
+          [
+            12,
+            12
+          ]
+        ],
+        "13": [
+          [
+            13,
+            13
+          ]
+        ],
+        "14": [
+          [
+            14,
+            14
+          ]
+        ],
+        "15": [
+          [
+            15,
+            15
+          ]
+        ],
+        "16": [
+          [
+            16,
+            16
+          ]
+        ],
+        "17": [
+          [
+            17,
+            17
+          ]
+        ],
+        "18": [
+          [
+            18,
+            18
+          ]
+        ],
+        "19": [
+          [
+            19,
+            19
+          ]
+        ],
+        "20": [
+          [
+            20,
+            20
+          ]
+        ],
+        "21": [
+          [
+            21,
+            21
+          ]
+        ],
+        "22": [
+          [
+            22,
+            22
+          ]
+        ],
+        "23": [
+          [
+            23,
+            23
+          ]
+        ],
+        "24": [
+          [
+            24,
+            24
+          ]
+        ],
+        "25": [
+          [
+            25,
+            25
+          ]
+        ],
+        "26": [
+          [
+            26,
+            26
+          ]
+        ],
+        "27": [
+          [
+            27,
+            27
+          ]
+        ]
+      }
+    }
+  },
+  "outputs": {
+    "per_layer_csv": "per_layer_kv_distribution.csv"
+  }
+}

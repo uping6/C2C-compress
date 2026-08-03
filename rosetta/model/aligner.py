@@ -6,6 +6,7 @@ handling cases where the same text is tokenized differently.
 """
 
 from typing import List, Tuple, Optional, Dict, Literal, Union
+import unicodedata
 import torch
 from transformers import PreTrainedTokenizerBase
 from enum import Enum
@@ -61,6 +62,83 @@ class TokenAligner:
         
         # Cache for token mappings to improve performance
         self._alignment_cache: Dict[Tuple[int, ...], List[int]] = {}
+        self._fallback_warning_count = 0
+
+    def _safe_decode_single_token(
+        self,
+        tokenizer: PreTrainedTokenizerBase,
+        token_id: int
+    ) -> str:
+        """
+        对单 token decode 做保守封装。
+        某些 fast tokenizer 在长时间训练中偶发会在 decode 的内部属性写入阶段抛异常，
+        这里回退到 convert_ids_to_tokens/convert_tokens_to_string，避免单个样本打断训练。
+        """
+        try:
+            return tokenizer.decode(
+                [token_id],
+                skip_special_tokens=False,
+                clean_up_tokenization_spaces=False
+            )
+        except Exception as exc:
+            raw_token = tokenizer.convert_ids_to_tokens(int(token_id))
+            if raw_token is None:
+                raw_token = tokenizer.unk_token or ""
+
+            if isinstance(raw_token, bytes):
+                raw_token = raw_token.decode("utf-8", errors="replace")
+
+            try:
+                recovered = tokenizer.convert_tokens_to_string([raw_token])
+            except Exception:
+                recovered = str(raw_token)
+
+            if self._fallback_warning_count < 5:
+                print(
+                    "Warning: tokenizer.decode failed for single token; "
+                    f"falling back to convert_ids_to_tokens. token_id={token_id} "
+                    f"token={raw_token!r} error={exc}"
+                )
+                self._fallback_warning_count += 1
+
+            return recovered
+
+    def _safe_encode_with_llm_tokenizer(self, text: str) -> List[int]:
+        """
+        在极少数情况下，fast tokenizer 会抛出底层异常
+        （例如 SystemError / UnboundLocalError）。
+        正常路径完全不变；只有异常时才做一次保守回退，避免整轮训练被单个 token 打断。
+        """
+        try:
+            return self.llm_tokenizer.encode(
+                text,
+                add_special_tokens=False,
+                return_tensors=None
+            )
+        except Exception as exc:
+            normalized_text = unicodedata.normalize("NFC", text)
+            if normalized_text != text:
+                try:
+                    return self.llm_tokenizer.encode(
+                        normalized_text,
+                        add_special_tokens=False,
+                        return_tensors=None
+                    )
+                except Exception:
+                    pass
+
+            if self._fallback_warning_count < 5:
+                preview = repr(text)
+                if len(preview) > 200:
+                    preview = preview[:200] + "..."
+                print(
+                    "Warning: llm_tokenizer.encode hit SystemError; "
+                    f"falling back to unk token. text={preview} error={exc}"
+                )
+                self._fallback_warning_count += 1
+
+            unk_id = self.llm_tokenizer.unk_token_id
+            return [0 if unk_id is None else unk_id]
     
     def align_tokens(
         self,
@@ -93,11 +171,7 @@ class TokenAligner:
         
         for slm_token_id in slm_token_ids:
             # Decode SLM token to string (without special token processing)
-            slm_token_str = self.slm_tokenizer.decode(
-                [slm_token_id], 
-                skip_special_tokens=False,
-                clean_up_tokenization_spaces=False
-            )
+            slm_token_str = self._safe_decode_single_token(self.slm_tokenizer, int(slm_token_id))
             
             # Handle special tokens
             if slm_token_id in self.slm_tokenizer.all_special_ids:
@@ -108,11 +182,7 @@ class TokenAligner:
                 continue
             
             # Tokenize the string with LLM tokenizer
-            llm_token_ids = self.llm_tokenizer.encode(
-                slm_token_str,
-                add_special_tokens=False,
-                return_tensors=None
-            )
+            llm_token_ids = self._safe_encode_with_llm_tokenizer(slm_token_str)
             
             if len(llm_token_ids) == 0:
                 # Handle empty tokenization (shouldn't normally happen)

@@ -1,3 +1,5 @@
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-torchrun --nproc_per_node=8 --master_port=29501 script/train/SFT_train.py \
-    --config recipe/train_recipe/C2C_longbench.json
+# export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+# torchrun --nproc_per_node=8 --master_port=29501 script/train/SFT_train.py \
+#     --config recipe/train_recipe/C2C_longbench.json --log_dir ./longbench/logs --log_name train_0.6_0.5_longbench.log \
+CUDA_VISIBLE_DEVICES=1 python script/train/SFT_train.py --config recipe/train_recipe/C2C_longbench.json --log_dir ./longbench/logs --log_name train_0.6_0.5_longbench.log --resume_from_checkpoint /data/smy/lmy/C2C-compress-master/local/checkpoints/0.6+0.5B_C2C_longbench_e/checkpoint-550
+CUDA_VISIBLE_DEVICES=1 python script/train/SFT_train.py --config recipe/train_recipe/C2C_longbench_0.6+1.5_instruct.json --log_dir ./longbench/logs --log_name train_0.6_1.5_instruct.log --resume_from_checkpoint /data/smy/lmy/C2C-compress-master/local/checkpoints/0.6+1.5B_C2C_longbench_e/checkpoint-250

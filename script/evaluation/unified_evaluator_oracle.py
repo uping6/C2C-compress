@@ -814,6 +814,17 @@ class UnifiedEvaluator:
         Returns:
             Summary dictionary
         """
+<<<<<<< HEAD
+=======
+        def mean_accuracy(stats: List[Dict]) -> Optional[float]:
+            values = [
+                float(stat["is_correct"])
+                for stat in stats
+                if stat.get("is_correct") is not None
+            ]
+            return float(np.mean(values)) if values else None
+
+>>>>>>> end2end commit
         if self.dataset_name == "mmlu-redux":
             # Group by subcategory
             subcat_stats = defaultdict(list)
@@ -829,7 +840,11 @@ class UnifiedEvaluator:
                         "avg_input_length": np.mean([s['input_length'] for s in stats]),
                         "avg_gen_length": np.mean([s['gen_length'] for s in stats]),
                         "avg_length_ratio": np.mean([s['length_ratio'] for s in stats]),
+<<<<<<< HEAD
                         "accuracy": np.mean([s['is_correct'] for s in stats]),
+=======
+                        "accuracy": mean_accuracy(stats),
+>>>>>>> end2end commit
                         "total_samples": len(stats)
                     }
         else:
@@ -845,7 +860,11 @@ class UnifiedEvaluator:
                         "avg_input_length": np.mean([s['input_length'] for s in stats]),
                         "avg_gen_length": np.mean([s['gen_length'] for s in stats]),
                         "avg_length_ratio": np.mean([s['length_ratio'] for s in stats]),
+<<<<<<< HEAD
                         "accuracy": np.mean([s['is_correct'] for s in stats]),
+=======
+                        "accuracy": mean_accuracy(stats),
+>>>>>>> end2end commit
                         "total_samples": len(stats)
                     }
         

@@ -1,0 +1,52 @@
+model:
+  model_name: cachejpeg
+  max_length: 12000
+  base_model_name: Qwen/Qwen3-0.6B
+  cachejpeg_config:
+    method: cachejpeg
+    homo_c2c_kv_src: /data/smy/HomoC2C-KV/src
+    anchors:
+      sink_count: 1
+      recent_count: 0
+      preserve_options: false
+    block:
+      mode: global
+      size: 64
+    quant:
+      q_global: 1.0
+      low: 1.0
+      high: 8.0
+      curve: quadratic
+      key_scale: 1.0
+      value_scale: 1.0
+      layer_group_scales:
+        early: 1.0
+        middle: 1.0
+        late: 1.0
+      clip_int16: true
+    zero_tail:
+      mode: none
+      ratio: 0.0
+      min_keep: 1
+    entropy:
+      representation: dense_int16
+      backend: zlib1
+  generation_config:
+    do_sample: false
+    max_new_tokens: 64
+
+output:
+  output_dir: local/final_results/cachejpeg_single/default
+
+eval:
+  dataset: ceval
+  gpu_ids: [0]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1
+  longbench_e: true
+  longbench_local_data_dir: /data/smy/KVCache-Factory/data/LongBench
+  skip_existing_longbench_subjects: true
+  longbench_prompt_format_path: longbench/config/dataset2prompt.json
+  longbench_maxlen_format_path: longbench/config/dataset2maxlen.json

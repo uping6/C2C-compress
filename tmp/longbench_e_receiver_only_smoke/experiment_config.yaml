@@ -1,0 +1,71 @@
+model:
+  model_name: cachejpeg_rosetta
+  max_length: 12000
+  rosetta_config:
+    base_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
+    teacher_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775
+    is_do_alignment: false
+    alignment_strategy: longest
+    checkpoints_dir: /data/smy/lmy/C2C-compress-master/local/checkpoints/0.6+0.5B_C2C_longbench_e
+  cachejpeg_rosetta_config:
+    sharer_model_role: teacher
+    receiver_model_role: base
+    homo_c2c_kv_src: /data/smy/HomoC2C-KV/src
+    transport:
+      mode: none
+    codec:
+      method: cachejpeg
+      homo_c2c_kv_src: /data/smy/HomoC2C-KV/src
+      compute:
+        backend: gpu
+        transform_dtype: float32
+      anchors:
+        sink_count: 1
+        recent_count: 0
+        preserve_options: false
+      block:
+        mode: global
+        size: 64
+      quant:
+        q_global: 1.0
+        low: 1.0
+        high: 8.0
+        curve: quadratic
+        key_scale: 1.0
+        value_scale: 1.0
+        layer_group_scales:
+          early: 1.0
+          middle: 1.0
+          late: 1.0
+        clip_int16: true
+      zero_tail:
+        mode: none
+        ratio: 0.0
+        min_keep: 1
+      entropy:
+        representation: adaptive_int
+        backend: lz4
+    ablation:
+      receiver_only: true
+  generation_config:
+    do_sample: false
+    max_new_tokens: 2048
+output:
+  output_dir: /data/smy_data/tmp/longbench_e_receiver_only_smoke
+eval:
+  dataset: longbench
+  longbench_e: true
+  longbench_local_data_dir: /data/smy/KVCache-Factory/data/LongBench
+  rosetta_checkpoint_subfolder: checkpoint-1850
+  skip_existing_longbench_subjects: false
+  longbench_prompt_format_path: longbench/config/dataset2prompt.json
+  longbench_maxlen_format_path: longbench/config/dataset2maxlen.json
+  gpu_ids:
+  - 1
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1
+  limit:
+  - 0
+  - 4

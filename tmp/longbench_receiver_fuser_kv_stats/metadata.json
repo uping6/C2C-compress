@@ -1,0 +1,26 @@
+{
+  "processed_samples": 947,
+  "processed_by_subject": {
+    "qasper": 48,
+    "multifieldqa_en": 34,
+    "hotpotqa": 93,
+    "2wikimqa": 89,
+    "gov_report": 90,
+    "multi_news": 75,
+    "trec": 69,
+    "triviaqa": 83,
+    "samsum": 81,
+    "passage_count": 60,
+    "passage_retrieval_en": 68,
+    "lcc": 84,
+    "repobench-p": 73
+  },
+  "failures": [],
+  "elapsed_seconds": 1895.1786946789944,
+  "receiver_model": "/home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca",
+  "teacher_model": "local/models/Qwen2.5-1.5B-Instruct",
+  "fuser_checkpoint": "/data/smy_data/local/checkpoints/0.6+1.5B_instruct_longbench_e/final",
+  "max_prompt_tokens": 12000,
+  "reservoir_size": 10000,
+  "quantile_note": "p01/p50/p99 are reservoir estimates; other reported moments are exact over processed tensor values."
+}

@@ -1,0 +1,48 @@
+{
+  "model": "cachejpeg_rosetta",
+  "dataset": "longbench",
+  "answer_method": "generate",
+  "overall_accuracy": 1.0,
+  "subjects": {
+    "qasper_e": {
+      "metric": "f1",
+      "score": 1.0,
+      "num_samples": 1,
+      "length_buckets": {
+        "4k-8k": {
+          "score": 1.0,
+          "num_samples": 1
+        }
+      }
+    }
+  },
+  "final_score": 1.0,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 1.0,
+      "num_samples": 1
+    }
+  },
+  "performance": {
+    "num_timed_samples": 1,
+    "end_to_end_total_seconds": 1.0850771080004051,
+    "end_to_end_avg_ms": 1085.0771080004051,
+    "end_to_end_p50_ms": 1085.0771080004051,
+    "end_to_end_p95_ms": 1085.0771080004051,
+    "longbench_e_score": 1.0,
+    "avg_encode_ms": 150.21756500937045,
+    "avg_decode_ms": 86.26609505154192,
+    "avg_payload_bytes": 14629869.0
+  },
+  "length_statistics": {
+    "subjects": {
+      "qasper_e": {
+        "avg_input_length": 5445.0,
+        "avg_gen_length": 2.0,
+        "avg_length_ratio": 0.0003673094582185491,
+        "accuracy": null,
+        "total_samples": 1
+      }
+    }
+  }
+}

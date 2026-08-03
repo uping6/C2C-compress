@@ -7,6 +7,7 @@ like MMLU-Redux and MMMLU.
 
 import re
 import os
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 import json
 import torch
 import torch.nn as nn
@@ -293,7 +294,7 @@ def load_hf_model(model_name: str, device: torch.device, generation_config: Opti
     tokenizer = AutoTokenizer.from_pretrained(
         str(model_name),
         trust_remote_code=True,
-        padding_side='left'
+        padding_side='left',
     )
 
     if tokenizer.pad_token is None:
@@ -308,13 +309,15 @@ def load_hf_model(model_name: str, device: torch.device, generation_config: Opti
             str(model_name),
             torch_dtype=torch.bfloat16,
             device_map={"": device},
-            sliding_window=4096
+            sliding_window=4096,
+            trust_remote_code=True
         ).eval()
     else:
         model = AutoModelForCausalLM.from_pretrained(
             str(model_name),
             torch_dtype=torch.bfloat16,
-            device_map={"": device}
+            device_map={"": device},
+            trust_remote_code=True
     ).eval()
     
     # Apply generation config
@@ -341,6 +344,14 @@ def load_rosetta_model(model_config: Dict[str, Any], eval_config: Dict[str, Any]
     rosetta_config = model_config["rosetta_config"]
     slm_model_path = rosetta_config["base_model"]
     teacher_model_config = rosetta_config["teacher_model"]
+    checkpoint_subfolder = eval_config.get("rosetta_checkpoint_subfolder", None)
+
+    def _resolve_checkpoint_dir(path_like):
+        if path_like is None:
+            return None
+        if checkpoint_subfolder:
+            return os.path.join(path_like, checkpoint_subfolder)
+        return path_like
 
     # Dict of models with list of checkpoints: {"model_name": "model_path", ...} + ckpt: ["ckpt1", "ckpt2"]
     
@@ -348,7 +359,7 @@ def load_rosetta_model(model_config: Dict[str, Any], eval_config: Dict[str, Any]
     
     if isinstance(teacher_model_config, str):
         # Single model - backward compatibility
-        checkpoint_dir = rosetta_config.get("checkpoints_dir", eval_config.get("checkpoints_dir"))
+        checkpoint_dir = _resolve_checkpoint_dir(rosetta_config.get("checkpoints_dir", eval_config.get("checkpoints_dir")))
         llm_configs.append((teacher_model_config, checkpoint_dir))
     
     elif isinstance(teacher_model_config, dict):
@@ -356,6 +367,8 @@ def load_rosetta_model(model_config: Dict[str, Any], eval_config: Dict[str, Any]
         # teacher_model: {"model1_name": "model1_path", "model2_name": "model2_path"}
         # ckpt: ["ckpt1_path", "ckpt2_path"]
         checkpoints_dir = rosetta_config.get("checkpoints_dir", [])
+        if checkpoint_subfolder:
+            checkpoints_dir = [os.path.join(p, checkpoint_subfolder) for p in checkpoints_dir]
         model_items = list(teacher_model_config.items())
         
         if len(checkpoints_dir) != len(model_items):
@@ -372,7 +385,8 @@ def load_rosetta_model(model_config: Dict[str, Any], eval_config: Dict[str, Any]
     slm_model = AutoModelForCausalLM.from_pretrained(
         str(slm_model_path),
         torch_dtype=torch.bfloat16,
-        device_map={"": device}
+        device_map={"": device},
+        trust_remote_code=True
     ).eval()
     
     # Apply generation config to SLM
@@ -386,20 +400,21 @@ def load_rosetta_model(model_config: Dict[str, Any], eval_config: Dict[str, Any]
                 str(llm_model_path),
                 torch_dtype=torch.bfloat16,
                 device_map={"": device},
-                sliding_window=4096
+                sliding_window=4096,
+                trust_remote_code=True
             ).eval()
         else:
             llm_model = AutoModelForCausalLM.from_pretrained(
                 str(llm_model_path),
                 torch_dtype=torch.bfloat16,
-                device_map={"": device}
+                device_map={"": device},trust_remote_code=True
             ).eval()
         
         # Apply generation config to LLM
         apply_generation_config(llm_model, generation_config)
         llm_models.append(llm_model)
     
-     # Load projectors for each LLM from their respective checkpoint directories
+    # Load projectors for each LLM from their respective checkpoint directories
     # Each checkpoint directory contains standard format: projector_{idx}.pt
     projector_list = []
     num_llms = len(llm_models)
@@ -408,6 +423,8 @@ def load_rosetta_model(model_config: Dict[str, Any], eval_config: Dict[str, Any]
     projector_offsets = [0]
     
     for llm_idx, (_, checkpoint_dir) in enumerate(llm_configs):
+        if checkpoint_dir is None:
+            raise KeyError("checkpoints_dir must be provided under model.rosetta_config or eval config")
         # Load projectors from this LLM's checkpoint directory
         # Standard naming: projector_{proj_idx}.pt / .json
         num_projectors = len([f for f in os.listdir(checkpoint_dir) 
@@ -511,6 +528,9 @@ def load_oracle_rosetta_model(model_config: Dict[str, Any], eval_config: Dict[st
     # Prefer checkpoints_dir under model.rosetta_config; fall back to eval config for backward compatibility
     rosetta_config = model_config["rosetta_config"]
     checkpoint_dir = rosetta_config.get("checkpoints_dir", eval_config.get("checkpoints_dir"))
+    checkpoint_subfolder = eval_config.get("rosetta_checkpoint_subfolder", None)
+    if checkpoint_dir is not None and checkpoint_subfolder:
+        checkpoint_dir = os.path.join(checkpoint_dir, checkpoint_subfolder)
     if checkpoint_dir is None:
         raise KeyError("checkpoints_dir must be provided under model.rosetta_config (preferred) or eval config (legacy)")
     slm_model_path = rosetta_config["base_model"]
@@ -719,4 +739,3 @@ def generate_answer_with_generate(model, tokenizer, prompt: str, device: torch.d
     gen_length = generated_ids.shape[0]
 
     return pred, probs, input_length, gen_length, content
-

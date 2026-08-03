@@ -1,0 +1,45 @@
+model:
+  model_name: cachejpeg_rosetta
+  max_length: 12000
+  rosetta_config:
+    base_model: Qwen/Qwen3-0.6B
+    base_model_path: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
+    teacher_model: Qwen/Qwen2.5-1.5B-instruct
+    teacher_model_path: /data/smy_data/local/models/Qwen2.5-1.5B-Instruct
+    is_do_alignment: false
+    alignment_strategy: longest
+    checkpoints_dir: /data/smy/lmy/C2C-compress-master/local/checkpoints/0.6+1.5B_C2C_longbench_e
+
+  cachejpeg_rosetta_config:
+    sharer_model_role: teacher
+    receiver_model_role: base
+    # Preserve the reference's in-process payload roundtrip. This is not a
+    # socket/bandwidth simulation; compression and decompression still run.
+    transport: {mode: none}
+    codec:
+      method: cachejpeg
+      compute: {backend: gpu, transform_dtype: float32}
+      entropy: {representation: adaptive_int, backend: lz4}
+    ablation:
+      # Decode the real payload, then set every sharer K/V tensor to zero
+      # immediately before fuser projection/fusion on the receiver.
+      zero_sharer_cache_at_receiver: true
+
+  generation_config: {do_sample: false, max_new_tokens: 2048}
+
+output:
+  output_dir: local/final_results/0.6+1.5B_instruct/zero_sharer_cache
+
+eval:
+  dataset: longbench
+  longbench_e: true
+  longbench_local_data_dir: /data/smy/KVCache-Factory/data/LongBench
+  rosetta_checkpoint_subfolder: final
+  skip_existing_longbench_subjects: false
+  longbench_prompt_format_path: longbench/config/dataset2prompt.json
+  longbench_maxlen_format_path: longbench/config/dataset2maxlen.json
+  gpu_ids: [0]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1

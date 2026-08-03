@@ -1,0 +1,50 @@
+{"pred": "1", "answers": ["11"], "all_classes": null, "length": 9921, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "15103103336cc36442b0c42f3458b745a0dff917705e78dd"}
+{"pred": "1", "answers": ["7"], "all_classes": null, "length": 8383, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "d28282eded860607e75bed90ce7af09e05042b3142190e9c"}
+{"pred": "1", "answers": ["18"], "all_classes": null, "length": 13512, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "9776b3470c4b709a980f1bb88ad724396e59212b4ecee62f"}
+{"pred": "1", "answers": ["22"], "all_classes": null, "length": 12667, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "c8fb2e7da26b4f6a903416b626c0554f4452e0372bc8f74f"}
+{"pred": "1", "answers": ["26"], "all_classes": null, "length": 17369, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "05778a8db1c3fcd589e2d28b3cebf7e50d3287f421cf0654"}
+{"pred": "1", "answers": ["9"], "all_classes": null, "length": 9246, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "8b97adebd90c3313fa7eb5ae877bd01ca5fc9e36e0098857"}
+{"pred": "1", "answers": ["20"], "all_classes": null, "length": 11563, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "ded5aee61cf4e0f9d90ad1ae1a355aaf32dc66a67876bd79"}
+{"pred": "1", "answers": ["7"], "all_classes": null, "length": 13534, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "f2883cfeeaae5e73e35cab529b72dfc8532ccfde0dcd904f"}
+{"pred": "1", "answers": ["12"], "all_classes": null, "length": 10580, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "2d82696987223e044b86a65a270354672010d630e33544b7"}
+{"pred": "1", "answers": ["30"], "all_classes": null, "length": 14264, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "c0bb231937e6ef9ba4ac317efe0cb198262fa99bef258983"}
+{"pred": "The final count of unique paragraphs after removing duplicates is: 1.", "answers": ["5"], "all_classes": null, "length": 12151, "input_length": 12024, "gen_length": 15, "length_bucket": "8k+", "_id": "120e08c8869c10d88554254c8b2a32f0b369f6d0056fb4ab"}
+{"pred": "The final count of unique paragraphs is 1.", "answers": ["10"], "all_classes": null, "length": 6481, "input_length": 9349, "gen_length": 11, "length_bucket": "8k+", "_id": "e92afc1ff29961bc4eba976e990a40abe21bbe90c86c44df"}
+{"pred": "1", "answers": ["5"], "all_classes": null, "length": 6927, "input_length": 9531, "gen_length": 2, "length_bucket": "8k+", "_id": "20ed2275045ab2f20875b16977819597bb3f9548b9bce563"}
+{"pred": "1", "answers": ["5"], "all_classes": null, "length": 10977, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "5aa0a5907de5cc7ae2236d2c2ea85cc0fba9aafa8000d821"}
+{"pred": "1", "answers": ["10"], "all_classes": null, "length": 5442, "input_length": 7130, "gen_length": 2, "length_bucket": "4k-8k", "_id": "cc350d0c2d864c38ff76f5a8e30390e7067d69bbeb37d484"}
+{"pred": "1", "answers": ["19"], "all_classes": null, "length": 8018, "input_length": 10841, "gen_length": 2, "length_bucket": "8k+", "_id": "953817f5c3c305e2c6fad14cdbec07a036e2303d03e6c7cb"}
+{"pred": "1", "answers": ["12"], "all_classes": null, "length": 8771, "input_length": 11910, "gen_length": 2, "length_bucket": "8k+", "_id": "5eb70267232e7f4bc84dc360624ba70afd81e45663855aa2"}
+{"pred": "1", "answers": ["15"], "all_classes": null, "length": 6573, "input_length": 9778, "gen_length": 2, "length_bucket": "8k+", "_id": "516419a6f9843210391b214ad1cb4eec64e81dbee7bd566d"}
+{"pred": "1", "answers": ["27"], "all_classes": null, "length": 11744, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "caadc4f6cb84112de819ef9e101db674e3367c7902d20285"}
+{"pred": "1", "answers": ["21"], "all_classes": null, "length": 14392, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "18d691a11dcf6bb463df3bc256f56bbfa8cff240f0882000"}
+{"pred": "1", "answers": ["13"], "all_classes": null, "length": 3554, "input_length": 5079, "gen_length": 2, "length_bucket": "4k-8k", "_id": "ba3892ed87002b9b3b4e9a2f0877bfe3cf40ff914b529f33"}
+{"pred": "1", "answers": ["11"], "all_classes": null, "length": 7488, "input_length": 10137, "gen_length": 2, "length_bucket": "8k+", "_id": "d8bd92479dc9bda41a48fd4c7ae60c70408f8f20bb2cbb01"}
+{"pred": "1", "answers": ["19"], "all_classes": null, "length": 10261, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "f41acb2f79f88df2fc4e60ffe84ae559ffbb8d219f238ea4"}
+{"pred": "1", "answers": ["31"], "all_classes": null, "length": 14767, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "24ff43f78608e42fa66481b03be99834dab37d79dc1d7cdf"}
+{"pred": "The final count of unique paragraphs after removing duplicates is: 1.", "answers": ["4"], "all_classes": null, "length": 9363, "input_length": 12024, "gen_length": 15, "length_bucket": "8k+", "_id": "3b2e2df257ef9766d2cac6a035512d54a541f2e43a4354ab"}
+{"pred": "1", "answers": ["24"], "all_classes": null, "length": 9779, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "8d5771799439959e8fd2a7896d3dde4f53ac7b0cb6b19e40"}
+{"pred": "The final count of unique paragraphs is 1.", "answers": ["2"], "all_classes": null, "length": 3967, "input_length": 6133, "gen_length": 11, "length_bucket": "4k-8k", "_id": "b6a484f33a9d817214eacd747b657b743e7947a245ffa6e5"}
+{"pred": "1", "answers": ["7"], "all_classes": null, "length": 8047, "input_length": 10699, "gen_length": 2, "length_bucket": "8k+", "_id": "6f77917f70f297e064ffccc2bb5502e7121cbb7d68b75396"}
+{"pred": "1", "answers": ["9"], "all_classes": null, "length": 6561, "input_length": 9478, "gen_length": 2, "length_bucket": "8k+", "_id": "8e9401d9fe6dbb5c32d8d7f5baf74ef5291e611a74756332"}
+{"pred": "1", "answers": ["18"], "all_classes": null, "length": 10765, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "a33a5faf2240f04e23ca851214d3be0297e84c0d44f1219f"}
+{"pred": "1", "answers": ["7"], "all_classes": null, "length": 6447, "input_length": 8754, "gen_length": 2, "length_bucket": "8k+", "_id": "5cad3eee00e491fe1a877fdab30d596f0d192880ffdfbb11"}
+{"pred": "1", "answers": ["33"], "all_classes": null, "length": 11704, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "c6329e65ae403fba3f0b0fc83e06e37483d2091049187260"}
+{"pred": "1", "answers": ["16"], "all_classes": null, "length": 12140, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "34d14298ea38c686b854621ba59fb0b0c04daae05ec39150"}
+{"pred": "1", "answers": ["26"], "all_classes": null, "length": 15302, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "e6187498122694bac0ef95c44c4f3cbf7dcc3e8b68585ee2"}
+{"pred": "1", "answers": ["16"], "all_classes": null, "length": 6374, "input_length": 8322, "gen_length": 2, "length_bucket": "8k+", "_id": "284dc215c36aa894d1779ec2a3d0ae6aa745158c176ce894"}
+{"pred": "1", "answers": ["7"], "all_classes": null, "length": 4858, "input_length": 6905, "gen_length": 2, "length_bucket": "4k-8k", "_id": "3622432ffcd2024f42503a85dcb4b1c08fa904a2f821fd96"}
+{"pred": "1", "answers": ["14"], "all_classes": null, "length": 9469, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "e50eec939aa2c3c70ff011b7b6a0ff3525003bea786ae90b"}
+{"pred": "The final answer is: 1", "answers": ["3"], "all_classes": null, "length": 13841, "input_length": 12024, "gen_length": 8, "length_bucket": "8k+", "_id": "0e5a00183b5b24cbe88243bf41e2ba255517e913c721b7e3"}
+{"pred": "1", "answers": ["9"], "all_classes": null, "length": 11684, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "7e33aa375f95bc7b58a99bd2758751d04346fdb40c90e33e"}
+{"pred": "The final count of unique paragraphs after removing duplicates is: 1.", "answers": ["3"], "all_classes": null, "length": 13730, "input_length": 12024, "gen_length": 15, "length_bucket": "8k+", "_id": "3edd71c284da396ecd2f780130236c66f7626c4f72c052dd"}
+{"pred": "1", "answers": ["34"], "all_classes": null, "length": 15684, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "cf5a86d7bd9ce05d8f1ad8c4263d9f1bac2e35d1a367240f"}
+{"pred": "1", "answers": ["9"], "all_classes": null, "length": 17635, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "b9a232f2938162a05e3d56a5ec390f5c37df2a16bca5c095"}
+{"pred": "1", "answers": ["6"], "all_classes": null, "length": 8470, "input_length": 11755, "gen_length": 2, "length_bucket": "8k+", "_id": "49cffcbb091b9cb440a422250974ab32ab168ed9d9dcbf50"}
+{"pred": "1", "answers": ["35"], "all_classes": null, "length": 15203, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "c3b0a367221b432d0150466e60ff3a2428386dc3417bd42a"}
+{"pred": "1", "answers": ["11"], "all_classes": null, "length": 12939, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "07d321a8a8ddebf0f9b048e62e08500659e58b42030a95c3"}
+{"pred": "1", "answers": ["28"], "all_classes": null, "length": 12397, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "1c367b928295691393f7d2a284a4e150422649fde123655b"}
+{"pred": "1", "answers": ["16"], "all_classes": null, "length": 9543, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "9f83657902d0bee359213997243fc8bd74e1166e6b8cd957"}
+{"pred": "1", "answers": ["26"], "all_classes": null, "length": 13429, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "8ec73233fc956960bfdcf720d094645bbc74775389615549"}
+{"pred": "1", "answers": ["42"], "all_classes": null, "length": 15870, "input_length": 12024, "gen_length": 2, "length_bucket": "8k+", "_id": "55495cff2c7e4428e6289fb921ee949afaa6f1ddca2bc5c5"}
+{"pred": "The final count of unique paragraphs is 1.", "answers": ["20"], "all_classes": null, "length": 14973, "input_length": 12024, "gen_length": 11, "length_bucket": "8k+", "_id": "9e51e30fb3063b8b4b7f5e23fba30fc6b8c10216d724428e"}

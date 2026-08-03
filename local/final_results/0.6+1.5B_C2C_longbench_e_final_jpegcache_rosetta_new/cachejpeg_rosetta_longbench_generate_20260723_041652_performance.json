@@ -1,0 +1,11 @@
+{
+  "num_timed_samples": 947,
+  "end_to_end_total_seconds": 17898.692278711263,
+  "end_to_end_avg_ms": 18900.414233063617,
+  "end_to_end_p50_ms": 3306.3384930137545,
+  "end_to_end_p95_ms": 76237.83175654238,
+  "longbench_e_score": 0.19866639169933645,
+  "avg_encode_ms": 602.8624385576389,
+  "avg_decode_ms": 373.72188895096,
+  "avg_payload_bytes": 34595075.235480465
+}

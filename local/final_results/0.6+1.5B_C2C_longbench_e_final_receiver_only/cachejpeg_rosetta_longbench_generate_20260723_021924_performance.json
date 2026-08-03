@@ -1,0 +1,8 @@
+{
+  "num_timed_samples": 947,
+  "end_to_end_total_seconds": 11620.120833317398,
+  "end_to_end_avg_ms": 12270.454945424917,
+  "end_to_end_p50_ms": 981.4187869196758,
+  "end_to_end_p95_ms": 102592.67966099984,
+  "longbench_e_score": 0.1972392564907022
+}

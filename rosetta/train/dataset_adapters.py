@@ -1,6 +1,26 @@
 """
 Simple dataset adapter for converting InstructCoder to chat format
 """
+import os
+
+
+def configure_hf_environment() -> None:
+    os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
+    proxy = os.environ.get("ROSETTA_HTTP_PROXY") or os.environ.get("http_proxy") or os.environ.get("HTTP_PROXY")
+    if proxy:
+        os.environ["http_proxy"] = proxy
+        os.environ["https_proxy"] = os.environ.get("ROSETTA_HTTPS_PROXY", proxy)
+        os.environ["all_proxy"] = os.environ.get("ROSETTA_ALL_PROXY", proxy)
+    else:
+        for key in ["http_proxy", "https_proxy", "all_proxy", "HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"]:
+            os.environ.pop(key, None)
+
+
+def hf_local_files_only() -> bool:
+    return os.environ.get("HF_HUB_OFFLINE", "0") == "1" or os.environ.get("TRANSFORMERS_OFFLINE", "0") == "1"
+
+
+configure_hf_environment()
 
 from typing import List, Dict, Any, Optional, Union, Callable
 from datasets import load_dataset, load_from_disk
@@ -8,7 +28,7 @@ from torch.utils.data import Dataset
 import torch
 from transformers import AutoTokenizer
 import inspect
-import os
+# import os
 import hashlib
 # Dataset Registry System
 DATASET_REGISTRY = {}
@@ -588,8 +608,23 @@ class LongBenchChatDataset(Dataset):
         all_data = []
         for dataset in target_datasets:
             try:
-                dataset_suffix = f"{dataset}_e" if use_longbench_e else dataset
-                data = load_dataset('THUDM/LongBench', dataset_suffix, split=split)
+                dataset_suffix = f"{dataset}" if use_longbench_e else dataset
+                
+                # --- 本地加载改造开始 ---
+                import os
+                # 根据你的实际路径拼接出本地 jsonl 的绝对路径
+                local_jsonl_path = f"/data/smy/KVCache-Factory/data/LongBench/{dataset_suffix}.jsonl"
+                
+                if os.path.exists(local_jsonl_path):
+                    print(f"  [Local] Loading {dataset_suffix} from {local_jsonl_path}...")
+                    # 使用本地 json 解析器加载数据，并指定对应的 split（LongBench 默认只有 'test' 类似的分片，这里保持原样）
+                    data = load_dataset('json', data_files={split: local_jsonl_path}, split=split)
+                else:
+                    print(f"  [Online] Local file not found: {local_jsonl_path}. Trying HF Hub...")
+                    # 如果本地没找到对应的 jsonl 文件，则走原本的线上加载兜底
+                    data = load_dataset('THUDM/LongBench', dataset_suffix, split=split)
+                # --- 本地加载改造结束 ---
+                
                 print(f"  Loaded {len(data)} samples from {dataset}")
                 
                 # 添加数据集名称标识
@@ -601,7 +636,7 @@ class LongBenchChatDataset(Dataset):
         
         if not all_data:
             raise ValueError("No datasets were successfully loaded")
-        
+
 
         from datasets import concatenate_datasets
         self.dataset = concatenate_datasets(all_data)
@@ -666,7 +701,6 @@ class LongBenchChatDataset(Dataset):
         # 5. 应用Chat Template
 
         final_prompt = raw_prompt
-        print(len(tokenized_raw))
         return final_prompt
     
     def __getitem__(self, idx):
@@ -725,7 +759,10 @@ class MMLUChatDataset(Dataset):
         # Apply total token length filtering on full chat (user + assistant)
         if max_word_count is not None:
             # Use a small tokenizer for speed; total token length = chat(user+assistant)
-            self._mmlu_tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-0.6B")
+            self._mmlu_tokenizer = AutoTokenizer.from_pretrained(
+                "Qwen/Qwen3-0.6B",
+                local_files_only=hf_local_files_only(),
+            )
             extractor = lambda sample: self._build_chat_messages(sample)
             filters = [create_text_length_filter(max_word_count, extractor, self._mmlu_tokenizer, use_tokens=True)]
             filter_descriptions = [f"Token count filter (full chat): max {max_word_count}"]
@@ -832,7 +869,10 @@ class LLMGeneratedChatDataset(Dataset):
         else:
             raise ValueError(f"Unexpected dataset type: {type(dataset)}")
 
-        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-0.6B")
+        tokenizer = AutoTokenizer.from_pretrained(
+            "Qwen/Qwen3-0.6B",
+            local_files_only=hf_local_files_only(),
+        )
         
         if max_word_count is not None:
             original_len = len(self.dataset)
@@ -1030,7 +1070,10 @@ class OpenHermesChatDataset(Dataset):
 
         # Apply conversation-level token count filtering (all messages combined <= max_word_count)
         if max_word_count is not None:
-            tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-0.6B")
+            tokenizer = AutoTokenizer.from_pretrained(
+                "Qwen/Qwen3-0.6B",
+                local_files_only=hf_local_files_only(),
+            )
             extractor = lambda sample: extract_openhermes_messages(sample, 'conversations')
             filters.append(create_text_length_filter(max_word_count, extractor, tokenizer, use_tokens=True))
             filter_descriptions.append(f"Token count filter: max {max_word_count}")
@@ -1117,6 +1160,10 @@ class AlignedChatDataset(Dataset):
         self.dataset = instruct_dataset
         self.aligner = aligner
         self.max_length = max_length
+        # Some chat-style datasets (for example LongBenchChatDataset) need the
+        # base tokenizer injected before they can materialize message lists.
+        if hasattr(self.dataset, "set_tokenizer"):
+            self.dataset.set_tokenizer(self.aligner.slm_tokenizer)
     
     def __len__(self):
         return len(self.dataset)

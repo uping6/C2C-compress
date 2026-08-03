@@ -1,0 +1,321 @@
+started 2026-07-31T23:53:57+08:00
+Traceback (most recent call last):
+  File "/data/smy_data/tmp/analyze_longbench_receiver_fuser_kv.py", line 21, in <module>
+    import torch
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/__init__.py", line 2604, in <module>
+    from torch import _meta_registrations
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_meta_registrations.py", line 11, in <module>
+    from torch._decomp import (
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_decomp/__init__.py", line 284, in <module>
+    import torch._decomp.decompositions
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_decomp/decompositions.py", line 15, in <module>
+    import torch._prims as prims
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_prims/__init__.py", line 524, in <module>
+    abs = _make_elementwise_unary_prim(
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_prims/__init__.py", line 492, in _make_elementwise_unary_prim
+    return _make_prim(
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_prims/__init__.py", line 320, in _make_prim
+    prim_def = torch.library.custom_op(
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_library/custom_ops.py", line 145, in custom_op
+    return inner(fn)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_library/custom_ops.py", line 126, in inner
+    result = CustomOpDef(namespace, opname, schema_str, fn)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_library/custom_ops.py", line 174, in __init__
+    self._register_to_dispatcher()
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_library/custom_ops.py", line 594, in _register_to_dispatcher
+    lib._register_fake(self._name, fake_impl, _stacklevel=4)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/library.py", line 177, in _register_fake
+    source = torch._library.utils.get_source(_stacklevel + 1)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_library/utils.py", line 53, in get_source
+    frame = inspect.getframeinfo(sys._getframe(stacklevel))
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/inspect.py", line 1624, in getframeinfo
+    lines, lnum = findsource(frame)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/inspect.py", line 952, in findsource
+    module = getmodule(object, file)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/inspect.py", line 878, in getmodule
+    os.path.realpath(f)] = module.__name__
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/posixpath.py", line 393, in realpath
+    path, ok = _joinrealpath(filename[:0], filename, strict, {})
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/posixpath.py", line 435, in _joinrealpath
+    newpath = join(path, name)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/posixpath.py", line 83, in join
+    if b.startswith(sep):
+UnboundLocalError: local variable 'b' referenced before assignment
+started 2026-07-31T23:55:34+08:00
+Traceback (most recent call last):
+  File "/data/smy_data/tmp/analyze_longbench_receiver_fuser_kv.py", line 23, in <module>
+    from rosetta.cachejpeg_rosetta.fuser_bridge import RosettaFuserBridge
+  File "/data/smy_data/rosetta/cachejpeg_rosetta/__init__.py", line 1, in <module>
+    from .config import CacheJPEGRosettaEvalConfig, resolve_cachejpeg_rosetta_eval_config
+  File "/data/smy_data/rosetta/cachejpeg_rosetta/config.py", line 6, in <module>
+    from rosetta.cachejpeg.config import CacheJPEGEvalConfig, resolve_cachejpeg_eval_config
+  File "/data/smy_data/rosetta/cachejpeg/__init__.py", line 2, in <module>
+    from .wrapper import CacheJPEGEvalWrapper, load_cachejpeg_model
+  File "/data/smy_data/rosetta/cachejpeg/wrapper.py", line 12, in <module>
+    from rosetta.utils.evaluate import apply_generation_config, load_hf_model, set_default_chat_template
+  File "/data/smy_data/rosetta/utils/evaluate.py", line 19, in <module>
+    from rosetta.model.wrapper import RosettaModel
+  File "/data/smy_data/rosetta/model/wrapper.py", line 9, in <module>
+    from transformers.modeling_utils import PreTrainedModel
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/modeling_utils.py", line 62, in <module>
+    from .integrations.flex_attention import flex_attention_forward
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/integrations/flex_attention.py", line 39, in <module>
+    from torch.nn.attention.flex_attention import BlockMask, flex_attention
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/nn/attention/flex_attention.py", line 16, in <module>
+    from torch._dynamo._trace_wrapped_higher_order_op import TransformGetItemToIndex
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/__init__.py", line 3, in <module>
+    from . import convert_frame, eval_frame, resume_execution
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 33, in <module>
+    from torch._dynamo.symbolic_convert import TensorifyState
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/symbolic_convert.py", line 30, in <module>
+    from . import config, exc, logging as torchdynamo_logging, trace_rules, variables
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/trace_rules.py", line 3554, in <module>
+    add(_name)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/trace_rules.py", line 3420, in add
+    _recompile_re()
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/trace_rules.py", line 3402, in _recompile_re
+    SKIP_DIRS_RE = re.compile(
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/re.py", line 251, in compile
+    return _compile(pattern, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 792, in compile
+    code = _code(p, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 631, in _code
+    _compile(code, p.data, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 184, in _compile
+    _compile(code, p, _combine_flags(flags, add_flags, del_flags))
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 225, in _compile
+    _compile(code, av, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 106, in _compile
+    for op, av in pattern:
+ValueError: too many values to unpack (expected 0)
+tmux-started 2026-07-31T23:56:46+08:00
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Model local/models/Qwen2.5-1.5B-Instruct already has a chat template.
+Traceback (most recent call last):
+  File "/data/smy_data/tmp/analyze_longbench_receiver_fuser_kv.py", line 228, in <module>
+    main()
+  File "/data/smy_data/tmp/analyze_longbench_receiver_fuser_kv.py", line 155, in main
+    prompt_templates = json.loads(
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/json/__init__.py", line 335, in loads
+    raise JSONDecodeError("Unexpected UTF-8 BOM (decode using utf-8-sig)",
+json.decoder.JSONDecodeError: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)
+tmux-restarted 2026-07-31T23:58:08+08:00
+Traceback (most recent call last):
+  File "/data/smy_data/tmp/analyze_longbench_receiver_fuser_kv.py", line 23, in <module>
+    from rosetta.cachejpeg_rosetta.fuser_bridge import RosettaFuserBridge
+  File "/data/smy_data/rosetta/cachejpeg_rosetta/__init__.py", line 1, in <module>
+    from .config import CacheJPEGRosettaEvalConfig, resolve_cachejpeg_rosetta_eval_config
+  File "/data/smy_data/rosetta/cachejpeg_rosetta/config.py", line 6, in <module>
+    from rosetta.cachejpeg.config import CacheJPEGEvalConfig, resolve_cachejpeg_eval_config
+  File "/data/smy_data/rosetta/cachejpeg/__init__.py", line 2, in <module>
+    from .wrapper import CacheJPEGEvalWrapper, load_cachejpeg_model
+  File "/data/smy_data/rosetta/cachejpeg/wrapper.py", line 12, in <module>
+    from rosetta.utils.evaluate import apply_generation_config, load_hf_model, set_default_chat_template
+  File "/data/smy_data/rosetta/utils/evaluate.py", line 19, in <module>
+    from rosetta.model.wrapper import RosettaModel
+  File "/data/smy_data/rosetta/model/wrapper.py", line 9, in <module>
+    from transformers.modeling_utils import PreTrainedModel
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/modeling_utils.py", line 62, in <module>
+    from .integrations.flex_attention import flex_attention_forward
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/integrations/flex_attention.py", line 39, in <module>
+    from torch.nn.attention.flex_attention import BlockMask, flex_attention
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/nn/attention/flex_attention.py", line 16, in <module>
+    from torch._dynamo._trace_wrapped_higher_order_op import TransformGetItemToIndex
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/__init__.py", line 3, in <module>
+    from . import convert_frame, eval_frame, resume_execution
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/convert_frame.py", line 33, in <module>
+    from torch._dynamo.symbolic_convert import TensorifyState
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/symbolic_convert.py", line 30, in <module>
+    from . import config, exc, logging as torchdynamo_logging, trace_rules, variables
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/trace_rules.py", line 3554, in <module>
+    add(_name)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/trace_rules.py", line 3420, in add
+    _recompile_re()
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_dynamo/trace_rules.py", line 3402, in _recompile_re
+    SKIP_DIRS_RE = re.compile(
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/re.py", line 251, in compile
+    return _compile(pattern, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/re.py", line 303, in _compile
+    p = sre_compile.compile(pattern, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 792, in compile
+    code = _code(p, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 631, in _code
+    _compile(code, p.data, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 184, in _compile
+    _compile(code, p, _combine_flags(flags, add_flags, del_flags))
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 225, in _compile
+    _compile(code, av, flags)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/sre_compile.py", line 106, in _compile
+    for op, av in pattern:
+ValueError: too many values to unpack (expected 0)
+tmux-isolated-pyc 2026-07-31T23:59:07+08:00
+Traceback (most recent call last):
+  File "/data/smy_data/tmp/analyze_longbench_receiver_fuser_kv.py", line 23, in <module>
+    from rosetta.cachejpeg_rosetta.fuser_bridge import RosettaFuserBridge
+  File "/data/smy_data/rosetta/cachejpeg_rosetta/__init__.py", line 1, in <module>
+    from .config import CacheJPEGRosettaEvalConfig, resolve_cachejpeg_rosetta_eval_config
+  File "/data/smy_data/rosetta/cachejpeg_rosetta/config.py", line 6, in <module>
+    from rosetta.cachejpeg.config import CacheJPEGEvalConfig, resolve_cachejpeg_eval_config
+  File "/data/smy_data/rosetta/cachejpeg/__init__.py", line 2, in <module>
+    from .wrapper import CacheJPEGEvalWrapper, load_cachejpeg_model
+  File "/data/smy_data/rosetta/cachejpeg/wrapper.py", line 8, in <module>
+    from transformers import AutoTokenizer
+  File "<frozen importlib._bootstrap>", line 1075, in _handle_fromlist
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/utils/import_utils.py", line 2045, in __getattr__
+    module = self._get_module(self._class_to_module[name])
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/utils/import_utils.py", line 2075, in _get_module
+    raise e
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/utils/import_utils.py", line 2073, in _get_module
+    return importlib.import_module("." + module_name, self.__name__)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/models/auto/tokenization_auto.py", line 38, in <module>
+    from .auto_factory import _LazyAutoMapping
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/models/auto/auto_factory.py", line 40, in <module>
+    from ...generation import GenerationMixin
+  File "<frozen importlib._bootstrap>", line 1075, in _handle_fromlist
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/utils/import_utils.py", line 2045, in __getattr__
+    module = self._get_module(self._class_to_module[name])
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/utils/import_utils.py", line 2075, in _get_module
+    raise e
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/utils/import_utils.py", line 2073, in _get_module
+    return importlib.import_module("." + module_name, self.__name__)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/importlib/__init__.py", line 126, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/generation/utils.py", line 62, in <module>
+    from .candidate_generator import (
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/generation/candidate_generator.py", line 29, in <module>
+    from sklearn.metrics import roc_curve
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/__init__.py", line 73, in <module>
+    from .base import clone  # noqa: E402
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/base.py", line 19, in <module>
+    from .utils._metadata_requests import _MetadataRequester, _routing_enabled
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/utils/__init__.py", line 9, in <module>
+    from ._chunking import gen_batches, gen_even_slices
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/utils/_chunking.py", line 11, in <module>
+    from ._param_validation import Interval, validate_params
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/utils/_param_validation.py", line 17, in <module>
+    from .validation import _is_arraylike_not_scalar
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/utils/validation.py", line 21, in <module>
+    from ..utils._array_api import _asarray_with_order, _is_numpy_namespace, get_namespace
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/utils/_array_api.py", line 20, in <module>
+    from .fixes import parse_version
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/sklearn/utils/fixes.py", line 16, in <module>
+    import scipy.stats
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/stats/__init__.py", line 624, in <module>
+    from ._stats_py import *
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/stats/_stats_py.py", line 52, in <module>
+    from . import distributions
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/stats/distributions.py", line 10, in <module>
+    from . import _continuous_distns
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/stats/_continuous_distns.py", line 4693, in <module>
+    halflogistic = halflogistic_gen(a=0.0, name='halflogistic')
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/stats/_distn_infrastructure.py", line 1874, in __init__
+    self._construct_argparser(meths_to_inspect=[self._pdf, self._cdf],
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/stats/_distn_infrastructure.py", line 777, in _construct_argparser
+    shapes_args = _getfullargspec(meth)  # NB does not contain self
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/_lib/_util.py", line 642, in getfullargspec_no_self
+    annotations = {p.name: p.annotation for p in sig.parameters.values()
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/scipy/_lib/_util.py", line 643, in <dictcomp>
+    if p.annotation is not p.empty}
+UnboundLocalError: local variable 'p' referenced before assignment
+tmux-conda-restarted 2026-08-01T00:00:45+08:00
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Model local/models/Qwen2.5-1.5B-Instruct already has a chat template.
+processed=10 subject=qasper elapsed_s=9.2
+processed=20 subject=qasper elapsed_s=17.0
+processed=30 subject=qasper elapsed_s=30.6
+processed=40 subject=qasper elapsed_s=46.3
+processed=50 subject=multifieldqa_en elapsed_s=64.4
+processed=60 subject=multifieldqa_en elapsed_s=73.5
+processed=70 subject=multifieldqa_en elapsed_s=95.0
+processed=80 subject=multifieldqa_en elapsed_s=115.8
+processed=90 subject=hotpotqa elapsed_s=131.1
+processed=100 subject=hotpotqa elapsed_s=142.0
+processed=110 subject=hotpotqa elapsed_s=151.4
+processed=120 subject=hotpotqa elapsed_s=162.8
+processed=130 subject=hotpotqa elapsed_s=185.6
+processed=140 subject=hotpotqa elapsed_s=209.6
+processed=150 subject=hotpotqa elapsed_s=236.2
+processed=160 subject=hotpotqa elapsed_s=269.0
+processed=170 subject=hotpotqa elapsed_s=301.4
+processed=180 subject=2wikimqa elapsed_s=322.7
+processed=190 subject=2wikimqa elapsed_s=331.3
+processed=200 subject=2wikimqa elapsed_s=340.5
+processed=210 subject=2wikimqa elapsed_s=351.8
+processed=220 subject=2wikimqa elapsed_s=371.5
+processed=230 subject=2wikimqa elapsed_s=391.5
+processed=240 subject=2wikimqa elapsed_s=422.0
+processed=250 subject=2wikimqa elapsed_s=454.3
+processed=260 subject=2wikimqa elapsed_s=486.5
+processed=270 subject=gov_report elapsed_s=503.9
+processed=280 subject=gov_report elapsed_s=510.1
+processed=290 subject=gov_report elapsed_s=517.3
+processed=300 subject=gov_report elapsed_s=530.2
+processed=310 subject=gov_report elapsed_s=546.6
+processed=320 subject=gov_report elapsed_s=560.8
+processed=330 subject=gov_report elapsed_s=586.5
+processed=340 subject=gov_report elapsed_s=617.4
+processed=350 subject=gov_report elapsed_s=646.7
+processed=360 subject=multi_news elapsed_s=661.1
+processed=370 subject=multi_news elapsed_s=664.5
+processed=380 subject=multi_news elapsed_s=670.8
+processed=390 subject=multi_news elapsed_s=687.4
+processed=400 subject=multi_news elapsed_s=703.9
+processed=410 subject=multi_news elapsed_s=729.0
+processed=420 subject=multi_news elapsed_s=760.9
+processed=430 subject=trec elapsed_s=790.1
+processed=440 subject=trec elapsed_s=796.1
+processed=450 subject=trec elapsed_s=802.2
+processed=460 subject=trec elapsed_s=811.4
+processed=470 subject=trec elapsed_s=830.2
+processed=480 subject=trec elapsed_s=853.5
+processed=490 subject=trec elapsed_s=884.9
+processed=500 subject=triviaqa elapsed_s=912.3
+processed=510 subject=triviaqa elapsed_s=919.2
+processed=520 subject=triviaqa elapsed_s=927.1
+processed=530 subject=triviaqa elapsed_s=944.2
+processed=540 subject=triviaqa elapsed_s=964.6
+processed=550 subject=triviaqa elapsed_s=986.9
+processed=560 subject=triviaqa elapsed_s=1016.6
+processed=570 subject=triviaqa elapsed_s=1049.0
+processed=580 subject=triviaqa elapsed_s=1081.3
+processed=590 subject=samsum elapsed_s=1091.5
+processed=600 subject=samsum elapsed_s=1098.7
+processed=610 subject=samsum elapsed_s=1111.0
+processed=620 subject=samsum elapsed_s=1136.3
+processed=630 subject=samsum elapsed_s=1155.9
+processed=640 subject=samsum elapsed_s=1186.3
+processed=650 subject=samsum elapsed_s=1218.6
+processed=660 subject=samsum elapsed_s=1250.9
+processed=670 subject=passage_count elapsed_s=1264.4
+processed=680 subject=passage_count elapsed_s=1272.3
+processed=690 subject=passage_count elapsed_s=1289.1
+processed=700 subject=passage_count elapsed_s=1308.7
+processed=710 subject=passage_count elapsed_s=1339.3
+processed=720 subject=passage_count elapsed_s=1371.0
+processed=730 subject=passage_retrieval_en elapsed_s=1385.5
+processed=740 subject=passage_retrieval_en elapsed_s=1395.1
+processed=750 subject=passage_retrieval_en elapsed_s=1404.8
+processed=760 subject=passage_retrieval_en elapsed_s=1426.1
+processed=770 subject=passage_retrieval_en elapsed_s=1444.9
+processed=780 subject=passage_retrieval_en elapsed_s=1475.7
+processed=790 subject=passage_retrieval_en elapsed_s=1508.2
+processed=800 subject=lcc elapsed_s=1514.4
+processed=810 subject=lcc elapsed_s=1521.2
+processed=820 subject=lcc elapsed_s=1531.1
+processed=830 subject=lcc elapsed_s=1559.8
+processed=840 subject=lcc elapsed_s=1592.1
+processed=850 subject=lcc elapsed_s=1622.3
+processed=860 subject=lcc elapsed_s=1654.9
+processed=870 subject=lcc elapsed_s=1687.7
+processed=880 subject=repobench-p elapsed_s=1710.8
+processed=890 subject=repobench-p elapsed_s=1726.1
+processed=900 subject=repobench-p elapsed_s=1744.8
+processed=910 subject=repobench-p elapsed_s=1776.0
+processed=920 subject=repobench-p elapsed_s=1806.9
+processed=930 subject=repobench-p elapsed_s=1839.5
+processed=940 subject=repobench-p elapsed_s=1872.0
+COMPLETE processed=947 failures=0 output=tmp/longbench_receiver_fuser_kv_stats

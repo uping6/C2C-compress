@@ -1,0 +1,1 @@
+{"pred": "The most active fan club is the South West Ultras fan club.", "answers": ["South West Ultras fan club."], "all_classes": null, "length": 819, "input_length": 1777, "gen_length": 15, "length_bucket": "0-4k", "_id": "c29e95ab6195406aceecf3874186150cb1b8b26db5bcd0e4", "end_to_end_latency_ms": 537.2771279653534}

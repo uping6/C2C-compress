@@ -1,0 +1,3 @@
+{"pred": "The director of film Requiem for Dominic was born in Austria.", "answers": ["Temesvár"], "all_classes": null, "length": 2873, "input_length": 4781, "gen_length": 15, "length_bucket": "4k-8k", "_id": "52150ca076ef6a156239c8fd2cb45983ba9b8cd446312f22"}
+{"pred": "The mother of Ibrahim Ibn Muhammad was Maria al-Qibtiyya.", "answers": ["Egypt"], "all_classes": null, "length": 3618, "input_length": 5893, "gen_length": 16, "length_bucket": "4k-8k", "_id": "61fa50e62866fbeeffc9822aa76f8f363578e72c1a7436af"}
+{"pred": "Mickey's Tent Show.", "answers": ["Mickey'S Tent Show"], "all_classes": null, "length": 2858, "input_length": 4592, "gen_length": 7, "length_bucket": "4k-8k", "_id": "4adca5ba1654b740d1e25c6e73d45aa2f3621537bed9086b"}

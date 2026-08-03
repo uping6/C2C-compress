@@ -1,0 +1,2550 @@
+Please install qwen-vl-utils to use VLM models
+[shard] rows [0, 10)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 175.14it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+Kaiyuan, Liaoning
+Kaiyuan (simplified Chinese: 开原; traditional Chinese: 開原; pinyin: Kāiyuán; lit. 'Open Plains') is a county-level city in the northeast of Liaoning, People's Republic of China, bordering Jilin for a small section to the north. It is under the administration of Tieling City, the centre of which lies 33 kilometres (21 mi) to the southwest.
+
+Administrative divisions
+There are 3 subdistricts, 9 towns, and 9 townships under the city's administration.Subdistricts:
+
+Xincheng Subdistrict (新城街道), Laocheng Subdistrict (老城街道), Xingkai Subdistrict (兴开街道)Towns:
+
+Babao (八宝镇), Qingyunbao (庆云堡镇), Kaoshan (靠山镇), Yemin (业民镇), Jingouzi (金沟子镇), Zhonggu (中固镇), Bakeshu (八棵树镇), Lianhua (莲花镇), Weiyuanbao (威远堡镇)Townships:
+
+Chengdong Township (城东乡), Sanjiazi Township (三家子乡), Songshanbao Township (松山堡乡), Majiazhai Township (马家寨乡), Lijiatai Township (李家台乡), Shangbadi Manchu Ethnic Township (上肥地满族乡), Xiabadi Manchu Ethnic Township (下肥地满族乡), Huangqizhai Manchu Ethnic Township (黄旗寨满族乡), Linfeng Manchu Ethnic Township (林丰满族乡)
+
+Geography and climate
+Kaiyuan is situated in northeastern Liaoning in the southeastern part of Tieling City on the eastern bank of the middle reaches of the Liao River. It borders Dongfeng County and Qingyuan Manchu Autonomous County to the east, Tieling County to the south, Faku and Changtu counties to the west, and Lishu County (Jilin) to the north. Its administrative area reaches a maximal north–south extent of 86 km (53 mi) and east–west width of 89.4 km (55.6 mi). In the east, the land begins to transition to the foothills of the Changbai Mountains, while the west is marked by the Songliao Plain.
+Kaiyuan has a monsoon-influenced humid continental climate (Köppen Dwa), characterised by hot, humid summers and long, cold and windy, but dry winters. The four seasons here are distinctive. A majority of the annual rainfall of 673 mm (26.5 in) occurs in July and August alone. The monthly 24-hour average temperature ranges from −13.4 °C (7.9 °F) in January to 23.9 °C (75.0 °F) in July, and the annual mean is 7.3 °C (45.1 °F). 
+Kaiyun was directly hit by tornadoes in 2019 and 2023.
+
+Notable people
+Sheng Shicai (1897–1970), a warlord who ruled Xinjiang from 1933 to 1944.
+Xiao Jie (1957), Chinese politician
+Xiaoshenyang (1981), Chinese actor
+Passage 2:
+Qinghe District, Tieling
+Qinghe District (simplified Chinese: 清河区; traditional Chinese: 清河區; pinyin: Qīnghé Qū), previously named as Qinghe Township before the 1980s, is a district of Tieling City.
+
+Sightseeings
+Qinghe Dam
+
+Administrative Divisions
+There are two subdistricts, two town, and one ethnic township within the district.
+Subdistricts:
+
+Xiangyang Subdistrict (向阳街道), Hongqi Subdistrict (红旗街道)Towns:
+
+Zhangxiang (张相镇), Yangmulinzi (杨木林子镇)The only township is Niejia Manchu Ethnic Township (聂家满族乡)
+
+Education
+There are two elementary schools, one junior high school and one senior high school in the main area.
+No.1 Elementary School of Qinghe District
+No.2 Elementary School of Qinghe District
+Qinghe Experimental High School
+Qinghe High School
+Passage 3:
+Pan Xiaoting
+Pan Xiaoting (simplified Chinese: 潘晓婷; traditional Chinese: 潘曉婷; pinyin: Pān Xiǎotíng; born 25 February 1982) is a Chinese professional pool player.
+
+Professional biography
+She is the first Chinese woman to play full-time on the WPBA Tour, and has been nicknamed the "Queen of Nine-Ball".
+
+WPBA Rookie of the Year in 2006
+Pan was named WPBA Rookie of the Year in 2006 and finished the season ranked #13. Pan won her first WPBA tournament at the 2007 Great Lakes Classic. Later she won the 2007 WPA World Nine-ball Championship held in Taoyuan City, Taiwan. Pan is a friendly rival of fellow Asian WPBA player Kim Ga-young; the two met in the finals of the 2007 Carolina Women's Billiard Classic, with Kim prevailing 7 to 6 in the WPBA's first all-Asian championship match. Kim and Pan finished the 2007 WPBA season ranked #2 and #3, respectively, behind perennially top-ranked Allison Fisher. Pan is also a good friend of Chinese snooker player Ding Junhui. In 2008, Pan won the BCA GenerationPool.com title on the WPBA tour, and in 2010 added a WPBA major to her resume at the Tour Championships. She went undefeated in Niagara Falls that year defeating Kim Ga-young of South Korea in the semi-finals 7–6, and Karen Corr of Northern Ireland 7–4 in the final.
+
+Matches against Ronnie O'Sullivan
+In December 2013, Pan participated in an exhibition match (9-ball and snooker) against snooker ace Ronnie O'Sullivan in Yanzhou, which she won 7–6 in 9-ball and lost 2–1 in snooker 6-red.In November 2018, a second exhibition match between Pan and O'Sullivan took place in China, as well. The professional 9-ball champion Pan won with 7-6
+
+Titles
+2010 Asian Games Nine-ball Singles
+2008 All Japan Championship 9-Ball
+2007 WPA Women's World Nine-ball Championship
+2005 All Japan Championship 9-Ball
+2002 All Japan Championship 9-Ball
+Passage 4:
+Yanzhou Village
+Yanzhou Village (Chinese: 燕州城; pinyin: Yānzhōuchéng) is a small settlement in Dengta Prefecture of Liaoyang Prefecture in Liaoning Province in China. The village is the site of the ancient Goguryeo city of Baegam (Hangul :백암성, Hanja :白巖城) in Korea or Baiyan City (Chinese: 白岩城) in Chinese. The ancient city was the scene a major battle between the Tang dynasty Chinese emperor Taizong and the Goguryeo in 645 AD.
+
+History
+The city dates to 403 AD and was built by the Goguryeo people who occupied much of the Liaodong Peninsula, modern Jilin province, Northern Korean Peninsula and part of the Primorsky Krai in modern Russia. Yanzhou was a major city at the frontier between the Goguryeo and Tang dynasty China.
+In 642 AD, the Goguryeo had a war with the neighbouring land of Silla on the Korean Peninsula. The Silla appealed to the Tang Emperor for assistance and in 645, the Emperor Taizong attacked the Goguryeo. The Tang first captured nearby Liaodong City. Then in June, they attacked at Yanzhou led by Tang Jun and after fierce fighting and some notable heroics by the Emperor and his generals, won.
+
+Location
+The city was built on a ridge on the northern side of the Taizi River.  (Chinese: 太子河; pinyin: Tàizǐhé), approximately 20 km east of Liaoyang and 50 km south of Shenyang (Chinese: 沈阳; pinyin: Shěnyáng).
+
+Construction
+As with other Goguryeo forts, Yanzhou village was built on a hill adjacent to a river, with the river forming a natural barrier.  Cliffs form the southern side of the city and a high defensive wall formed an arch around the west, north and east sides.  The land slopes such that the eastern side of the city is significantly higher than the west. The site is about 480 metres long and 440 metres wide. The city walls, which are still visible today, cover some 1840 metres in length. The walls were 2 to 3 metres thick and between 5 and 8 metres high with towers at regular intervals along its length, and is comparable to the Great Wall of China in its dimensions. At the top of the ridge are the remains of a square tower with a wall enclosed area to its east. The gate to the city was to the west, near the Taizi River. The construction is of rough-cut stone built dry without mortar.
+
+Status
+The city walls in Yanzhou are a protected site of Liaoning province.  Despite its protected status, some of the western sections of the city walls have been dismantled by the adjacent villagers and stones taken from the wall can be seen in various homes and fences throughout the village.  By comparison, the city walls on the northern and eastern sections appear to be in good condition.
+
+Accessibility
+As of 2014 the site was not developed to encourage tourism and there was no tourist infrastructure present to facilitate tourism related activities within the city walls. Access to the site was neither monitored nor actively controlled.
+The city can be easily reached by automobile, as paved roads connect it to both Liaoyang and Shenyang.
+Passage 5:
+Yanzhou District
+Yanzhou (postal: Yenchow; simplified Chinese: 兖州; traditional Chinese: 兗州; pinyin: Yǎnzhōu) is a district in the prefecture-level city of Jining, in the southwest of Shandong province, People's Republic of China. It was also the name of one of the Nine Provinces in ancient China, where Yu combated floods by water control.
+
+Administration
+Yanzhou District administers six subdistricts and six towns:
+
+Subdistricts (街道)
+Towns (镇)
+History
+Yanzhou was the first place to install the "school-fields" xuetian in 1022, during the Song dynasty.In early European sources, based on accounts by French missionaries, the name of Yanzhou (Fu) is transcribed in the contemporary French manner, as Yen-tcheou-fou; however, when reading 18th- and 19th-century books in French or English, care should be taken not to confuse Yanzhou in Shandong with the identically transcribed Yanzhou in Zhejiang.
+
+Geology
+The land structure of the Yinzhou area belongs to the Luxi fault block uplift (level III) and the Zhangzhou fault (Grade IV) unit. The eastern part of the boundary is the Yishan fault, the west is the Sunshidian fault, and the north is the Wensi fault. It is the Fushan fault. Yanzhou is part of it. The basement is the metamorphic rock series of the Mount Tai Group. The Paleozoic, Mesozoic and Cenozoic strata are developed above the basement. Among them, rich industrial coal seams are formed in the Late Paleozoic strata, which is an important base for Yanzhou becoming national coal resources. The tectonic movement in the territory has shaped various structural topography, which are roughly two types of fault structure and fold structure. The strata of all walks of life are developed from the old to the new for the Early Paleozoic strata, the Paleozoic strata, the Mesozoic strata, and the Neogene stratigraphic strata. In the early Paleozoic, the horizon was in a state of slow decline, with large-scale transgression, and the deposition of thick shallow sand shale and carbonate rock formations. The Ordovician rocks in the Paleozoic are mainly light gray and gray thick layered limestone, crystalline limestone and leopard skin limestone; the Carboniferous rocks are mainly gray-white siltstone, clay rock, shale and thin layer limestone. Several layers of coal; the two rocks are mainly grayish white, dark gray sandstone and variegated mudstone and brown shale, rich in plant fossils. The Mesozoic Jurassic rocks are mainly brown sandstone, conglomerate, variegated mudstone and glutenite. The Cenozoic is made up of Tertiary and Quaternary strata. The Tertiary is sandstone, sticky sandstone, and mudstone; the Quaternary strata are loose rock formations composed of Wenyu alluvial deposits. The west is the Wenhe alluvial fan, the east is the Weihe alluvial fan, and the two overlapping alluvial fans are located in the area of Qianqian-Da'an-Tianqi Temple.
+Yanzhou District is located in the sloping plain of the southwestern part of the Mount Tai in the Luzhong Mountains. The west is flooded by the flood waters, and the flood alluvial landforms are obvious; the eastern waters are discharged to the southwest, and the terrain is inclined from the northeast to the southwest; the central Guangfu River and the Yangjiahe River are parallel and the terrain is low. The ground elevation is 60~38 meters, the height difference is 22 meters and the average elevation is 49 meters, and the average slope is 1/1500. The northeast is affected by the structure and is a shallow buried area of the Tertiary, with a large slope on the ground. The plain area is 64,670 hectares, accounting for 99.7% of the total area; it is divided into three types: micro-sloping ground, depression and slow-moving. The area is 45,601 hectares, accounting for 70.35% of the total area; the area is 12276.9 hectares, accounting for 18.94% of the total area; the area is 6792.2 hectares, accounting for 10.48% of the total area.
+The hills in the territory belong to the bedrock of the Mount Tai hidden under the Quaternary cover. There is a hill 15 kilometers west of the city, named Ziyang Mountain. It is the only hill in Yanzhou. It is a bare hill of the Ordovician limestone. It is a low hill type. It is divided into two peaks, east peak is 75 meters above sea level, and west peak is 72.5 meters above sea level. The mountain is spread from east to west, 1.5 kilometers long and one kilometer wide, covering an area of 1.5 square kilometers. The rock is limestone, and the Qing Dynasty has been sporadic mining, although it is forbidden. In the later period of the "Cultural Revolution", the trees on the mountain were cut down, and the mountain quarry was cut off. The East Peak had become a deep valley, and the west peak still existed.
+
+Climate
+Yanzhou has a monsoon-influenced, four-season humid continental climate (Köppen Dwa). Winters are cold and dry while summers are hot and humid. Monthly daily average temperatures range from −1.0 °C (30.2 °F) in January to 26.8 °C (80.2 °F), while the annual mean temperature is 13.79 °C (56.8 °F). More than 70% of the annual precipitation occurs from June to September, with barely any occurring in the winter months. The city receives 2,461 hours of bright sunshine annually.
+
+Economy
+2012 GDP reached 50.62 billion yuan, up 13.1 percent; local fiscal revenue 3.008 billion yuan, an increase of 22.65%; major economic indicators higher than the provincial average, income growth higher than the GDP growth rate of urban and rural residents. First three quarters of 2012, the GDP of 41.35 billion yuan, an increase of 11.9%; 1–10 months, local fiscal revenue 3.13 billion yuan, up 14.4 percent; 17.94 billion yuan in fixed assets investment, an increase of 22.9%.Yanzhou Coal Mining Company is headquartered in Yanzhou.
+The economic aggregate has reached a new level. According to preliminary calculations, in 2017, the region's Gross Regional Product (GDP) exceeded 70 billion yuan, reaching 72.312 billion yuan, a year-on-year increase of 6.7% at comparable prices. Among them, the added value of the primary industry was 4.659 billion yuan, up 2.8% year-on-year; the added value of the secondary industry was 39.699 billion yuan, up 6.1% year-on-year; the added value of the tertiary industry was 27.954 billion yuan, up 8.4% year-on-year. According to the industry, the added value of agriculture, forestry, animal husbandry and fishery was 4.794 billion yuan, up 3.2%; the industrial added value was 35.909 billion yuan, up 6.8%; the construction industry added value was 3.808 billion yuan, down 0.4%; the wholesale and retail industry added value was 7.805 billion yuan. , an increase of 1.9%; transportation, warehousing and postal industry added value of 2.267 billion yuan, an increase of 8.6%; accommodation and catering industry added value of 891 million yuan, an increase of 2.6%; financial industry added value of 2.094 billion yuan, an increase of 12%; real estate industry The added value was 1.197 billion yuan, an increase of 4.9%; the added value of other service industries was 13.547 billion yuan, an increase of 12.6%. The three industrial structure ratios were adjusted from 7.3:54.5:38.2 in 2016 to 6.4:54.9:38.7 in 2017. The value added of the service industry accounted for 38.7%, an increase of 0.5 percentage points over the same period of the previous year. The per capita GDP of the region reached 113,217 yuan (converted to an annual average exchange rate of 16,769 US dollars), which was 6.2% higher at comparable prices.
+
+Transportation
+Beijing–Shanghai Railway
+Yanzhou–Shijiusuo Railway
+Xinxiang–Yanzhou Railway
+Rizhao–Lankao high-speed railway: Jining East railway station (济宁东站)
+
+Historic Sites
+Passage 6:
+Heze
+Heze, formerly known as Caozhou, is the westernmost prefecture-level city in Shandong province, China, it borders Jining to the east and the provinces of Henan and Anhui to the west and south respectively.
+
+History
+Caozhou was at the center of the Nian Rebellion during the 1850s and 60s.
+In August 1949, Heze was detached from Shandong and given to the experimental province of Pingyuan. It returned to Shandong just over three years later.
+In April 1953, Heze and Jining gained counties from the former prefecture of Huxi after its abolishment.
+
+City Flower
+Mudan is the city flower of Heze. The earliest documentary of Mudan is in Classic of Poetry (诗经), which is almost 3,000 years away from now. Mudan is also called the King of flower from Bencao Gangmu(本草纲目). It is a symbol of honor, peace, wealth, love, aristocracy, and feminine beauty. There are 9 types of Mudan based on the colors: red, white, purple, yellow, blue, green, black, pink, and multi-colored.
+
+Climate
+Heze has a monsoon-influenced climate that lies between the humid subtropical and humid continental zones (Köppen Cwa/Dwa), with four well-defined seasons. The city is warm and nearly rainless in spring, hot and humid in summer, crisp in autumn and cold and dry in winter. The mean annual temperature is 14.22 °C (57.6 °F), with the monthly 24-hour average temperature ranging from −0.5 °C (31.1 °F) in January to 27.1 °C (80.8 °F) in July. Nearly 70% of the annual precipitation occurs from June to September. With monthly percent possible sunshine ranging from 48% in July to 60% in May, the city receives 2,411 hours of bright sunshine annually.
+
+Administration
+The prefecture-level city of Heze administers nine county-level divisions. The municipal executive, legislature and judiciary are in Mudan District (牡丹区), together with CPC and Public Security bureaux.
+There are two districts and seven counties:
+
+Mudan District (牡丹区)
+Dingtao District (定陶区)
+Cao County (曹县)
+Chengwu County (成武县) - originally in Huxi
+Shan County (单县) - originally in Huxi
+Juye County (巨野县) - originally in Huxi
+Yuncheng County (郓城县)
+Juancheng County (鄄城县)
+Dongming County (东明县)These are further divided into 158 township-level divisions.
+
+Demographics
+According to the 2010 population census, Heze was home to 8,287,693 people, of whom 1,346,717 live in the built-up area around the seat of government in Mudan District.
+
+Culture
+Places of Interests
+Caozhou Mudan Garden: It is the largest Mudan Garden in Heze with the most varieties.
+One Hundred Lion Square: It is famous for its column carved 100 different posture stone lions. It is the symbol of best wishes and longevities. The archway is 14 meters high and 9 meters wide. The 100 lions with different shapes represent superb architectural skills and immortal artistic value, which fully embodies the wisdom and strength of the ancient people.
+Shui Hu Hero City: It is famous for the teaching and communication of martial arts and ancient buildings. It is also the Chinese ancient residence museum, CCTV recommended tour routes, and the source of Water Margins.
+
+Foods
+Shanxian Lamb Soup: The soup is founded in 1807. The taste is fresh but not mutton, and fragrant but not greasy. After more than 200 years of development and innovation of soup, it can be carried forward and accepted in many years. It is not only refreshing, but also functional in medicinal meal.
+Peony Cake: During the Flower Festival is the season when peonies are in full bloom, Wu Zetian led a maid to enjoy the flowers in the garden and ordered the maid to pluck a large number of flowers of various colors. After return to the palace, according to her design, she mashed them with rice, and steamed them to make a cake, which is called "Hundred Flower Cake". And she used this dessert as a gift to the officials.
+Pijia Roast Chicken: The sauce is in color red, and you can smell the rich roast chicken scent just a few feet away from the pot. Its outstanding characteristics are fresh, fragrant, and tender with consistent taste inside and out.
+Caozhou Sesame Cake: Its shape is round as moon, tender inside with a crispy crust. It has ingredients of wheat essence powder, sesame oil, salt, pepper, fennel powder and other ingredients made of oil flesh.
+
+Transportation
+Highway: China National Highway 220; China National Highway 105; China National Highway 106; China National Highway 240; China National Highway 327
+Heze Mudan Airport opened on April 2, 2021.
+Conventional rail services call at Heze railway station, high-speed services call at Heze East railway station.
+
+Famous Figures
+Ancient times: Fuxi, Yao, Shun, Song Jiang, Wu Yong, Cao Zhi
+Current: Peng Liyuan, Zhang Jizhong, Fan Shaohuang
+
+Economy
+Heze is the largest center in China for the cultivation of the "national flower" peony, after which the Mudan District was named. Over 30% of its GDP comes from the sale of peony.
+
+Sister Cities
+Mobile, Alabama
+Passage 7:
+Shizhong District, Jining
+Shizhong District is a former district of the city of Jining in Shandong province, China. In November 2013 it was merged into Rencheng District.
+Passage 8:
+Zhongshan High School of Northeast
+Zhongshan High School of Northeast (东北中山中学) (Hereinafter abbreviated as nezs) is a secondary school located in Heping District, Shenyang, Liaoning, China. It was the first national high school in Republic of China. Its first name is National Northeast Zhongshan High School (國立東北中山中學). Nezs is the only one middle school join in the December 9th Movement.
+It was established in Peiking in 1934. The first headmaster is Li Xi'en, who is Jilin University's headmaster. In the autumn of 1936, nezs moved to Banqiao, Nanjing because of the Second Sino-Japanese War. After the war's end, in 1946, nezs moved to Shenyang, Liaoning, and then changed name to Shenyang No.39 middle school. In 1996, nezs rehabilitated the name Zhongshan High School of Northeast. In 1998, nezs become the Shenyang important middle School (沈阳市重点中学). In 1999, it became the Liaoning important school (辽宁省重点中学).
+Passage 9:
+Yan Prefecture (Shandong)
+Yanzhou or Yan Prefecture was a zhou (prefecture) in imperial China centering on modern Yanzhou District, Jining, Shandong, China. It existed (intermittently) until 1385, when the Ming dynasty created Yanzhou Prefecture.
+Yan Prefecture was named after Yan Province, one of the Nine Provinces of ancient China. The modern district of Yanzhou District retains its name.
+
+Geography
+The administrative region of Yan Prefecture in the Tang dynasty is in modern central Shandong. It probably includes parts of modern: 
+
+Under the administration of Jining:
+Jining
+Qufu
+Zoucheng
+Wenshang County
+Sishui County
+Under the administration of Tai'an:
+Tai'an
+Ningyang County
+Under the administration of Laiwu:
+Laiwu
+Passage 10:
+Liaoning Province Shiyan High School
+Liaoning Province Shiyan High School (Chinese: 辽宁省实验中学; pinyin: Liáoníngshěng Shíyàn Zhōngxué), originally called Northeast Shiyan School (Chinese: 东北实验学校; pinyin: Dōngběi Shíyàn Xuéxiào), is a public high school located in Huanggu District, in the city of Shenyang, Liaoning, China. It is the number one ranked high school in Shenyang, ranking by high school entrance examination grades.
+
+History
+Liaoning Province Shiyan High School was founded on May 4, 1949. It is the only Secondary School that is operated under direct supervision of the Department of Education in Liaoning Province. The first appointed headmaster was the Vice-governor and notable educationist Mr. Che Xiangchen.
+In July 2007, the School was selected as an Olympic Model Schools in Liaoning Province.
+
+Notes
+External links
+Official website of Liaoning Experimental High School
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: Which city is under Jining, Kaiyuan, Liaoning or Yanzhou District?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  10%|█         | 1/10 [00:04<00:39,  4.41s/it]Evaluating hotpotqa_e (generate):  20%|██        | 2/10 [00:07<00:29,  3.65s/it]Evaluating hotpotqa_e (generate):  40%|████      | 4/10 [00:08<00:09,  1.62s/it]Evaluating hotpotqa_e (generate):  70%|███████   | 7/10 [00:11<00:04,  1.39s/it]Evaluating hotpotqa_e (generate):  90%|█████████ | 9/10 [00:15<00:01,  1.47s/it]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:15<00:00,  1.52s/it]
+
+
+[Generated output]:
+Kaiyuan, Liaoning
+================ End Example IO ================
+
+hotpotqa_e processed 5 samples, skipped 5
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.2,
+  "num_samples": 5,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.25,
+      "num_samples": 4
+    },
+    "0-4k": {
+      "score": 0.0,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "1dae9ec530a93f43f85bd215a5c0e6737dbcf226cd3541d8",
+      "score": 0.0,
+      "input_length": 6402,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "b2af3aefc3bc4f5ba5340eca87389e8dcaa6fa1834110aaf",
+      "score": 0.0,
+      "input_length": 5433,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "ebbd87b5c458cf749032bb57bb69ba30cd54ac841b39153d",
+      "score": 0.0,
+      "input_length": 1193,
+      "length_bucket": "0-4k"
+    },
+    {
+      "_id": "6f1878db4a5deb3dd168bf2275cd753e434311c0900ce549",
+      "score": 0.0,
+      "input_length": 5787,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "6ad3ed1320a952efd9df47137729d6f27f4fb720739dc5be",
+      "score": 1.0,
+      "input_length": 5801,
+      "length_bucket": "4k-8k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/000_010/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [10, 20)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 181.16it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+Danilo Suárez
+Danilo Nicolás Suárez García (born March 7, 1989 )  is a Uruguayan professional footballer who plays as a goalkeeper for Deportivo Marquense in the Liga Nacional de Fútbol de Guatemala.
+
+Club career
+Suarez started his career playing with Tacuarembó. He made his professional debut during the 2014/15 season.
+Passage 2:
+Diego Luz
+Diego Alexander Luz Pizarro (born 3 July 1990) is an Uruguayan professional football (soccer) player. He played for Club Sportivo Miramar Misiones, Club Atlético Rentistas, Central Español Fútbol Club and Huracán del Paso de la Arena. Known for playmaking skills, range of passing and crossing ability, bending free-kicks with both legs and head goals. Since 2017 he plays for Huracán Buceo.
+
+Early career
+Luz's professional club career began with Miramar Misiones, where he made his first-team debut in 2007 at the age of 17. He played for two seasons with Miramar Misiones, contributing to the promotion to First Professional League.
+He then played one season with Rentistas, winning the championship of the Second League and getting the promotion to the First Professional League. He also played one season with Central Español and three seasons with Huracán del Paso de la Arena. In 2017, he plays for Huracán Buceo.
+
+Early life
+Luz was born in Montevideo, Uruguay. He is the son of Silvia Pizarro and Wilmen Luz. He has two younger brothers Claudio and Nahuel Luz. He regularly played football as a child, and attended Portones Primary School and Jose Pedro Varela High School.
+Passage 3:
+Cristian Jeandet
+Cristian Daniel Jeandet (born March 1, 1975) is a retired Argentine football striker. He retired in December 2015 after playing in 23 clubs and in the top-leagues of eight different countries: Argentina, Italy, FR Yugoslavia, Chile, Bolivia, Peru, Morocco and Venezuela. He is regarded along Lutz Pfannenstiel and Sebastián Abreu among the best known globetrotters.
+
+Career
+Beginnings and Newell's
+Born in Concordia, Entre Ríos, Argentina, he started playing in local side Estudiantes Concordia when he was 12.  By his own words, he scored 60 goals in 23 games in first year, and 73 goals in 36 games in next one, receiving, an award as the recognition of the record of goals in youth levels, by then, at the city of Paraná, Entre Ríos. After that, Newell's Old Boys coach, Marcelo Bielsa, took him after trials. Jeandet spent 6 years at youth levels of Newell's, reaching promotion to the first team but without ever debuting in the league. Then what followed were loans, first six months to Ferrocaril de Concordia playing at Torneo Argentino A in 1995–96, but failed to qualify to final stage of the tournament, and next to same level club Patronato, in 1996–97, reaching with them the semi-finals.
+
+Europe: Italy and Yugoslavia
+After the loans at Argentino A, Jeandet left Newell's and joined Lanús.  He faced tough competition for a spot in the team from older and more experienced Claudio Enría and Ariel "Chupa" López. He failed to debut in the league, so he left, this time moving abroad, crossing the Atlantic, and settling in Italy. First he played with Fidelis Andria, competing in Serie B at that time, and making 4 appearances. Next, he played with Casertana F.C. and Fidenza.  He experienced difficulties adapting, so he decided during the winter-break of 1999–2000 to cross the Adriatic and join Serbian side Sartid Smederevo playing back then in the First League of FR Yugoslavia. He stayed six months in Yugoslavia, leaving Sartid at the end of the season. In between, he also apent some time in Switzerland with FC Lugano.
+
+Back to South America
+After leaving Sartid, Jeandet crossed back the Atlantic, but instead of returning to his native Argentina, he went to Chile where he joined Palestino. There were three more Argentinian players in the club and Jeandet adapted well, however not long afterwards, the club changed the coach and Argentinian Ricardo Dabrowski was brought, who said Jeandet was not in his plans. That meant the end of the short spell at Palestino in Chile, and Jeandet returned to Argentina. Dalcio Giovagnoli informed him about the ambitious project Central Córdoba was having under way at the time. Several Jeandet's former colleagues from Newell's were also playing at that time at the club, and Jeandet spent a solid 2000–01 season with Central Córdoba. They reached the "octogonal" with Jeandet scoring 9 goals in the process, but were eliminated in the 1/8 finals by Instituto de Córdoba which were strong and coached by Gerardo "Tata" Martino. Jeandet moved precisely to Instituto for the next season, but with Tito Martino already gone, and not getting many chances as a starter in the line-up, Jeandet opted to leave as soon as a good offer from Bolivian side Blooming arrived through his agent.
+
+Peru
+The arrival to a major Bolivian club looked initially promising, however the club at the time was experiencing major difficulties. After three months at Blooming the situation became unsustainable; several coaches changed and the players were receiving no salaries and were on strike. Jeandet decided to leave, and left Bolivia and moved to Peru where he joined Club Aurora. He stayed at Aurora six very important months for the club, since Jeandet was crucial in the squad from Cochabamba that won the 2002 Copa Simón Bolívar thus earning promotion after 14 years to the Liga de Fútbol Profesional Boliviano, the national top tier. Jeandet scored two goals in the decisive victory of Aurora over Fancesa by 5–1.Next, he joined Peruvian top-league side Sport Boys where he played coached by his compatriot Jorge Sampaoli during 2003. At the time his daughter Catalina was about to born, his wife wanted to have her in Argentina. By that time, Jeandet was approached by Cienciano president with an offer to join the club and become their main striker in their upcoming Copa Sudamericana campaign, but with Jeandet disbelief of Cienciano doing well in the Copa, and the disadvantage of that meaning a move to Cusco, Peru, over his wife's desire to return to Argentina, Jeandet dropped the offer from Cienciano and joined Argentinian side Gimnasia y Esgrima. Playing in the Primera B Nacional, they finished the season relegated. Besides the bad sporting result, the club also failed to pay the last six salaries, which meant also a bad financial decision for him, and to make the bad choice even harder, Cienciano surprisingly won the Copa Sudamericana that season, and consequently, the Recopa Sudamericana as well.
+
+Globetrotter: Morocco and Venezuela
+After this disastrous decision, Jeandet was decided to reanimate his career. After spells at Sarmiento de Junin and Estudiantes de Buenos Aires he moved again abroad. After trials in Austria, he joined in 2007, along Claudio Ortiz, Wydad Casablanca, becoming the first Argentinians to play in the Moroccan top league, the Botola. He played with Wydad in the CAF Champions League. The African adventure was followed by a trip to Venezuela where he played with Mineros de Guayana.
+
+Back to Argentina
+After Venezuela, he returned to Argentina and in the following years he had spells with Villa Dálmine, Sarmiento de Leones, Almagro, Deportivo Laferrere, Unión Aconquija, General Paz Juniors, Talleres de Perico and Sarmiento Leones.
+
+Personal life
+Criistian Jeandet has four children, the older one, Catalina, then Constanza, Jeremías and Felipe. By spring 2014, Jeremías was playing football in Belgrano as striker.
+
+Honors
+AuroraCopa Simón Bolívar: 2002Individual:
+
+Torneo Argentino B top-scorer: 2012–13 (22 goals)
+Passage 4:
+Jonathan Blanes
+Jonathan Blanes Núñez (born March 10, 1987 in Paysandú) is a Uruguayan professional footballer who plays as an attacking midfielder for River Plate in the Uruguayan Primera División.
+
+Honours
+Club
+Racing Club2007-2008 Uruguayan Segunda División championship
+Passage 5:
+Jonathan Urretaviscaya
+Jonathan Matías Urretaviscaya da Luz (born 19 March 1990) is a Uruguayan professional footballer who plays for Boston River as a right winger.
+
+Club career
+Born in Montevideo to a father of Basque descent, Urretaviscaya started off his career with hometown's Club Atlético River Plate. His Primera División debut came one month shy of his 18th birthday as he scored in a 2–0 win against Liverpool Montevideo in the Clausura's first game, and he eventually netted nine goals overall for the runners-up.Urretaviscaya signed a contract with Portuguese club S.L. Benfica on 2 July 2008, for a fee of €1.5 million, being rarely used in his debut season. In January 2010, after having made almost no official appearances during the campaign – his only Primeira Liga game was against FC Porto as his team had many players missing due to injuries and suspensions, and he put up a good performance in a 1–0 home win for the eventual champions– he was loaned to Peñarol for five months, thus returning to his country.In late June 2010, Urretaviscaya was loaned to Deportivo de La Coruña in a season-long move. In the following transfer window, however, he returned to Peñarol in the same situation.For 2011–12, Urretaviscaya returned to Portugal, being loaned to Vitória S.C. while also renewing his contract until 2015. He went on to miss most of the campaign, due to injury.Subsequently, returned to the Estádio da Luz, Urretaviscaya spent the better part of the following two seasons with the B team. On 1 September 2014 he terminated his contract with Benfica and penned a one-year deal with F.C. Paços de Ferreira.Urretaviscaya re-joined Peñarol for a third spell on 23 January 2015, after signing for six months. He was on the move again the following June, joining C.F. Pachuca in the Mexican Liga MX.
+
+International career
+Urretaviscaya was part of the Uruguayan squad that competed in the 2012 Summer Olympics, held in London. He earned his first cap for the full side on 28 March 2017: after having come on as a second-half substitute for Carlos Sánchez, he received two yellow cards in 11 minutes and was thus sent off, in a 2–1 away loss to Peru for the 2018 FIFA World Cup qualifiers.On 2 June 2018, Urretaviscaya was selected for the finals in Russia by manager Óscar Tabárez. He made his debut in the competition on 6 July, playing 17 minutes in the 2–0 quarter-final defeat against France after replacing Nahitan Nández.
+
+Career statistics
+Club
+As of 16 December 2017
+
+International
+As of match played 7 September 2018
+
+Honours
+Benfica
+
+Primeira Liga: 2009–10
+Taça da Liga: 2009–10
+UEFA Europa League runner-up: 2012–13Peñarol
+
+Uruguayan Primera División: 2009–10
+Copa Libertadores runner-up: 2011Pachuca
+
+Liga MX: Clausura 2016
+CONCACAF Champions League: 2016–17Monterrey
+
+Liga MX: Apertura 2019
+CONCACAF Champions League: 2019Individual
+
+FIFA Club World Cup: Bronze Ball 2017
+Passage 6:
+Diego Vicente
+Diego Sebastián Vicente Pereyra (born July 19, 1998)  is a Uruguayan professional footballer who plays as a central midfielder for Danubio in the Uruguayan Segunda División.
+
+Club career
+Vicente started his career playing with River Plate. He made his professional debut during the 2015/16 season.
+Passage 7:
+Sebastián Abreu
+Washington Sebastián Abreu Gallo (Spanish pronunciation: [seβasˈtjan aˈβɾew]; born 17 October 1976) is a Uruguayan football manager and former player who played as a striker. He is the current manager of Peruvian club Universidad César Vallejo.
+He is best known for his record of appearing for 32 teams in 11 countries during his professional career. Nicknamed Loco (Madman in Spanish), the prolific scorer for club and national team initially retired in 2021 after a four-month stint with Sud América, but later that same year came out of retirement with Olimpia de Minas.A Uruguayan international for more than 15 years, Abreu represented his country in two World Cups and three Copa América tournaments, winning the latter in 2011.
+
+Playing career
+Club
+Early career
+Born in Minas, Lavalleja Department, Abreu played in numerous clubs throughout the Americas (Uruguay, Argentina, Mexico and Brazil). He also had an unsuccessful stint with Spain's Deportivo de La Coruña, which loaned him several times for the duration of his contract.In his sole season in La Liga, which started in January 1998, having been signed from San Lorenzo, Abreu scored for the Galicians in a 3–1 home defeat of Barcelona on 25 January.
+
+River Plate and Beitar
+After having joined Mexico's UANL in 2007, Abreu was able to rescind his contract with them in order to join River Plate – the Mexican Football Federation stalled on recognising the transfer because of an imposed moratorium between the clubs. He became the only foreigner to score in the Clásico Regiomontano (Tigres vs. Monterrey, which he represented the previous year) against each team.In the middle of 2008, after exhausting negotiations, Abreu signed a deal with Israeli League champions Beitar Jerusalem. He appeared in the qualifying rounds of the UEFA Champions League, but his team was quickly eliminated. Additionally, he could not play in the domestic front due to lack of payment.
+Abreu re-signed with River Plate in September 2008 after terminating his link with Beitar, with a deal lasting until June 2009. Due to being a late addition, he was not able to play for the side in the Primera División, only featuring in the Copa Sudamericana. The next year, he was eligible for both the domestic and Copa Libertadores fronts.
+
+Real Sociedad
+In early January 2009, Abreu returned to Spain after a ten-year absence, being loaned by River to Segunda División side Real Sociedad, which had lost habitual first choice Iñigo Díaz de Cerio for the season due to a serious leg injury.On 14 March 2009, he scored a hat-trick in a 3–1 away win against league leaders Xerez. His team, however, ultimately failed in returning to the top flight.
+
+Botafogo
+On 13 June 2009, Aris in Greece signed Abreu from River Plate. However, in January of the following year, the 33-year-old changed club and country again, agreeing on a two-year contract with Brazil's Botafogo.Abreu scored the second goal in the 2–1 victory over Flamengo on 18 April 2010, which gave the team the Campeonato Carioca title. In July, he had his link extended until 31 December 2012 with a release clause of US$11.3 million, with the player declaring he had previously held talks with Universidad de Chile and Trabzonspor of Turkey.On 6 February 2011, Abreu was involved in a dramatic match against Fluminense: his team won a penalty kick as they were losing 2–1, and he shot it in Panenka-style, with Diego Cavalieri saving the shot by simply standing still. Another penalty was awarded just five minutes later, and he shot it in the same fashion, this time into the right-hand corner of the goal, as the goalkeeper dived the other way; a few minutes later, Botafogo scored again and won the game.Abreu was loaned to fellow Série A side Figueirense on 5 July 2012. However, as the season went on to end in relegation, his contract was ended via Twitter on 24 November, one day before the last game against Grêmio.
+
+Sol de América
+From January 2013 to December 2015, Abreu was under contract to Nacional, also being loaned to Rosario Central and Aucas during this timeframe. On 28 December 2015, Paraguayan newspaper D10 reported that he had met in Uruguay with Sol de América chairman Miguel Figueredo. He had already received a more lucrative offer from Mexico, but declined in order to be closer to his country, and was officially confirmed on 6 January 2016.
+
+Bangu
+On 12 November 2016, 40-year-old Abreu joined Brazil's Bangu from Santa Tecla, with the deal being made effective the following January. After ten appearances in the Rio de Janeiro State League, he left.
+
+Later years
+On 4 April 2017, Abreu signed with Montevideo-based team Central Español of the Uruguayan Segunda División. In late December of the same year, he joined Chilean Primera División's Audax Italiano from Puerto Montt, in the same country but one level below; this transfer broke a world record, as it marked him as the first player to have played for 26 professional clubs.Abreu returned to Brazil in December 2018 at age 42, agreeing to a contract at Série D's Rio Branco. He returned to his homeland the following July, signing with Boston River and making his Primera División debut in a 0–0 draw against River Plate where he donned jersey number 113.On 8 February 2021, Abreu signed for Athletic Club in Brazil. After four matches in the Campeonato Mineiro, he terminated his contract on 21 March due to the COVID-19 pandemic.On 30 March 2021, Abreu joined newly promoted Uruguayan top-tier club Sud América. On 10 June, he announced his decision to retire from professional football, and it was reported on news the game against Liverpool the following day would be his last.Abreu's hometown side Olimpia de Minas announced on 29 August 2021 that he would briefly come out of retirement to play for them in the local Campeonato Minuano. He finished as champion of the +40 category tournament of ADIC (Asociación Deportiva de Integración Colegial), and also top scorer with 17 goals in 11 matches for the amateur (college) team Colegio Jesús María 2019, being the second championship won in the year after the Apertura, where he also ranked first in the scoring charts.
+
+International
+Abreu played for Uruguay at the 2002 FIFA World Cup – three matches – and the 1997, 2007 and 2011 Copa América editions, netting twice in the latter. He made his debut for the national side on 17 July 1996 in a friendly with China, going on to earn 70 caps.On 27 May 2010, Abreu stood only five goals short of Uruguayan all-time goalscoring record, held by Héctor Scarone for 79 years. He was selected for the 2010 World Cup in South Africa, where he appeared three times as a substitute; in the quarter-finals against Ghana he scored the decisive penalty shootout attempt (1–1 after 120 minutes), a Panenka to send his team to the semi-finals for the first time in 40 years.
+
+Coaching career
+On 26 April 2019, Abreu was announced as the interim manager of Santa Tecla on an initial one-and-a-half month spell, with the parties holding the option open of keeping him as a player-coach or just as a player afterwards. He won the Copa El Salvador four days later, defeating Audaz 1–0 in the final.In December 2019, Abreu was appointed player-coach at Boston River ahead of the upcoming campaign in the Uruguayan Primera División. He resigned from the last-placed club the following 9 November.Abreu was named manager of Bolivian Primera División side Always Ready on 30 January 2022. On 1 March, he left by mutual consent.On 25 May 2022, Abreu was appointed at Paysandú in the Uruguayan Primera División Amateur.
+
+Personal life
+Abreu's son, Diego, played for Mexico at under-16 level.From October 2019 to August 2020 he hosted Trato Hecho, the Uruguayan version of Deal or No Deal, being replaced by Maximiliano de la Cruz.
+
+Honours
+Player
+San Lorenzo
+
+Argentine Primera División: 2001 ClausuraNacional
+
+Uruguayan Primera División: 2001, 2003 Apertura, 2004 Apertura, 2005River Plate
+
+Argentine Primera División: 2008 ClausuraBotafogo
+
+Campeonato Carioca: 2010
+Taça Guanabara: 2010
+Taça Rio: 2010, 2012Santa Tecla
+
+Salvadoran Primera División: 2016 AperturaUruguay
+
+Copa América: 2011Individual
+
+Mexican Primera División Golden Boot: Verano 2000, Verano 2002, Apertura 2005, Clausura 2006
+
+Manager
+Santa Tecla
+
+Copa El Salvador: 2018–19
+Passage 8:
+Christian Serrón
+Christian Ariel Serrón Acosta (born November 17, 1994 )  is a Uruguayan professional footballer who plays as an attacking midfielder for Fuerza Amarilla.
+
+Club career
+Vicente started his career playing with Rampla Juniors. He made his professional debut during the 2014/15 season.Serrón signe for Fuerza Amarilla in January 2018.
+Passage 9:
+Facundo Vigo
+Facundo Vigo González (born May 22, 1999)  is a Uruguayan professional footballer who plays as an attacking midfielder for River Plate in the Uruguayan Primera División.
+
+Club career
+Vigo started his career playing with River Plate. He made his professional debut on 5th of December during the 2015/16 season, he played 25 minutes and he did it very well
+
+Honours
+Uruguay U20
+
+South American Games silver medal: 2018
+Passage 10:
+Carlos Cabezas
+Carlos Eduardo Cabezas Jurado (born November 14, 1980) is a Spanish professional basketball player for Alba Fehérvár. He is the nephew of the former Uruguayan professional footballer Hugo Cabezas, who played in Spain in the late 70s. His father (Hugo's brother), and his grandfather, are also former Uruguayan professional basketball players. He is a 1.87 m (6 ft 1 ¾ in) tall point guard.
+
+Professional career
+Cabezas began his playing career with the youth teams of Unicaja Málaga in Spain. He made his professional debut during the 1998–99 season with Unicaja Macías, the reserve team of Unicaja Málaga, in the Spanish EBA League (Spanish 2nd division). He then moved to the LEB club Circulo Badajoz during the 1999–00 season. He joined the senior top-tier level Spanish ACB League club Unicaja Málaga in 2000.
+The Orlando Magic of the NBA invited Cabezas to play for their NBA Summer League team at the Orlando Pro Summer League in 2009, but he declined the offer. He joined the Russian Super League club Khimki Moscow Region in 2009. In October 2010, he signed a one-year contract with Spanish club CAI Zaragoza.On September 1, 2012, Cabezas signed with the EuroLeague club Caja Laboral. He left the club in February, officially due to technical reasons, but several media sources claimed he was fired by the club.On August 3, 2016, he signed with Spanish club Baloncesto Fuenlabrada. On October 26, 2016, he parted ways with Fuenlabrada. On November 9, 2016, he signed a short-term deal with French club Orléans Loiret Basket. On April 15, 2017, Cabezas signed with the Spanish team Real Betis Energía Plus for the rest of the season.In November 2017, he signed with Guaros de Lara.On August 31, 2021, Cabezas announced his retirement from professional basketball.
+
+Spain national team
+With the junior national teams of Spain, Cabezas won the gold medal at the 1998 FIBA Europe Under-18 Championship, the gold medal at the 1999 FIBA Under-19 World Championship, and the bronze medal at the 2000 FIBA Europe Under-20 Championship. He also played at the 2001 FIBA Under-21 World Championship.
+He played with the senior Spain national basketball team at the EuroBasket 2005. Cabezas won the gold medal with the senior Spain national basketball team, at the 2006 FIBA World Championship. He also won the silver medal at the EuroBasket 2007, and the gold medal at the EuroBasket 2009.
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: What are a Uruguayan professional footballer and Luz Pfannenstiel are best known as?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  10%|█         | 1/10 [00:04<00:40,  4.54s/it]Evaluating hotpotqa_e (generate):  40%|████      | 4/10 [00:07<00:10,  1.76s/it]Evaluating hotpotqa_e (generate):  60%|██████    | 6/10 [00:11<00:06,  1.73s/it]Evaluating hotpotqa_e (generate):  70%|███████   | 7/10 [00:14<00:06,  2.14s/it]Evaluating hotpotqa_e (generate):  80%|████████  | 8/10 [00:18<00:04,  2.44s/it]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:18<00:00,  1.80s/it]
+
+
+[Generated output]:
+Luz Pfannenstiel is best known as a global footballer and a former Uruguayan professional footballer. He played for clubs in Italy,
+================ End Example IO ================
+
+hotpotqa_e processed 5 samples, skipped 5
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.14828264208909372,
+  "num_samples": 5,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.14828264208909372,
+      "num_samples": 5
+    }
+  },
+  "details": [
+    {
+      "_id": "4bed97d5daa9f4078353a6cd57e7427f4a854bffa5c09234",
+      "score": 0.16,
+      "input_length": 6164,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "c5b67fae3f50b2c27eaa6248ea92ba04b917aca24810ab36",
+      "score": 0.28571428571428575,
+      "input_length": 5404,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "88a86128267b1d8a14f97c64a5b03ad6c0aa0cb6d02c4336",
+      "score": 0.16666666666666669,
+      "input_length": 5316,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "88ecef6a544abe95c7d7b3130586c02359d2a3efa43fd1f5",
+      "score": 0.0,
+      "input_length": 5627,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "b0f42fe35532a3195281456d38184da20c1eba239afb0c9c",
+      "score": 0.12903225806451613,
+      "input_length": 5367,
+      "length_bucket": "4k-8k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/010_020/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [20, 30)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 184.80it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+2015–16 Maine Black Bears women's basketball team
+The 2015–16 Maine Black Bears women's basketball team will represent the University of Maine in the America East Conference. The Black Bears are led by fifth year head coach Richard Barron and play their home games at the Cross Insurance Center. They finished the season 26–9, 15–1 in America East play to share the America East regular season title with Albany. They advanced to the championship game of the America East women's tournament where they lost to Albany. As champs of the America East Conference who failed to win their conference tournament, they received an automatic bid to the Women's National Invitation Tournament where they lost to Quinnipiac in the first round.
+
+Media
+All home games and conference road games will stream on either ESPN3 or AmericaEast.tv. Most road games will stream on the opponents website. All games will be broadcast on the radio on WGUY and online on the Maine Portal.
+
+Roster
+Schedule
+See also
+2015–16 Maine Black Bears men's basketball team
+Maine Black Bears women's basketball
+Passage 2:
+America East Conference Baseball Tournament
+The America East Conference baseball tournament, officially known as the America East Conference baseball championship, is the conference baseball championship of the NCAA Division I America East Conference. The top six finishers in the regular season of the conference's seven teams advance to the double-elimination tournament, which rotates among the home fields of each conference member. The winner of the tournament receives an automatic berth to the NCAA Division I Baseball Championship. The format has changed over the years between a six-team and four-team formats. Beginning in 2009, the conference allowed schools to host the championship on fields without lights.
+
+History
+1993–1994
+See, for example, 1994 North Atlantic Conference baseball tournament.For the first two tournaments, the event was held over two weekends. On the first, the opening round consisted of best-of-three series, for which the league's eight members were paired. The winners of the four opening round series advanced to a double-elimination final round.
+
+1995–1997
+See, for example, 1997 America East Conference baseball tournament.For these three tournaments, the event was held in a single weekend. Its format was the six-team double-elimination format of NCAA Regionals at the time.
+
+1998–2015
+See, for example, 2001 America East Conference baseball tournament.For eighteen years, the format was a four-team double-elimination tournament. In some years, the event has been held at a campus location, while in others, it has been held at a neutral site.
+
+2016–present
+The current format, adopted for the 2016 tournament, is six-team double-elimination event.
+
+Champions
+By year
+The following is a list of conference champions and sites listed by year.
+
+Championships by school
+The following is a list of conference champions by school.
+†Former member of the America East
+Passage 3:
+2014 America East Men's Lacrosse Tournament
+The 2014 America East men's lacrosse tournament was the 15th edition of the America East Conference men's lacrosse tournament and took place from May 1 to May 3 that year at Kenneth P. LaValle Stadium in Stony Brook, New York. The winner of the tournament received the America East Conference's automatic bid to the 2014 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+Kenneth P. LaValle Stadium - Stony Brook, New York
+
+denotes an overtime game
+
+All-Tournament
+Doug Eich, Albany
+Lyle Thompson, Albany
+Miles Thompson, Albany
+Ty Thompson, Albany
+Blaze Riorden, Albany
+Zach Esser, UMBC
+Matt Gregoire, UMBC
+Phil Poe, UMBC
+Michael Antinozzi, Binghamton
+Greg Cove, Binghamton
+Mike Andreassi, Stony Brook
+Hayden Johnstone, Stony Brook
+Most Outstanding Player
+Lyle Thompson, Albany
+Most Outstanding Goalie
+Blaze Riorden, Albany
+
+Tournament notes
+Just like in the previous year's tournament Albany and Stony Brook again set a tournament record of combined goals with 33.
+Passage 4:
+2015 America East Men's Lacrosse Tournament
+The 2015 America East men's lacrosse tournament was the 16th edition of the America East Conference men's lacrosse tournament and took place from April 30 to May 2 that year at John Fallon Field in Albany, New York, United States. The winner of the tournament received the America East Conference's automatic bid to the 2015 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+John Fallon Field - Albany, New York
+
+denotes an overtime game
+
+External links
+Americaeast.com
+Americaeast.com
+Americaeast.com
+Passage 5:
+2009 America East Men's Lacrosse Tournament
+The 2009 America East men's lacrosse tournament was the 10th edition of the America East Conference men's lacrosse tournament and took place from April 29 to May 2 at the higher seeds home field. The winner of the tournament received the America East Conference's automatic bid to the 2009 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+denotes an overtime game
+
+All-Tournament
+
+Brian Caufield, Albany
+Corey Small, Albany
+Larry Kline, Binghamton
+Chris Mulheron, Binghamton
+Kevin Crowley, Stony Brook
+Chris Gignilliat, Stony Brook
+Steve Waldeck, Stony Brook
+Jeremy Blevins, UMBC
+Mike Camardo, UMBC
+Justin Radebaugh, UMBC
+Ryan Smith, UMBC
+Most Outstanding Player
+Mike Camardo, UMBC
+Passage 6:
+2009 America East Conference Baseball Tournament
+The 2009 America East Conference baseball tournament took place from May 21 through 23 at Pete Sylvester Field in Endicott, New York. The top four regular season finishers of the league's seven teams qualified for the double-elimination tournament. In the championship game, first-seeded Binghamton defeated second-seeded Albany, 16–6, to win its first tournament championship. As a result, Binghamton received the America East's automatic bid to the 2009 NCAA tournament, the program's first.
+
+Seeding
+The top four finishers from the regular season were seeded one through four based on conference winning percentage only. They then played in a double-elimination format. In the first round, the one and four seeds were matched up in one game, while the two and three seeds were matched up in the other.
+
+Results
+All-Tournament Team
+The following players were named to the All-Tournament Team.
+
+Most Outstanding Player
+Binghamton second baseman Jim Calderone was named Most Outstanding Player.
+Passage 7:
+2012 America East Men's Lacrosse Tournament
+The 2012 America East men's lacrosse tournament was the 13 edition of the America East Conference men's lacrosse tournament and took place from May 2 to May 5 at the higher seeds home field. The winner of the tournament received the America East Conference's automatic bid to the 2012 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+denotes an overtime game
+
+All-Tournament
+Sean Brady, Stony Brook	
+Travis Lyons, Albany
+Jeff Tundo, Stony Brook	
+Tate Kildonas, Hartford
+Kyle Moeller, Stony Brook
+Ben Knapton, Hartford
+JJ Laforet, Stony Brook
+Scott Jones, UMBC
+Phil Poe, UMBC
+Joe Resetarits, Albany
+Lyle Thompson, Albany
+Most Outstanding Player
+Sean Brady, Stony Brook
+Passage 8:
+2013 America East Men's Lacrosse Tournament
+The 2013 America East men's lacrosse tournament was the 14 edition of the America East Conference men's lacrosse tournament  and took place from May 2 to May 4 at Kenneth P. LaValle Stadium in Stony Brook, New York. The winner of the tournament received the America East Conference's automatic bid to the 2013 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+Kenneth P. LaValle Stadium - Stony Brook, New York
+
+denotes an overtime game
+
+All-Tournament
+Kevin Glueckert, Albany
+Anthony Ostrander, Albany
+Lyle Thompson, Albany
+Miles Thompson, Albany
+Scott Jones, UMBC
+Joe Lustgarten, UMBC
+Phil Poe, UMBC
+Jack Bobzien, Hartford
+Alex Matarazzo, Hartford
+Brody Eastwood, Stony Brook
+Jeff Tundo, Stony Brook
+Most Outstanding Player
+Lyle Thompson, Albany
+Passage 9:
+Albany Great Danes baseball
+The Albany Great Danes baseball team is a varsity intercollegiate athletic team of the University at Albany in Albany, New York, United States. The team is a member of the America East Conference, which is part of the National Collegiate Athletic Association's Division I. It plays home games at Varsity Field on the university's campus in Albany, New York. The Great Danes are coached by Jon Mueller.
+
+History
+Albany's baseball program played its first season in 1958.  After spending several decades in Division III, it began the transition to Division I in the mid-1990s along with the school's other teams.
+
+Division I
+It played its first season in Division I in 2000, also hiring head coach Jon Mueller that year.  After competing as an independent in 2000 and in the New York State Baseball Conference in 2001, it played its first season in the America East in 2002.  In 2004, the Great Danes set a program record with 37 wins and reached their first Division I postseason, going 1–2 at that season's America East tournament.  In 2007, the team won the AEC tournament as the third seed to reach its first NCAA tournament at any level.  As the fourth seed at the Fayetteville Regional, Albany went 0–2, losing 9–0 to host Arkansas and 21–11 to second seed Creighton.
+
+Year-by-year results
+Below is a table of Albany's yearly records as an NCAA Division I baseball program.
+
+MLB Draft
+As of 2020, nine players have been selected from Albany in the Major League Baseball draft and none have reached the majors. The highest selections have been Michael Kenney (9th round, 211th overall in 1974) and Stephen Woods (8th round, 245th overall in 2016).
+
+See also
+List of NCAA Division I baseball programs
+
+Notes
+Passage 10:
+Stony Brook Seawolves baseball
+The Stony Brook Seawolves baseball team represents Stony Brook University in NCAA Division I men's college baseball. Stony Brook currently competes in the CAA and plays its home games on Joe Nathan Field. Matt Senk has coached the team since the beginning of the 1991 season. The team has won the America East tournament six times in 2004, 2008, 2010, 2012, 2015, and 2019. In 2011, the Seawolves claimed their first America East regular season championship. Stony Brook has participated in the NCAA tournament on six separate occasions, winning its first game in 2010.
+In 2012, the Seawolves clinched their second consecutive regular season championship and their fourth America East Conference baseball tournament championship, earning the league's automatic bid to the 2012 NCAA Division I baseball tournament. The team went on to win the Coral Gables Regional and the Baton Rouge Super Regional, becoming the first ever team from the America East Conference to advance to the College World Series.
+
+History
+Pre-Division I era (1966–98)
+Stony Brook first fielded NCAA–sanctioned baseball in 1966. The program struggled hard initially, posting only six winning seasons until the hiring of Matt Senk as head coach in 1991. Senk's leadership helped the team succeed at the Division III level, and Stony Brook finished 1995 with a 30–8 record and a trip to their first Division III NCAA tournament. Stony Brook shortstop Joe Nathan was drafted by the San Francisco Giants in the sixth round with the 159th overall pick in the 1995 MLB Draft. He debuted for the Giants in 1999 as a pitcher, becoming the first player in program history to play in the MLB.
+
+Early years in Division I (1999–2004)
+Stony Brook began in Division I as a member of the Eastern College Athletic Conference. In 2002, the Seawolves joined the America East Conference. In 2003, Stony Brook advanced to its first America East Tournament title game, needing to beat Northeastern twice to win the championship. While they won 11–10 in game one, they were blown out 11–0, leaving them one game away from its first NCAA tournament berth. In 2004, the fourth-place Seawolves upset first-place Northeastern 15–6 in the first round of the America East Tournament, and advanced to the championship game for a second straight year, this time defeating Maine 3–1 to win their first America East championship and advance to their first NCAA tournament in the program's Division I history. Stony Brook was assigned as the fourth seed in the Kinston Regional, where they lost to host East Carolina 8–2 and Tennessee 1–0 and were eliminated from the tournament in two games.
+
+Program on the rise (2005–11)
+After reaching their first NCAA tournament in 2004, Stony Brook followed up with its first losing season since 1997, not qualifying for the America East Tournament. Stony Brook suffered another losing season in 2006 and a quick elimination from the America East Tournament in 2007. On December 6, 2006, Joe Nathan's No. 22 was retired, becoming the first retired number in Stony Brook athletics history. In 2008, Stony Brook finished 34–26 (14–10 America East) in second place in the regular season behind the Binghamton Bearcats. In the double-elimination tournament, the Seawolves beat UMBC and Binghamton twice to clinch their second tournament championship and advance to their second NCAA tournament Regionals. In the Tempe Regional of the NCAA tournament, Stony Brook lost 9–7 to Arizona State and 9–4 to Vanderbilt, resulting in another early exit from the tournament.The 2009 season was less promising and the Seawolves ended the regular season in third place with a 29–23 (14–10) record. Stony Brook was ousted early in the America East tournament after consecutive losses against second-seeded Albany and fourth-seeded Vermont. In 2010, Stony Brook ended 30–27 (15–9), entering the tournament as the third seed but surprising with victories against Maine and consecutive victories against Albany to earn its third tournament championship. In the NCAA tournament, the Seawolves played in the Myrtle Beach Regional. They lost to Coastal Carolina 6–0, but defeated NC State 6–2 in the loser's bracket to earn their first victory in the tournament. The Seawolves were then eliminated in a rematch with Coastal Carolina, losing 25–7.In 2011, Nathan's donation allowed for the construction of a new venue, Joe Nathan Field, which was unsuitable for play entering the season. As a result, the Seawolves played their home games at Baseball Heaven in Yaphank, New York. Joe Nathan Field opened on May 20, 2011. Stony Brook won its first conference regular season title in 2011 after going 22–2 in America East play; the Seawolves ended with a program-record 42 wins and went 42–12. However, Stony Brook was upset twice in the America East Tournament, once by Albany and again by Maine to eliminate the Seawolves before reaching the title game, putting their record-breaking season to a stunning halt.
+
+College World Series run (2012)
+Stony Brook opened its 2012 campaign with a perfect 4–0 weekend at Thibodaux, Louisiana, with a pair of victories over Alabama State and Nicholls State in the Colonel Round Robin. The Seawolves' only losses in conference play came against East Carolina in a sweep, Kansas, Minnesota, Yale and Holy Cross. When conference play started, Stony Brook was 17–8.
+Stony Brook went 21–3 in conference play, losing two games to Binghamton and one to Albany. The Seawolves continued to earn non-conference wins against Iona, Marist, Rhode Island, Central Connecticut and Fairfield in the middle of the conference season, entering the America East tournament with a 43–11 record. Stony Brook beat Maine 14–6, Binghamton 7–4 and Maine 13–6 to win the conference title, advancing to the 2012 NCAA Division I baseball tournament with a 46–11 record, the best record in Division I.The Seawolves were the first team in the America East since 2002 to earn both the regular season and conference tournament championships in the same season. For the first time in the history of the program, Stony Brook found itself ranked, sitting at No. 25 in the Baseball America poll and No. 29 in the NCBWA poll.Stony Brook traveled to South Florida to play in the Coral Gables Regional as the fourth seed. In the first game the Seawolves knocked off top-seeded Miami and went on to the winner's bracket. Following a loss to second-seeded Central Florida, Stony Brook beat Missouri State in dramatic fashion, striking out Luke Voit in the bottom of the ninth with the bases loaded in a 10–7 win. The Seawolves topped Central Florida 12–5 and 10–6 in consecutive days to win the regional and advance to face the LSU Tigers in the Super Regionals.
+
+In a rain-soaked Baton Rouge Super Regional, Stony Brook fell in the first game to LSU, who started pitcher Aaron Nola, in an extra-innings affair that spanned two days due to rain. In game two, LSU started pitcher Kevin Gausman, who had closed out the game one victory hours before, with Stony Brook winning 3–1 behind a 127-pitch complete game. In a winner-take-all game three, Stony Brook won 7–2 and advanced to the 2012 College World Series in Omaha, Nebraska. The Seawolves were the second team to be the fourth seed in its regional and advance to the College World Series. Stony Brook was the first Northeast school to reach Omaha since 1986 and the first school from New York to do so since St. John's in 1980.In the College World Series, Stony Brook's Cinderella run came to an end, losing to UCLA 9–1 and Florida State 12–2. Stony Brook ended the season with a 52–15 record, the most wins in college baseball, a No. 8 national ranking in the NCBWA poll and seven players selected in the 2012 MLB Draft, including outfielder Travis Jankowski being selected in the first round by the San Diego Padres.
+
+Final America East years (2013–2022)
+Stony Brook followed up its College World Series campaign with a disappointing 25–34 season, finishing fourth in the America East and being eliminated in the first two games of the tournament. In 2014, Stony Brook won its third America East regular season title with a 35–18 (18–5) record. The Seawolves advanced to the championship round of the conference tournament in the winner's bracket but lost to Binghamton in both games, 4–3 and 8–7, and were eliminated.Stony Brook won back-to-back regular season championships in 2015, reaching the finals from the winner's bracket again, and this time beat UMBC 16–11 to reach its fifth NCAA tournament. Playing in the Fort Worth Regional, the Seawolves lost to North Carolina State 3–0, beat Sacred Heart 11–6 and were eliminated with an 8–3 loss to TCU.In 2016, Stony Brook finished in third place in the America East, advancing to the tournament championship from the loser's bracket before falling to Binghamton. In 2017, Stony Brook finished in third again but lost two quick games in the playoffs. Stony Brook finished in fourth place in 2018, again reaching the championship game from the loser's bracket and losing to Hartford.The Seawolves won their fifth regular season title and sixth America East Tournament title in 2019, beating Binghamton in the championship. In the NCAA tournament, Stony Brook was placed in the Baton Rouge Regional, scheduled to face LSU in a rematch of the 2012 series that sent the Seawolves to Omaha. LSU won the rematch 17–3. The Seawolves were eliminated from the NCAA tournament with a following 13–5 loss to Arizona State, which rostered future number-one MLB draft pick Spencer Torkelson.The 2020 season was canceled on March 12 because of the COVID-19 pandemic. Stony Brook played 15 games to a 6–9 record. Stony Brook won its sixth regular season title in 2021, setting the America East all-time record for most conference wins in a season (25). Hosting the conference tournament at Joe Nathan Field, Stony Brook advanced to the championship but did so from the loser's bracket. Up 1–0 against NJIT, the game was halted due to rain and never resumed. The America East controversially awarded the title and NCAA tournament bid to NJIT since the Highlanders were in the winner's bracket.Before the 2022 season began, the America East controversially prohibited Stony Brook from participating in the conference tournament because of the school's impending move to the Colonial Athletic Association.
+
+NCAA tournament appearances
+Alumni in Major League Baseball
+The following Stony Brook Seawolves baseball alumni have reached Major League Baseball:
+
+Joe Nathan (1999–2016)
+Tom Koehler (2012–2017)
+Nick Tropeano (2014–present)Travis Jankowski (2015–present)
+Daniel Zamora (2018–present)
+
+Facilities
+Joe Nathan Field
+Joe Nathan Field, located in the north end of the Stony Brook campus, is the home field of Seawolves baseball. Known as Seawolves Field until 2002 and University Field from 2002 to 2011, the field was named after Stony Brook alumnus and six-time MLB All-Star relief pitcher Joe Nathan, who donated $500,000 for the construction of a new baseball field in 2008. As part of the renovations, a new FieldTurf was installed and dugouts were constructed. Additional donations allowed for a new scoreboard adjacent to the field.
+The field's dimensions are 330 feet to left and right field, 365 feet to left and right center, and 390 feet to center field. Joe Nathan Field's capacity stands at 1,000 spectators. Stony Brook has hosted the 2011 and 2012 America East Baseball Tournaments at Joe Nathan Field.
+
+Year-by-year results
+Conference awards
+America East Coach of the Year
+Matt Senk – 2011, 2012, 2014, 2015
+
+America East Player of the Year
+Willie Carmona – 2011
+Travis Jankowski – 2012
+Kevin Krause – 2014
+Jack Parenty – 2015
+Toby Handley – 2017
+Nick Grande – 2019
+Evan Giordano - 2022
+
+America East Pitcher of the Year
+Gary Novakowski – 2007
+Nick Tropeano – 2010, 2011
+Tyler Johnson – 2012
+
+America East Rookie of the Year
+Jon Lewis – 2002
+Willie Carmona – 2010
+Brandon McNitt – 2011
+Cole Peragine – 2012
+Jack Parenty – 2013
+Cameron Stone – 2014
+Bret Clarke – 2016
+
+See also
+List of NCAA Division I baseball programs
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: What team that is a member of the America East Conference played in the championship game in 2009?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  90%|█████████ | 9/10 [00:04<00:00,  2.21it/s]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:06<00:00,  1.39it/s]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:06<00:00,  1.54it/s]
+
+
+[Generated output]:
+The 2009 America East Men's Lacrosse Tournament.
+================ End Example IO ================
+
+hotpotqa_e processed 2 samples, skipped 8
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.17647058823529413,
+  "num_samples": 2,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.0,
+      "num_samples": 1
+    },
+    "0-4k": {
+      "score": 0.35294117647058826,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "6a19ad6f564ebfc50447ee4315ab9a246aeb472906728777",
+      "score": 0.0,
+      "input_length": 5829,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "a5b6031f24f2af89a8ea917c39ba1652e5608649660bb138",
+      "score": 0.35294117647058826,
+      "input_length": 4019,
+      "length_bucket": "0-4k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/020_030/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [30, 40)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 181.84it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+Fight for Fame
+Fight for Fame is a one-hour reality show produced by E! Entertainment Television, and producers Jay James, Tim Puntillo, Alan Blassberg, and Brian Lando, directed by Hans van Riet. A long established talent agency - Acme Talent & Literary - provides two top agents, Adam Lieblein (President) and Greg Meyer to add focus to the show, without being seen as "hosts." Each hour shows five actors vying for the opportunity to sign with Adam and Greg at the agency. They are put through four sets of audition challenges, including monologues, improvisation, and scripted auditions in front of well-known Hollywood directors, casting executives and executive producers. At the end of each episode, one actor signs with Acme Talent & Literary. The audience gets to see the decision process of the agents, as well as the attitude of talented and not-so-talented actors.
+Ten episodes were ordered and shot in 2005, and no additional order has been placed. Episodes began airing on June 5, 2005, and continue every Sunday evening at 10PM for ten weeks. Each episode is also re-run numerous times each week at different hours. The initial ten episodes continued to air in countries outside the United States through the end of 2007.
+
+External links
+Official Website (via Internet Archive)
+Fight for Fame at IMDb
+Passage 2:
+Franz Weihmayr
+Franz Weihmayr (30 December 1903 – 26 May 1969) was a German cinematographer who worked on over 80 films between 1924 and 1964. He was one of the leading German cinematographers of the Nazi era, working on a number of Zarah Leander films and the 1935 propaganda documentary Triumph of the Will. His marriage to Ada Tschechowa ended in divorce. After the Second World War, Weihmayr worked in West German cinema, including rubble films such as Love '47.
+
+Selected filmography
+They May Not Marry (1929)
+ Do You Know That Little House on Lake Michigan? (1929)
+On the Reeperbahn at Half Past Midnight (1929)
+Mädchen in Uniform (1931)
+Anna and Elizabeth (1933)
+Hans Westmar (1933)
+William Tell (1934)
+Elisabeth and the Fool (1934)
+Miracle of Flight (1935)
+Stjenka Rasin (1936)
+Calling the Tune (1936)
+The House of the Spaniard (1936)
+The Court Concert (1936)
+Moscow-Shanghai (1936)
+To New Shores (1937)
+Daphne and the Diplomat (1937)
+La Habanera (1937)
+The Blue Fox (1938)
+By a Silken Thread (1938)
+Heimat (1938)
+ My Aunt, Your Aunt (1939)
+The Life and Loves of Tschaikovsky (1939)
+Das Herz der Königin (1940)
+Wunschkonzert (1940)
+Beloved World (1942)
+The Great Love (1942)
+Back Then (1943)
+Nora (1944)
+ Paths in Twilight (1948)
+Journey to Happiness (1948)
+Love '47 (1949)
+Amico (1949)
+Two Times Lotte (1950)
+ Who Is This That I Love? (1950)
+My Niece Susanne (1950)
+Melody of Fate (1950)
+Dr. Holl (1951)
+The Great Temptation (1952)
+Two People (1952)
+I and You (1953)
+Anna Louise and Anton (1953)
+Don't Forget Love  (1953)
+Conchita and the Engineer (1954)
+Canaris Master Spy (1954)
+Men at a Dangerous Age (1954)
+Devil in Silk (1956)
+Marriages Forbidden (1957)
+And Lead Us Not Into Temptation (1957)
+A Summer You Will Never Forget (1959)
+
+Bibliography
+Knopp, Guido. Hitler's Women. Routledge, 2003.
+Rother, Rainer. Leni Riefenstahl: The Seduction of Genius. Continuum International Publishing Group, 2003.
+
+External links
+Franz Weihmayr at IMDb
+Passage 3:
+Jost Vacano
+Jost Vacano, BVK (born 15 March 1934) is a German retired cinematographer. His work included Das Boot, and he also worked together with director Paul Verhoeven on seven films, including RoboCop and Total Recall. He was also the cinematographer for The Lost Honor of Katharina Blum which he considers his favorite of his own films due to its timeless political message.
+
+Awards
+1981 Bavarian Film Award, Best Cinematography
+
+Filmography
+Feature films
+Television
+TV movies
+
+Die Stühle (1964)
+Mariana Pineda (1965)
+Der Nebbich (1965)
+Mord in Frankfurt (1968)
+Ostern (1968)
+The Accident (1968)
+The Age of the Fish (1969)
+The German Lesson (1971)
+Shot on Command – The Sass Brothers, Once Berlin's Big Crooks (1972)
+21 Hours at Munich (1976)TV series
+
+Tatort: Kressin und der tote Mann im Fleet (1971)
+Tales from the Crypt (1990) (Episode "The Switch")
+
+See also
+List of German-speaking Academy Award winners and nominees
+Passage 4:
+Shaggy Dog (play)
+"Shaggy Dog", broadcast by ITV on 10 November 1968, is a black-and-white television play by Dennis Potter written for the London Weekend Television anthology series The Company of Five, specifically a group of five actors. The Company of Five ran for one series of six episodes.
+
+Synopsis
+A man walks through central London on his way to a job interview, perceiving his surroundings as resembling a zoo. He behaves oddly, bumping into people, speaking gibberish, and avoiding the cracks between paving stones. Meanwhile, Johnson (Ray Smith), the boss of the Bideawhile Organisation, a hotel chain and leisure conglomerate, is trying to persuade his colleague Mr James (Cyril Luckham) that the methods of a new consultant he has contracted from the Transatlantic Corporation will aid their ability to identify potential employees who may suffer from stress and poor health. Johnson is taken aback when the consultant, Parker (Derek Godfrey), arrives wearing an obviously false nose, but Mr James is unfazed.
+The man seen earlier, Wilkie (John Neville), arrives for his interview, and is kept waiting on Parker's insistence as a test of his vulnerability. He is interviewed for a management position by Mr James and by Parker—who is now wearing a woman's blonde wig. Wilkie displays extensive knowledge, from the financial and business press, of the company's history and prospects—which he does not think are very promising. He is repeatedly shocked that the firm does not possess a computer. Parker, meanwhile, insists on knowing about Wilkie's relationship with his mother; also about any bedwetting; and pounces on him when he admits to suffering from headaches. Parker concludes (correctly) that Wilkie is recovering from a nervous breakdown.
+After Mr James recites a limerick with lines ending on 'Bristol' and 'pistol', Wilkie aims his gun at the two men. Now intent on revenge, he recounts a story about the 'Rary', a (fictional) now-extinct species, and threatens Mr Parker for his insulting fixations. Johnson returns to the office, but flees. He tells the receptionist (Ann Bell) that he should never have taken on Parker. They hear two shots, but Johnson hurriedly leaves. The receptionist discovers that James and Parker are dead, and faints. She comes round at the open window to which Wilkie has moved her. He again tells his 'Rary' story, before jumping to his death from a window of the tall office block.
+
+Reputation
+The recording of "Shaggy Dog" was long thought to be lost; its rediscovery was announced in January 2005. The play's director Gareth Davies recalled the work as "a sad piece about a madman applying for a job. Not a great play. A sort of sour joke." Once described as "perhaps the most bizarre of all Potter's single plays", it shows Potter continuing with themes begun in The Confidence Game in 1965. "Shaggy Dog" has been issued on DVD in Region 2, along with the other plays Potter wrote for LWT.
+Passage 5:
+Martin Ruhe
+Martin Ruhe (born 1965) is a German cinematographer working on films, commercials, and music videos. A member of the American Society of Cinematographers, he is perhaps best known for his work on the miniseries Catch-22 (2019), as well as the films Control (2007) and The Midnight Sky (2020), for which he was nominated for a British Independent Film Award and a Satellite Award, respectively.
+
+Life
+Martin Ruhe became interested in cinema as a teenager and wanted to become a director. After graduating from school, he completed a two-year training course as a focus puller.Afterwards he moved to London, where he worked as a runner for a camera rental company. He then became a cinematographer and filmed more than 200 music videos for artists such as Herbert Grönemeyer, Depeche Mode and Coldplay as well as 350 advertising spots. For Thorsten Wettcke Ruhe filmed the short film Die Rosenfalle (1998) and the feature film Ein göttlicher Job (2001). On the recommendation of Herbert Grönemeyer Ruhe met Anton Corbijn, wo engaged him for his Ian Curtis biopic Control. He gained further prominence for his work on the film Harry Brown. Since then Ruhe was engaged for various international productions. In 2010 he worked again with Anton Corbijn on The American, a thriller starring George Clooney. In 2016 he filmed Ewan McGregor's directorial debut American Pastoral. For George Clooney Ruhe filmed the science fiction film The Midnight Sky.
+
+Filmography
+Film
+
+Television
+Passage 6:
+Sepp Allgeier
+Josef “Sepp” Allgeier (6 February 1895 – 11 March 1968) was a German cinematographer who worked on around fifty features, documentaries and short films.  He began his career as a cameraman in 1911 for the Expreß Film Co. of Freiburg.  In 1913 he filmed newsreels in the Balkans.  He then became an assistant to Arnold Fanck, a leading director of Mountain films. He worked frequently with Luis Trenker and Leni Riefenstahl, both closely associated with the genre. He was Riefenstahl's lead cameraman on her 1935 propaganda film Triumph of the Will. During the Second World War, Allgeier filmed material for newsreels. He later worked in West German television. His son is the cinematographer Hans-Jörg Allgeier.
+
+Selected filmography
+Mountain of Destiny (1924)
+The Holy Mountain (1926)
+The Great Leap (1927)
+Alpine Tragedy (1927)
+Milak, the Greenland Hunter  (1928)
+Struggle for the Matterhorn (1928)
+Diary of a Lost Girl (1929)
+The White Hell of Pitz Palu (1929)
+Storm Over Mont Blanc (1930)
+Mountains on Fire (1931)
+The Rebel (1932)
+Baroud (1932)
+William Tell (1934)
+The Champion of Pontresina (1934)
+Frisians in Peril (1935)
+Escape Me Never (1935)
+Ewiger Wald (1936)
+Militiaman Bruggler (1936)
+The Great Barrier (1937)
+The Mountain Calls (1938)
+A German Robinson Crusoe (1940)
+The Sinful Village (1940)
+Wetterleuchten um Barbara (1941)
+Border Post 58 (1951)
+Passage 7:
+The American (2010 film)
+The American is a 2010 American action thriller film directed by Anton Corbijn and starring George Clooney, Thekla Reuten, Violante Placido, Irina Björklund, and Paolo Bonacelli. Based on the 1990 novel A Very Private Gentleman by Martin Booth, it was loosely adapted to screenplay by Rowan Joffé. The film was released on September 1, 2010. It received generally positive reviews from critics and grossed $67 million worldwide.
+
+Plot
+Jack and his lover, Ingrid, are relaxing in Sweden. As they walk in the wilderness outside their cabin, Jack becomes alarmed by a trail of footprints in the snow and pulls Ingrid towards shelter. Sniper gunshots ring out. Ingrid sees Jack pull a gun from his pocket and shoot the sniper. With little hesitation, Jack also kills Ingrid before locating and killing another armed man. He flees to Rome and contacts a man named Pavel, who insists that Jack cannot stay in Rome. Pavel sends him to Castelvecchio, a small town in the mountains of Abruzzo. Jack becomes nervous, and disposing of the cell phone that Pavel gave him, goes to nearby Castel del Monte instead, where he now uses the name Edward.
+While in Abruzzo, Jack contacts Pavel, who sets him up with a job. He meets a woman named Mathilde, who wants him to build her a custom sniper rifle. A local priest named Father Benedetto takes notice of Jack, and befriends him. Jack also begins patronizing a local prostitute named Clara, and they begin a relationship.
+In the meantime, Jack suspects that he's being followed by a man, but he still meets with Mathilde in a secluded area next to a river to test the weapon. She is impressed by the craftsmanship, but asks Jack to make a few more adjustments to the rifle, and to provide her with specific types of ammunition before they complete their transaction.
+Later, the man who has been following Jack attempts to assassinate him, but Jack kills him after a chase through town. The next day the priest asks Jack if he has anything to confess. Jack has been tormented by dreams of the events in Sweden and regrets killing Ingrid, but shares nothing with the priest. When Father Benedetto tells Jack that he senses he lives in a special kind of hell, "a place without love", Jack starts to let himself feel love for Clara and envisions a life with her.
+Jack calls Pavel to ask how the Swedes found him, and Pavel tells Jack that he's losing his edge. In his growing fear, he even suspects Clara when he discovers a small pistol in her purse. Jack takes Clara on a picnic to the same secluded river where he tested the rifle with Mathilde, and prepares to kill Clara. But when she doesn't try to kill him, Jack begins to trust Clara and agrees to meet with her later back in town.
+Finally, Jack agrees to deliver the completed weapon and ammunition to Mathilde as his last job, but at the last moment, he re-opens the briefcase holding it. During the drop-off with Mathilde, Jack becomes suspicious that she plans to kill him. But before anything can happen, a bus load of school children arrives. Mathilde gives Jack his payment—a thick envelope full of cash, and the two separate. As Mathilde drives away, Pavel contacts her and asks if she has killed Jack. She tells him she has not, but says she is following him.
+Clara then meets Jack at a religious procession in town. Jack asks her to go away with him and she agrees. While they embrace, Mathilde attempts to shoot Jack from a nearby rooftop with the rifle that Jack built. But the rifle backfires in her face, confirming Jack's suspicion and his last-minute decision to sabotage the rifle. Seeing Mathilde fall from the roof, Jack gives Clara the envelope of cash and tells her to wait for him at the river where they had picnicked before. He runs to Mathilde, who is dying on the pavement, and discovers that she also works for Pavel.
+As Jack walks away to go meet Clara, he hears someone behind him. Jack turns, and they quickly exchange gunfire. Pavel drops dead, having come to finish Mathilde's failed assassination. As Jack drives to meet Clara at the river, he feels his abdomen and realizes he has been shot. Jack arrives at the picnic spot, and as he sees Clara waiting for him, collapses behind the wheel of his car.
+
+Cast
+Production
+Filming began in September 2009 and took place in Castel del Monte, Sulmona, Castelvecchio Calvisio, Calascio and Campo Imperatore in the Province of L'Aquila (Abruzzo); in Rome, and in Östersund, Jämtland and other locations. As the Clooney character drives from Rome to Castel del Monte, there is an impressively long drive through the 4600-meter long San Domenico Tunnel (Galleria San Domenico) that is between the exits of Pescina and Cocullo on the A25 highway that connects Rome to Torano and Pescara. The car driven by Jack in the movie is a Fiat Tempra with Pescara licence plates.
+The film's "most romantic moment", according to director Anton Corbijn—when Jack takes Clara to a restaurant of her choice, their "actual date"—was filmed at a restaurant in Pacentro, near Sulmona. The comic-acting waiter in this restaurant scene was directed to stand in front of a two-bulb lamp fixture so that he appeared to have "devil's horns". Photographs on the restaurant's walls are reportedly all of the lovers of Gabriele D'Annunzio. Clara orders Montepulciano d'Abruzzo wine for the dinner, and Corbijn said the film's company enjoyed many of the fine wines of the region during the months of production there.The film score was written and composed by German singer-songwriter (and longtime friend of Corbijn) Herbert Grönemeyer. A 1967 song called "Window of My Eyes" by the Dutch blues band Cuby + Blizzards is played over the ending credits. The aria "Un bel dì, vedremo" ("One fine day we'll see") from Puccini's opera Madama Butterfly can be heard in the background of one scene, and "Tu vuò fà l'americano" in another. In another scene, the Italian song "La bambola" by Patty Pravo plays.
+
+Western films and other influences
+Once Upon a Time in the West (1968), with Henry Fonda facing off as a villain in a gunfight, is playing on television on the back wall of a modest restaurant where Jack has been eating. In the DVD commentary, Corbijn notes this homage and says the American Western—and more specifically the Italian-American Spaghetti Westerns by Leone and others—were explicit models for The American. Corbijn also notes the Ennio Morricone scores made famous in Once Upon a Time in the West, The Good, the Bad and the Ugly (1966), and other films. Speaking of the narrow, labyrinthine streets of the Italian hill towns where much of the action of The American occurs, Corbijn says he was thinking, in filming, of the streets of Venice and the way they appeared in Nicolas Roeg's Don't Look Now (1973).Large segments of the dialogue between Jack and Clara are taken verbatim from Graham Greene's novel The Honorary Consul (1973).
+
+Release
+Marketing
+The first official poster was released on June 17, 2010. The first trailer was attached to Robin Hood and the second official trailer on June 19, 2010, and was attached to Jonah Hex, Grown Ups, Inception and The Other Guys.
+
+Box office
+The American grossed $35.6 million in the United States and Canada, and $32.3 million in other territories, for a worldwide total $67.9 million, against a production budget of $20 million.The film debuted to $13.2 million, including a total of $16.7 million over the four-day Labor Day weekend, topping the box office. It fell 57% to $5.7 million in its second weekend, finishing third, and another 53% to $2.7 million in its third weekend.
+
+Critical response
+On Rotten Tomatoes, the film holds an approval rating 66% based on 224 reviews, with an average rating of 6.5/10. The website's critical consensus states: "As beautifully shot as it is emotionally restrained, The American is an unusually divisive spy thriller—and one that rests on an unusually subdued performance from George Clooney." On Metacritic, the film has a weighted average score of 61 out of 100, based on 36 critics, indicating "generally favorable reviews". Audiences polled by CinemaScore gave the film an average grade of "D−" on an A+ to F scale. The score was attributed to disappointment after the film was marketed as being action-packed instead of focusing on suspense and drama.Rolling Stone's Peter Travers gave the film two-and-a-half stars, writing that director Anton Corbijn "holds his film to a steady, often glacial pace", and that the result is of "startling austerity". Roger Ebert gave the film four stars, writing, "Here is a gripping film with the focus of a Japanese drama, an impenetrable character to equal Alain Delon's in Le Samouraï, by Jean-Pierre Melville." Leonard Maltin called it a "slowly paced, European-style mood piece, short on dialogue and action and long on atmosphere".
+
+Home media
+The film was released on DVD and Blu-ray on December 28, 2010.
+Passage 8:
+Robert Baberske
+Robert Baberske (1 May 1900 – 27 March 1958) was a German cinematographer. Although he worked briefly in Britain, Baberske spent most of his career in the German film industry. Baberske began as an assistant to Karl Freund. He became a prominent film technician during the silent era, and later during the Nazi years. Following the Second World War, he lived and worked in East Germany on a number of propaganda films for the state-controlled DEFA studio.
+
+Selected filmography
+Madame Wants No Children (1926)
+Berlin: Symphony of a Metropolis (1927)
+Doña Juana (1927)
+Out of the Mist (1927)
+A Knight in London (1929)
+Napoleon at St. Helena (1929)
+Bookkeeper Kremke (1930)
+Dolly Gets Ahead (1930)
+Calais-Dover (1931)
+Ronny (1931)
+No More Love (1931)
+The Street Song (1931)
+Thea Roland (1932)
+The Beautiful Adventure (1932)
+You Don't Forget Such a Girl (1932)
+The Song of Night (1932)
+Things Are Getting Better Already (1932)
+The Burning Secret (1933)
+Spies at Work (1933)
+Little Girl, Great Fortune  (1933)
+The Sun Rises (1934)
+The Higher Command (1935)
+One Too Many on Board (1935)
+Make Me Happy (1935)
+The Girl Irene (1936)
+Carousel (1937)
+The Chief Witness (1937)
+A Night in May (1938)
+The Girl of Last Night (1938)
+Her First Experience (1939)
+How Do We Tell Our Children? (1940)
+Between Hamburg and Haiti (1940)
+The Rothschilds (1940)
+Attack on Baku (1942)
+Between Heaven and Earth (1942)
+Kohlhiesel's Daughters (1943)
+The Buchholz Family (1944)
+Marriage of Affection (1944)
+King of Hearts (1947)
+The Cuckoos (1949)
+How Do We Tell Our Children? (1949)
+Bürgermeister Anna (1950)
+The Axe of Wandsbek (1951)
+Das tapfere Schneiderlein (1956)
+Passage 9:
+Curt Courant
+Curt Courant (11 May 1899 – 20 April 1968) was a German cinematographer who worked on over a hundred films during the silent and early sound eras. Courant worked in several European countries, collaborating with figures such as Alfred Hitchcock and Fritz Lang. As he was of Jewish ancestry, Courant was forced to leave Germany in 1933 and go into exile following the Nazi takeover of power. Courant worked at several of the leading British studios during the mid-1930s. He was the uncle of Willy Kurant who also became a cinematographer.
+
+Selected filmography
+Bibliography
+Bock, Hans-Michael & Bergfelder, Tim. The Concise Cinegraph: Encyclopaedia of German Cinema. Berghahn Books, 2009.
+
+External links
+Curt Courant at IMDb
+Passage 10:
+Georg Muschner
+Georg Muschner (12 June 1885 – 17 May 1971) was a German cinematographer. He worked on over sixty productions during his career in the Weimar Republic, Austria, and Nazi Germany. Muschner originally worked as a portrait photographer, before entering the film industry during the silent era. He worked on several Harry Piel films, including His Greatest Bluff. During the 1930s he often worked with the director Johann Alexander Hübler-Kahla.
+
+Selected filmography
+The Flying Car (1920)
+The Lost House (1922)
+Rivals (1923)
+Judith (1923)
+The Last Battle (1923)
+Women's Morals (1923)
+Dangerous Clues (1924)
+The Fake Emir (1924)
+By Order of Pompadour (1924)
+The Man Without Nerves (1924)
+A Dangerous Game (1924)
+Zigano (1925)
+Adventure on the Night Express (1925)
+The Dealer from Amsterdam (1925)
+Swifter Than Death (1925)
+Eyes Open, Harry! (1926)
+The Black Pierrot (1926)
+His Greatest Bluff (1927)
+Night of Mystery (1927)
+The Girl Without a Homeland (1927)
+What a Woman Dreams of in Springtime (1929)
+Flachsmann the Educator (1930)
+Rag Ball (1930)
+The Citadel of Warsaw (1930)
+Pension Schöller (1930)
+Such a Greyhound (1931)
+Errant Husbands (1931)
+The Battle of Bademunde (1931)
+Mrs. Lehmann's Daughters (1932)
+Our Emperor (1933)
+Dance Music (1935)
+Blood Brothers (1935)
+Across the Desert (1936)
+The Violet of Potsdamer Platz (1936)
+The Mysterious Mister X (1936)
+Meiseken (1937)
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: Name five actors that worked with a German cinematographer?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  10%|█         | 1/10 [00:04<00:41,  4.65s/it]Evaluating hotpotqa_e (generate):  90%|█████████ | 9/10 [00:07<00:00,  1.37it/s]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:10<00:00,  1.03s/it]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:10<00:00,  1.06s/it]
+
+
+[Generated output]:
+The German cinematographer mentioned in the given passages is Franz Weihmayr. He worked on over 80 films between 1924 and 
+================ End Example IO ================
+
+hotpotqa_e processed 3 samples, skipped 7
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.12406947890818859,
+  "num_samples": 3,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.12406947890818859,
+      "num_samples": 3
+    }
+  },
+  "details": [
+    {
+      "_id": "4f578bedb58906daa59e91baacc5d3c4b5d68d82e086891d",
+      "score": 0.06451612903225806,
+      "input_length": 6249,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "290bb908487a6d2e88a53f395727e7225abdf1260ecaef68",
+      "score": 0.3076923076923077,
+      "input_length": 5370,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "d11894d8411463b8ec99c7e12fe204b484174dceaf7ba0fb",
+      "score": 0.0,
+      "input_length": 4259,
+      "length_bucket": "4k-8k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/030_040/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [40, 50)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 186.91it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+The Blame (song)
+Bing Bang Boom is the fourth studio album by American country music band Highway 101, released in 1991  It was the band's first release following the departure of original lead singer Paulette Carlson, with Nikki Nelson on lead vocals. The album's title track was its first single, reaching #14 on the Hot Country Singles & Tracks charts. After it came "The Blame" at #31, "Baby, I'm Missing You" at #22 and "Honky Tonk Baby" at #54.
+
+Track listing
+Personnel
+Highway 101
+Jack Daniels – electric guitar, background vocals
+Cactus Moser – drums, background vocals
+Nikki Nelson – rhythm guitar, lead vocals
+Curtis Stone – bass guitar, background vocals
+
+Additional musicians
+Buddy Emmons – pedal steel guitar
+Dave Flint – acoustic guitar
+John Hobbs – piano
+Bill Hullett – mandolin
+John "Skink" Noreen – pedal steel guitar, lap steel guitar
+Tommy Spurlock – electric Dobro, pedal steel guitar
+Harry Stinson – background vocals
+Dennis Wilson – background vocals
+Paul Worley – acoustic guitarString section on "Till I Get It Right" by The A-Strings, conducted by Conni Ellisor, arranged by Bergen White.
+
+Chart performance
+Album
+Singles
+Passage 2:
+Burnin' Old Memories
+"Burnin' Old Memories" is a song written by Larry Boone, Paul Nelson and Gene Nelson, and recorded by American country music artist Kathy Mattea.  It was released in July 1989 as the second single from the album Willow in the Wind.  The song was Mattea's fourth and final number one on the country chart.  It was number one for one week and spent fourteen weeks on the country chart.
+
+Chart performance
+Year-end charts
+Passage 3:
+Ontogenetic depth
+Ontogenetic depth is a pseudoscientific idea proposed in February 2003 by Paul Nelson, an American philosopher of science, young Earth creationist and intelligent design advocate; he is employed by the Discovery Institute.
+Basically, Nelson concludes in his 'hypothesis' that developmental complexity is infrangible, and that if he shows Cambrian organisms to be complex, then it is therefore impossible for them to have evolved. Nelson proposes 'ontogenetic depth' as evidence of specified complexity, and a reliable marker of design by an intelligent agent, in opposition to modern evolutionary theory.
+Nelson subsequently stated that ontogenetic depth is "Currently Impossible to Measure".
+
+Criticism
+Biologist PZ Myers, who works in the field of evolutionary developmental biology, dismissed the concept, stating in 2010 that "Nelson is a creationist who made up this wacky claim of "ontogenetic depth", saying he had a way of objectively measuring the complexity of the developmental process in organisms with a number that described the distance from egg to adult. Unfortunately, he forgot to tell us how one calculated this number, or how it actually accounted for the complexity of a network, or even how we'd get a number that was different for a sponge and a cat. But he did say he'd get back to us with the details tomorrow...six years ago." Myers concludes that "ontogenetic depth is a sloppily-defined concept with no theoretical support for its validity and no apparent operational utility."The concept of 'ontogenetic depth' has not been published in any peer-reviewed journal, there are no methods described that would allow to measure this value in any organisms, nobody other than Nelson and his collaborator, Marcus Ross, do anything with the idea.
+Passage 4:
+Kevin Avery
+Kevin Avery (born June 24, 1957) is an American biographer, short story writer, and editor. Born and raised in Salt Lake City, Utah, he now lives in Brooklyn, New York. His first two books, Everything Is an Afterthought: The Life and Writings of Paul Nelson and Conversations with Clint: Paul Nelson's Lost Interviews with Clint Eastwood, 1979 - 1983, were published within weeks of each other by two different publishers, Fantagraphics Books and Continuum Books, respectively, in 2011.
+
+Early life
+Kevin Avery was born and raised in Salt Lake City, Utah.
+
+Career
+Prior to publishing his first book, Avery was vice-president of Yield Management for Motor Cargo, a Western regional transportation company that was acquired by UPS Freight, the Less-Than-Truckload (LTL) trucking division of UPS.Avery's first published works were short stories, which were published by periodicals including City Weekly, Gallery, Weber Studies, Utah Holiday, California Quarterly, and Mississippi Review.In 1992, he began writing nonfiction, mainly rock & roll criticism, for CATALYST Magazine, The Event, Penthouse, and Salt Lake magazine. Interview subjects included NBA star Shaquille O’Neal, musical acts Radiohead, Freedy Johnston, Los Lobos, Tori Amos, Moody Blues, Graham Parker, and Sheryl Crow, cartoonist John Callahan, and late impresario Eugene Jelesnik. Avery's music criticism was greatly influenced by the work of Paul Nelson (critic), whose work he'd begun reading as a teenager.Beginning in 2006, upon learning of Nelson's death, Avery spent four years researching and writing Everything Is an Afterthought: The Life and Writings of Paul Nelson, an anthology-biography compiling some of Nelson's best works while also documenting the critic's tragic life. In addition to interviewing Nelson's friends, family, and fellow critics, Avery interviewed some of the artists about whom Nelson wrote, including Bruce Springsteen, Jackson Browne, Elliott Murphy, Bruce Hornsby, Suzanne Vega, and Rod Stewart.From 2010 to 2011, Avery edited Conversations with Clint: Paul Nelson's Lost Interviews with Clint Eastwood, 1979 - 1983, compiled from interview tapes with Clint Eastwood found in Paul Nelson's apartment after his death. Critic Robert Christgau called the book, which was published eight weeks before Everything Is an Afterthought, "astonishingly thorough."In October 2016, he published his third book (his second for Fantagraphics) It's All One Case: The Illustrated Ross Macdonald Archives, editing Paul Nelson's forty hours of interviews with detective writer Ross Macdonald.He founded Mere Words Media Relations, a boutique public relations firm that provides a full array of affordable publicity services.
+
+Personal life
+In 2005, Avery moved to New York City to pursue his writing career, and where in 2006, he got married. He now lives in Brooklyn, New York, with his wife Deborah Avery.
+
+Bibliography
+Everything Is an Afterthought: The Life and Writings of Paul Nelson, Fantagraphics Books, 2011. ISBN 1606994751
+Conversations with Clint: Paul Nelson's Lost Interviews with Clint Eastwood, 1979 - 1983, Continuum Books, 2011. ISBN 144116586X
+
+Short fiction
+"A Daughter Is a Different Matter", Weber Studies, Winter 1994
+Passage 5:
+Lost Generation (album)
+Lost Generation was the second major label album by singer-songwriter Elliott Murphy produced by Paul A. Rothchild and recorded at Elektra Studio in Los Angeles and was reviewed by Paul Nelson in Rolling Stone. The album featured an all-star band of top session musicians including drummer Jim Gordon and keyboardist Richard Tee. The cover photo of Murphy standing in front of an open parachute was taken by photographer Ed Caraeff. Paul Nelson's Rolling Stone review called the album "brilliant but extraordinarily difficult" and gave Murphy the Hemingwayesque accolade, "When he's on the street, the sun also rises on one of the best."
+
+Track listing
+All tracks composed by Elliott Murphy
+
+"Hollywood"
+"A Touch of Mercy"
+"History"
+"When You Ride"
+"Bittersweet"
+"Lost Generation"
+"Eva Braun"
+"Manhattan Rock"
+"Visions of the Night"
+"Lookin' Back"
+
+Personnel
+Elliott Murphy – vocals, guitar, harmonica, keyboards
+Richard Tee – piano
+Wayne DeVillier – keyboards
+Jim Gordon – drums, percussion
+Ned Doheny  – guitar
+Sonny Landreth – guitar
+Jackie Clark – guitar
+Bobby Kimball – harmony vocals
+Gordon Edwards – bass
+Jon Smith – saxophoneTechnicalFritz Richmond – engineer
+Acy Lehman – art direction
+Dennis Katz – cover design
+Ed Caraeff – photography
+Passage 6:
+Michael P. Nelson
+Michael Paul Nelson is an environmental scholar, writer, teacher, speaker, consultant, and Professor of environmental philosophy and ethics at Oregon State University. Nelson is also the philosopher in residence of the Isle Royale Wolf-Moose Project, a senior fellow with the Spring Creek Project for Ideas, Nature, and the Written word, and the co-founder and co-director of the Conservation Ethics Group. From 2012 to 2022 he served as the Lead Principal Investigator for the H.J. Andrews Long-Term Ecological Research Program and held the Ruth H. Spaniol Chair in Renewable Resources at Oregon State .
+
+Early life
+Born in Richland Center, WI and raised in Janesville, WI, Nelson earned an M.A. in philosophy at Michigan State University and a Ph.D. in philosophy at Lancaster University in England.
+
+Career
+Nelson taught in the philosophy department, and held a joint appointment in the College of Natural Resources, at the University of Wisconsin-Stevens Point from 1993 to 2004, in the philosophy department at the University of Idaho from 2005 to 2007, and held a triple-joint appointment in the Lyman Briggs College, the Department of Fisheries and Wildlife, and the Department of Philosophy at Michigan State University from 2007 to 2012, before joining Oregon State's Department of Forest Ecosystems and Society in the College of Forestry.
+Nelson's work focuses on environmental philosophy and ethics, philosophy of ecology, conservation biology, wildlife ecology and ethics/metaethics, American Indian environmental thought, applied philosophy, and wilderness philosophy. He is the co-founder and co-director of the Conservation Ethics Group, an environmental ethics consultancy group fusing ethics with social and ecological science. He has written articles, co-authored one book, and edited three books on environmental ethics.
+
+Awards and distinctions
+Nelson was awarded the University Excellence in Teaching Award from the University of Wisconsin-Stevens Point in 2002 and the Teacher/Scholar in Residence Award from the University of Wisconsin-Stevens Point in 2001. His book, Moral Ground, won two 2010 ForeWord Reviews book awards - the Gold Medal for Anthology, and the Bronze Medal for Environment.  His Conservation Ethics Group won the Phi Kappa Phi award for Excellence in Interdisciplinary Research in 2011.
+
+Selected works
+Kathleen Dean Moore and Michael P. Nelson (eds.). Moral Ground: Ethical Action for a Planet in Peril. Trinity University Press, 2010 ISBN 9781595340665
+Nelson, Michael P. and J. Baird Callicott (eds.). The Wilderness Debate Rages On.. Athens, GA: University of Georgia Press, 2008.
+Callicott, J. Baird and Michael P. Nelson. American Indian Environmental Ethics: An Ojibwa Case Study. Prentice-Hall, 2004.
+Callicott, J. Baird and Michael P. Nelson (eds.). The Great New Wilderness Debate University of Georgia Press, 1998.
+
+See also
+American philosophy
+List of American philosophers
+Environmental ethics
+Passage 7:
+Eighteen Wheels and a Dozen Roses
+"Eighteen Wheels and a Dozen Roses" is a song written by Paul Nelson and Gene Nelson, and recorded by American country music artist Kathy Mattea.  It was released in March 1988 as the second single from her album Untasted Honey.  The song hit number one on both the US and Canadian Country charts in 1988.
+
+Content
+The song is about a truck driver named Charlie who is retiring after thirty years to spend more time with his wife. The song mentions Charlie receiving a gold watch, a common retirement gift. The song's chorus counts down from the number 18 (the number of wheels) to 12 (the roses), until Charlie eventually reaches the "one that he loves."
+
+Music video
+The video was directed by May/Sams. The video opens with Mattea dining at the Pie Wagon, a diner off Music Row in Nashville, when a truck driver approaches her and asks for her autograph as a present for his wife. Here, we learn that her first name is Nina. Throughout the video, there are scenes of Mattea on her tour bus, performing with her band, and scenes of the truck driver. In the end, the driver makes it home, his wife greeting him, and he hands her the dozen roses mentioned in the song's lyric, as they walk arm in arm into their house;  Kathy turns off the lights to the bus, and the video ends with a shot of various trucks driving on the highway.
+
+Charts
+Weekly charts
+Year-end charts
+External links
+Lyrics at cmt.com
+Passage 8:
+Paul Nelson (musician)
+Paul Nelson is a Grammy  award winning American blues and rock guitarist, record producer, and songwriter. He has played and or recorded alongside artists such as Eric Clapton, Buddy Guy, and members of the Allman Brothers Band.  He was the hand picked guitarist to join Johnny Winter's band in 2010, performing on and producing several of Winter's albums, including the Grammy Award-nominated I'm a Blues Man, Roots, and  Step Back, which won the Grammy Award for Best Blues Album, debuted at #1 on the Billboard chart for Blues Albums, and Independent Albums, and debuted at #16 on the Billboard 200 albums chart, marking the highest spot in Winter's career. Nelson is also a Blues Music Award recipient for Best Rock Blues Album, and has been inducted into the New York Blues Hall of Fame and is a recipient of the KBA award from the Blues Foundation. He received a Grammy nomination for his work as producer and performer on Joe Louis Walker's, Everybody Wants a Piece.
+
+Career
+Paul Nelson is credited as being a composer and performer for music heard on international and national television broadcasts such as NBC, TNN, and UPN, as well as for the WWF and has been featured in many publications such as Rolling Stone, Billboard, USA Today, Guitar World, Guitar Player, Premier Guitar, Classic Rock, and Vintage Guitar magazines. His solo guitar work can be heard on his first solo CD, entitled Look. He also performed on the Halifax song "Anthem For Tonight" from their album The Inevitability of a Strange World, and featured on the Xbox 360 game Prey.  Nelson also produced many albums, including 14 albums for Johnny Winter's Live Bootleg series (all breaking the top 10 in the Billboard Blues Chart); plus Martin Barre's Live at the Factory Underground (2019).
+He produced and performed on Joe Louis Walker's, Everybody Wants a Piece; a James Montgomery album featuring Jimmy Vivino (Conan B'Brien), Mark Naftalin (Paul Butterfield Blues Band), Grace Kelly (Stephen Colbert) and the Uptown Horns (Rolling Stone, James Brown); He also produced albums for Leo "Bud" Welch album; Lance Lopez Live From NYC; Tyler Morris — Next in Line, Otis — Eyes of the Sun and the sessions for a Junior Well's tribute album.
+He executive produced and appeared in the Johnny Winter documentary Down And Dirty, directed by Greg Oliver and also appeared in the documentary Sidemen: Long Road To Glory alongside Gregg Allman, Bonnie Raitt, Elvin Bishop, Pinetop Perkins, and Hubert Sumlin.
+
+Early years
+Nelson was born in Manhattan, New York, his love for music and the guitar started at an early age listening to and playing blues, rock, pop, jazz, fusion, country, funk, and Southern rock, becoming inspired by guitar players Billy Gibbons, Jeff Beck, Robben Ford, Larry Carlton, Johnny Winter, Albert Collins, Freddie King, Stevie Ray Vaughan, Joe Satriani, Jimi Hendrix, B.B. King, and Duane Allman. Wanting to pursue music as a career he enrolled into Berklee College of Music, quickly discovering Miles Davis,  John Coltrane and Wes Montgomery. It was soon after he began studying privately with Steve Vai, Mike Stern, and Steve Khan. Nelson soon built an name for himself as an "A" list session player and was on the first call list for guitar spots for many national and international performing artists this later on led to his teaming up with his mentor Johnny Winter.
+
+Today
+Nelson has toured the world sharing the stage and or recording with top artists such as Buddy Guy, Johnny Winter, Eric Clapton, Billy Gibbons, Vince Gill, Slash, Brian Setzer, Joe Perry, Derek Trucks, Edgar Winter, Ben Harper, Hubert Sumlin, Rick Derringer, Robben Ford, Joe Bonamassa, James Cotton, Steve Vai, Sonny Landreth, Earl Slick, Dicky Betts, Mark Knopfler, Bobby Rush, Joe Walsh, Pat Travers, Brent Mason, Larry Carlton, Elvin Bishop, Derek St. Holmes, Kim Simmonds/Savoy Brown, Gov't Mule, Anders Osborne, Quinn Sullivan, Los Lobos, Lucky Peterson, Jon Herington, Ronnie Baker Brooks, JT Taylor, Joe Louis Walker, Popa Chubby, Bobby Rush, Ricky Byrd, Mark Naftalin, Ronnie Earl, Susan Tedeschi, G-Love, Jeff Timmons, Jerry Portnoy, Samantha Fish, Uptown Horns, Harvey Brooks, Steven Seagal, Bill Evans, Magic Slim, Coco Montoya, Reese Wynans, Kid Ramos, Scott Sharrard, Ray Davies, George Lynch, Kenny Wayne Shepherd, Ana Popovic, Anthony Jackson, Tom Hambridge, Junior Brown, John Medeski, Ron Holloway, Jimmy Vivino of Late Night With Conan O'Brien, Paul Schaffer's CBS Orchestra, and the Blues Brothers Horns. He has appeared on Late Night With David Letterman and Jimmy Kimmel Live. Nelson released his first solo instrumental album entitled Look and then signed with Sony Music Group for The Paul Nelson Band album, Badass Generation, and tours internationally.
+Nelson produced Shaw Davis & the Black Ties third album, Red Sun Rebellion (2021).
+
+Selected discography
+The Worldwide Mega-Book of Heavy Metal Bands (Rock & Roll Reference Series) (book)
+Wacken Open Air (DVD)
+Look – Paul Nelson
+Warmth in the Wilderness: A Tribute to Jason Becker – various artists
+Gigs From Hell: True Stories From Rock and Roll's Frontline (book)
+A Return To Fantasy: A Tribute To Uriah Heep – various artists
+A-Z of Power Metal (Rockdetector) (book/CD)
+Beyond Inspiration: A Tribute to Uli Jon Roth – various artists
+I'm a Bluesman – Johnny Winter
+The Collector's Guide To Heavy Metal (book)
+Prey – Xbox 360
+The Mob
+The Inevitability of a Strange World – Halifax
+Pigswear EMI/Virgin
+Johnny Winter Live Bootleg Series Volume 1
+Warmth in the Wilderness, Vol. II: A Tribute to Jason Becker – various artists
+Johnny Winter Live Bootleg Series Volume 2
+Johnny Winter Live Bootleg Series Volume 3
+Johnny Winter Live Bootleg Series Volume 4
+Raisin' Cain: The Wild and Raucous Story of Johnny Winter (book)
+Live On The Legendary Rhythm & Blues Cruise – Joe Louis Walker
+Johnny Winter Plays The Blues (Book/CD)
+Roots – Johnny Winter
+Live From Japan – Johnny Winter – DVD
+True to the Blues: The Johnny Winter Story – Johnny Winter
+Step Back – Johnny Winter
+Everybody Wants a Piece – Joe Louis Walker
+Blues Christmas – various artists
+Southern Rock Christmas – various artists
+Live From NYC – Lance Lopez
+Badass Generation – Paul Nelson Band
+Johnny Winter: Down and Dirty documentary
+Sidemen: Long Road To Glory documentary
+The James Montgomery Blues Band – James Montgomery
+Life of a Dreamer – Yonrico Scott (Derek Trucks)
+10,000 Feet Below – Eliza Neals
+InstrumentHead – Michael Weintrob Photography Book
+Eyes of The Sun  – Otis
+Next in Line – Tyler Morris
+Live At The Underground – Martin Barre
+All I Got for Christmas was the Blues and a Broken Heart – (Paul Nelson and Anthony Krizan - Spin Doctors)
+Rise Up – (Harper and The Midwest Kind)
+Borrowed Time – (Memphis Lightning)
+Consider This – (Patty Tuite)
+Red Sun Rebellion – (Shaw Davis & the Black Ties) 
+Hard Case of The Blues – Patty Tuite
+Prestidigitation – Tobin Mueller
+My Time To Shine – Jureesa McBride
+Grab Brothers – Grab Brothers
+'It Ain't Easy – Joshua Morris
+Passage 9:
+Paul Nelson (creationist)
+Paul A. Nelson (born 1958) is an American philosopher, noted for his advocacy of the pseudosciences of young earth creationism and intelligent design.
+
+Biography
+Nelson is the grandson of the creationist author and Lutheran minister Byron Christopher Nelson (1894–1972) and edited a book of his grandfather's writings.  He is married to Suzanne Nelson, an assistant professor of pediatrics at Northwestern University.
+In 1998, Nelson gained a PhD in philosophy from the University of Chicago.
+Nelson is a fellow of the Discovery Institute's Center for Science and Culture and of the International Society for Complexity, Information and Design.
+
+Controversies
+The Discovery Institute's Wedge Document, and other sources have said that Nelson publishes works derived from his dissertation, "Common Descent, Generative Entrenchment, and the Epistemology in Evolutionary Inference", in which he criticizes the principle of common descent as it is expounded in the Evolutionary Monographs series.
+Nelson is frequently cited by opponents of intelligent design as an example of ID's "big tent" strategy in action. He has written about "Life in the Big Tent" in the Christian Research Journal. In an interview for Touchstone Magazine Nelson said that the main challenge facing the ID community was to "develop a full-fledged theory of biological design", and that the lack of such a theory was a "real problem".As shown in the Peabody Award-winning documentary Nova: Intelligent Design on Trial, in the Kitzmiller v. Dover trial, Barbara Forrest presented a quote from Nelson to demonstrate that Intelligent Design proponents know that it is not a theory in the scientific sense:
+
+Easily, the biggest challenge facing the I.D. community is to develop a full-fledged theory of biological design. We don't have such a theory right now, and that's a real problem. Without a theory, it's very hard to know where to direct your research focus. Right now, we've got a bag of powerful intuitions and a handful of notions, such as irreducible complexity, but as yet, no general theory of biological design.
+
+Young Earth views
+Nelson was a contributor to the book Three Views on Creation and Evolution, edited by J. P. Moreland and John Mark Reynolds, in which he, along with Reynolds, represented the young Earth creationist position. In their discussion in that book he and Reynolds acknowledged that "natural science at the moment seems to overwhelmingly point to an old cosmos." Ideas consistent with present-day Young Earth creationism were abandoned around the start of the 19th century. Today, such proposals are rejected by the scientific community, and the courts have ruled Young Earth creationism to be a religious belief.In a discussion with historian of science Ronald Numbers, Nelson made a distinction between his theological understanding of Earth history, which is informed by the biblical account as presented in the book of Genesis, and his advocacy for intelligent design. Nelson acknowledged that his young-Earth views are unpopular with many other intelligent design advocates.Nelson was a cast member in the 2017 creationist documentary film Is Genesis History?. After the film's release, he published an article stating that the film distorted his arguments and presented "a false dichotomy" between naturalistic evolution and young Earth creationism while omitting other viewpoints. Director and Producer Thomas Purifoy wrote a response entitled A Tale of Two Dichotomies in which he presented the full film interview with Nelson as evidence and stated that "as a philosopher, Paul seemed to be shifting back to viewing things from a philosophical perspective. The film, however, was not about comparing two different philosophies, but two different histories."
+Passage 10:
+Old Coyote Town
+"Old Coyote Town" is a song recorded by American country music artist Don Williams.  It was released in January 1989 as the fourth single from the album Traces.  The song reached number 5 on the Billboard Hot Country Singles & Tracks chart. The song previously appeared on co-writer Larry Boone's 1988 album Swingin' Doors, Sawdust Floors, and was the B-side to that album's single "Wine Me Up".  Boone wrote the song with Paul Nelson and Gene Nelson.
+
+Chart performance
+Year-end charts
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: What philosophy related to creationism is Paul Nelson noted for?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  10%|█         | 1/10 [00:03<00:34,  3.84s/it]Evaluating hotpotqa_e (generate):  30%|███       | 3/10 [00:05<00:11,  1.69s/it]Evaluating hotpotqa_e (generate):  70%|███████   | 7/10 [00:09<00:03,  1.22s/it]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:13<00:00,  1.19s/it]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:13<00:00,  1.32s/it]
+
+
+[Generated output]:
+Paul Nelson is noted for his advocacy of the pseudosciences of young earth creationism and intelligent design.
+================ End Example IO ================
+
+hotpotqa_e processed 4 samples, skipped 6
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.30804283435862384,
+  "num_samples": 4,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.29961266803372066,
+      "num_samples": 3
+    },
+    "0-4k": {
+      "score": 0.33333333333333337,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "d3b42d558b1a0e6d38a3cd63521f90726d0a0726bd3400c1",
+      "score": 0.21052631578947367,
+      "input_length": 5545,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "ef3faa552971c8c2dd04a40301cb536d27289864a68fe138",
+      "score": 0.33333333333333337,
+      "input_length": 3246,
+      "length_bucket": "0-4k"
+    },
+    {
+      "_id": "f0e60dbc6890e706835583d8f0df3574fae87ab373935366",
+      "score": 0.14285714285714288,
+      "input_length": 6316,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "47cd5e5112b2781b51123ef1de243e4e0818c2dd36fdaf5c",
+      "score": 0.5454545454545454,
+      "input_length": 6084,
+      "length_bucket": "4k-8k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/040_050/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [50, 60)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 184.63it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+Scott Draper
+Scott Dennis Draper (born 5 June 1974) is an Australian former tennis player and golfer. He won the Australian Open Mixed Doubles with Samantha Stosur in 2005. Draper also reached the fourth round of the 1995 and 1996 French Opens, and the fourth round of the US Open in 1997. His most significant achievement in singles was winning the 1998 Queen's Club Championships, the lowest ranked player ever to do so.
+
+Personal life
+Draper was born in Queensland, Australia. He married his first wife, Kellie, in 1998 and she died in 1999 from cystic fibrosis.
+
+Tennis career
+Juniors
+Draper reached a high of No. 5 in the junior world doubles rankings in 1992, after winning the Wimbledon Boys' Doubles title.
+Junior Slam results – Singles:
+Australian Open: SF (1992)
+French Open: 1R (1992)
+Wimbledon: 2R (1992)
+US Open: –
+
+Junior Grand Slam finals
+Doubles: 1 (1 title)
+ATP career finals
+Singles: 3 (1 title, 2 runners-up)
+Doubles: 1 (1 runner-up)
+Mixed Doubles: 1 (1 title)
+ATP Challenger and ITF Futures finals
+Singles: 5 (5–0)
+Doubles: 2 (1–1)
+Performance timelines
+Singles
+Doubles
+Mixed Doubles
+Golf career
+Draper has also played golf professionally. He made his professional debut in the 2005 Victorian Open, a 54-hole event played from 28 to 30 January. Draper had accepted an offer from Sam Stosur to play in the mixed doubles at the 2005 Australian Open which also finished on 30 January. Draper and Stosur reached the semi-final, which meant that Draper had to play in the first round of the golf in the morning and the semi-final of the tennis in the afternoon. Draper played his second round on the following day but missed the cut. This meant he was free to compete in the final of the mixed doubles on 30 January. On 11 February 2007, Draper won the New South Wales PGA Championship on the Von Nida Tour. He finished the four-round event with a score of 268, 20-under-par, one stroke ahead of Andrew Bonhomme and Aaron Townsend. Draper played as a professional golfer from 2005 to 2008 when a back injury ended his professional career. Although he played tennis left-handed, he played golf right-handed.
+
+Professional wins (1)
+Von Nida Tour wins (1)
+Passage 2:
+Peter Curtis (tennis)
+Peter Curtis  (born 29 August 1945 ) is a former British professional tennis player. Curtis won one Grand Slam title in mixed doubles with his then-wife Mary Ann Eisel Curtis.
+
+Grand Slam finals
+Mixed doubles (1 title)
+Career finals
+Doubles (1 runner-up)
+Passage 3:
+1998 Stella Artois Championships
+The 1998 Stella Artois Championships was a men's tennis tournament played on grass courts at the Queen's Club in London in the United Kingdom and was part of the World Series of the 1998 ATP Tour. It was the 96th edition of the tournament and was held from 8 June through 15 June 1998. Scott Draper won the singles title.
+
+Finals
+Singles
+Scott Draper defeated  Laurence Tieleman 7–6(7–5), 6–4
+
+It was Draper's only title of the year and the 1st of his career. He was the lowest ranked player ever to win the tournament, while Tieleman was the lowest ranked finalist.
+
+Doubles
+Todd Woodbridge /  Mark Woodforde vs.  Jonas Björkman /  Patrick Rafter 
+
+The doubles final was cancelled due to bad weather. This was the second time in the Open Era that a final at the Championships had been cancelled, the first being the washout of both the singles and doubles finals in 1968.
+Passage 4:
+1997 Lipton Championships – Men's Singles
+Thomas Muster defeated Sergi Bruguera in the final, 7–6(8–6), 6–3, 6–1 to win the men's singles tennis title at the 1997 Miami Open.Andre Agassi was the two-time defending champion, but lost in the second round to Scott Draper.
+
+Seeds
+All thirty-two seeds received a bye to the second round.
+
+Draw
+Key
+Finals
+Top half
+Section 1
+Section 2
+Section 3
+Section 4
+Bottom half
+Section 5
+Section 6
+Section 7
+Section 8
+Qualifying
+Qualifying seeds
+Qualifiers
+Lucky losers
+Qualifying draw
+First qualifier
+Second qualifier
+Third qualifier
+Fourth qualifier
+Fifth qualifier
+Sixth qualifier
+Seventh qualifier
+Eighth qualifier
+Ninth qualifier
+Tenth qualifier
+Eleventh qualifier
+Twelfth qualifier
+Passage 5:
+1996 Infiniti Open – Singles
+Michael Stich was the defending champion but lost in the first round to Scott Draper.
+First-seeded Michael Chang won in the final 6–4, 6–3 against second-seeded Richard Krajicek.
+
+Seeds
+Draw
+Key
+Passage 6:
+The Witches (1966 film)
+The Witches, released in the United States as The Devil's Own, is a 1966 British horror film directed by Cyril Frankel and starring Joan Fontaine, Alec McCowen, Kay Walsh, Ann Bell, Ingrid Boulting (billed as Ingrid Brett) and Gwen Ffrangcon Davies. Made by Hammer Films, it was adapted by Nigel Kneale from the 1960 novel The Devil's Own by Norah Lofts, published under the pseudonym Peter Curtis.
+
+Plot
+Schoolteacher Gwen Mayfield comes back to England after suffering a nervous breakdown caused by an attack by witch-doctors while working in a mission in Africa. She's hired by the wealthy Reverend Alan Bax, who runs a school in the remote village of Heddaby. Once there, Gwen finds out Alan is not actually a minister, and only wears a clerical collar out of "a sense of security"; the only church in the village is in ruins. Meanwhile, she befriends Alan's sister, an esteemed journalist.
+The romance between two of Gwen's students, Ronnie Dowsett and Linda Rigg, is sternly opposed by adults in the village for reasons Gwen can't understand. Linda lives with her grandmother, who's rumoured to be a witch and Ronnie fears is abusing Linda.
+As Ronnie is a gifted student, Alan proposes to pay for his stay at a prep school outside the village, but the boy's father is against it. Gwen volunteers to tutor the boy.
+Ronnie gives Linda a male doll as a mate to her female one, to represent them as a couple. The next day, Ronnie falls into a coma, and Gwen finds the male doll with pins stuck through it and its head missing. She shows it to Stephanie, who indicates someone might be dabbling in witchcraft. Impressed by Gwen's knowledge of magical practices in Africa, Stephanie invites her to coauthor an article about witchcraft in contemporary England.
+Ronnie's superstitious mother becomes upset when Gwen asks her about Ronnie's state. Later, she goes to Granny Rigg's house to work out a deal. The next day, Ronnie is out of the coma and is quickly taken by his mother to stay with her relatives in Wales. Ronnie's father confronts Granny Rigg about it and is later found drowned in a nearby pond.
+Gwen starts to think people who believe themselves to be witches are behind these incidents, and realizes that if they're trying to keep Ronnie apart from Linda, it could mean they might be planning to sacrifice her as a virgin. She announces her will to testify at the inquest into Ronnie's father's death. Following an injury caused by Stephanie's dogs, Gwen is taken to the Baxes' home where she is treated by the local doctor. During the night, she gets frightened by the sudden appearance of an African totem, and suffers another nervous breakdown.
+Months later, Gwen is recovering in a nursing home with no recollection of ever leaving Africa. After a visiting little girl's doll triggers the return of her memories, she escapes the hospital and hitchhikes back to Heddaby, where she's welcomed to stay at the Baxes' again. One of the villagers whispers to her that Linda, officially in vacation at her cousin's, has actually been taken by the witches.
+One night, Gwen sees from the Baxes' window a group of people scurrying toward the ruined church, and goes to investigate, finding a witches' coven led by Stephanie, who reveals she had planned to initiate Gwen into their ranks. Stephanie explains that she has learned a ritual that extends life through the ritual sacrifice of a pure maiden, planned for the next night, in occasion of Lammastide. The place of sacrifice is to be kept spiritually clean or the power of the ritual will turn upon the witch. Unable to find where they are hiding Linda, Gwen waits for the ceremony. Linda is there but in a trance, unable to assist in her own rescue. As Stephanie raises the ritual knife to kill the girl, Gwen cuts herself and smears her blood on Stephanie's robe, defiling it. Seized with convulsions, Stephanie tries to remove her soiled garb, but falls dead.
+Weeks later, freed of Stephanie's influence, Heddaby has returned to normal. Gwen chooses to stay and work as a schoolteacher for Alan.
+
+Cast
+Production
+The village of Hambleden, Buckinghamshire, was the filming location for the fictional village of Heddaby. Interiors were filmed at Hammer's usual studio at Bray in the same year that the famous horror film company vacated their home altogether for (mainly) Elstree and Pinewood. The cast featured child-actor Martin Stephens, then 17. The supporting cast also included Hammer regular Duncan Lamont, as well as John Collin, Michele Dotrice, Leonard Rossiter and Bryan Marshall. The score was by Richard Rodney Bennett.
+
+Critical reception
+Variety called the film "routine entertainment". The Hammer Story: The Authorised Biography of Hammer Films called the film "unsettling, though compromised by a hysterical climax", writing, "when The Witches strikes the right balance it ultimately succeeds as an engrossing thriller, even if it ultimately disappoints as Hammer horror."On the review aggregator website Rotten Tomatoes, 67% of 9 critics' reviews are positive.
+Passage 7:
+1999 Stella Artois Championships – Singles
+Scott Draper was the defending champion but lost in the third round to Sargis Sargsian.
+Pete Sampras won in the final 6–7(1–7), 6–4, 7–6(7–4) against Tim Henman.
+This was the only year in which Roger Federer competed in this tournament.
+
+Seeds
+The top eight seeds received a bye to the second round.
+
+Draw
+Key
+Finals
+Top half
+Section 1
+Section 2
+Bottom half
+Section 3
+Section 4
+External links
+1999 Stella Artois Championships draw
+Passage 8:
+2005 Australian Open – Mixed Doubles
+Samantha Stosur and Scott Draper defeated Liezel Huber and Kevin Ullyett in the final 6–2, 2–6, [10–6] to win the mixed doubles title at the 2005 Australian Open. This was the first Grand Slam title for both Stosur and Draper, and would be Draper's only Grand Slam title.
+Elena Bovina and Nenad Zimonjić were the defending champions, but Bovina did not compete due to a left foot injury. Zimonjić participated with Elena Likhovtseva, and the pair lost in the second round to Stosur and Draper.
+
+Seeds
+Draw
+Key
+Finals
+Top half
+Bottom half
+External links
+WTA Draw Archived 2008-09-11 at the Wayback Machine
+2005 Australian Open – Doubles draws and results at the International Tennis Federation
+Passage 9:
+Peter Lamont
+Peter Curtis Lamont (12 November 1929 – 18 December 2020) was a British set decorator, art director, and production designer most noted for his collaborations with filmmaker James Cameron, and for working on eighteen James Bond films, from Goldfinger (1964) to Casino Royale (2006). The only Bond film that he did not work on during that period was Tomorrow Never Dies (1997), as he was working on Cameron's Titanic (1997) at the time.  He also worked extensively as a set dresser on the Carry On series in the 1960s.
+Throughout his near 60-year career, Lamont was nominated for four Academy Awards for his work on Fiddler on the Roof (1971), The Spy Who Loved Me (1977), Aliens (1986), and Titanic (1997), winning for the latter film. His memoir, The Man With the Golden Eye: Designing the James Bond Films, was published in 2016.
+
+James Bond series
+Draftsman
+Goldfinger (1964)  (uncredited)
+
+Set decorator
+Thunderball (1965) (uncredited)
+You Only Live Twice (1967)
+On Her Majesty's Secret Service (1969)
+Diamonds Are Forever (1971)
+
+Art director
+Live and Let Die (1973)
+The Man with the Golden Gun (1974)
+The Spy Who Loved Me (1977)
+Moonraker (1979) — Visual effects
+
+Production designer
+James Bond 007
+For Your Eyes Only (1981)
+Octopussy (1983)
+A View to a Kill (1985)
+The Living Daylights (1987)
+Licence to Kill (1989)
+GoldenEye (1995)
+The World Is Not Enough (1999)
+Die Another Day (2002)
+Casino Royale (2006)
+
+Works with James Cameron
+Aliens (1986)
+True Lies (1994)
+Titanic (1997)
+
+Selected other filmography
+Chitty Chitty Bang Bang (1968) — Assistant set director
+Fiddler on the Roof (1971) — Set decorator
+Eve of Destruction (1991) — Production designer
+Wing Commander (1999) — Production designer
+Passage 10:
+2003 RCA Championships – Singles
+Greg Rusedski was the defending champion but lost in the second round to Scott Draper.
+Andy Roddick won in the final 7–6(7–2), 6–4 against Paradorn Srichaphan.
+
+Seeds
+All sixteen seeds received a bye to the second round.
+
+Draw
+Key
+Finals
+Top half
+Section 1
+Section 2
+Bottom half
+Section 3
+Section 4
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: Peter Curtis and Scott Draper are both what?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  90%|█████████ | 9/10 [00:02<00:00,  3.47it/s]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:02<00:00,  3.86it/s]
+
+
+[Generated output]:
+Peter Curtis and Scott Draper are both tennis players.
+================ End Example IO ================
+
+hotpotqa_e processed 1 samples, skipped 9
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.16666666666666666,
+  "num_samples": 1,
+  "length_buckets": {
+    "0-4k": {
+      "score": 0.16666666666666666,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "d9498c0fbfcb672ba5d114d73232817f7d7dd66ac68dc476",
+      "score": 0.16666666666666666,
+      "input_length": 3434,
+      "length_bucket": "0-4k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/050_060/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [60, 70)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 184.82it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+2010 America East Men's Lacrosse Tournament
+The 2010 America East men's lacrosse tournament was the 11th edition of the America East Conference men's lacrosse tournament and took place from May 4 to May 8 at the higher seeds home field. The winner of the tournament received the America East Conference's automatic bid to the 2010 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+denotes an overtime game
+
+All-Tournament
+All-Tournament team is made up of the best players at each position from throughout the tournament. The All-Tournament team consisted of the following players:
+Robbie Campbell, Stony Brook
+Kevin Crowley, Stony Brook
+Charlie Paar, Stony Brook (Most Outstanding Player) (GK)
+Steve Waldeck, Stony Brook
+Dave Brock, Albany
+John Carroll, Albany (GK)
+Kyle Crotty, Albany
+Maxx Davis, UMBC
+Rob Grimm, UMBC
+A.J. Masson, Vermont
+Drew Philie, Vermont
+Most Outstanding Player
+Charlie Paar, Stony Brook (GK)
+Passage 2:
+2009 America East Men's Lacrosse Tournament
+The 2009 America East men's lacrosse tournament was the 10th edition of the America East Conference men's lacrosse tournament and took place from April 29 to May 2 at the higher seeds home field. The winner of the tournament received the America East Conference's automatic bid to the 2009 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+denotes an overtime game
+
+All-Tournament
+
+Brian Caufield, Albany
+Corey Small, Albany
+Larry Kline, Binghamton
+Chris Mulheron, Binghamton
+Kevin Crowley, Stony Brook
+Chris Gignilliat, Stony Brook
+Steve Waldeck, Stony Brook
+Jeremy Blevins, UMBC
+Mike Camardo, UMBC
+Justin Radebaugh, UMBC
+Ryan Smith, UMBC
+Most Outstanding Player
+Mike Camardo, UMBC
+Passage 3:
+2015 Big East Men's Lacrosse Tournament
+The 2015 Big East men's lacrosse tournament took place April 30 to May 2 at Villanova Stadium in  Villanova, Pennsylvania. The winner of the tournament received the Big East Conference's automatic bid to the 2015 NCAA Division I Men's Lacrosse Championship. Four teams from the Big East conference will compete in the single elimination event. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the Big Ten conference advanced to the Big East Conference Tournament.
+
+Schedule
+Bracket
+Villanova Field – Villanova, Pennsylvania
+
+denotes an overtime game
+
+All-Tournament
+Johnny Gallaway, Villanova, Jr., A
+Danny Seibel, Villanova, Fr., A
+Dan Mojica, Marquette, RS-Jr., D
+Conor Gately, Marquette, Jr., A
+Craig Berge, Georgetown, Fr., M
+Bo Stafford, Georgetown, Sr., A
+Nick Marrocco, Georgetown, Sr., GK
+Erik Adamson, Denver, Sr., M
+Trevor Baptiste, Denver, Fr., M/FOS
+Wesley Berg, Denver, Sr., A
+Connor Cannizzaro, Denver, So., A
+Most Outstanding Player
+Connor Cannizzaro, Denver, So., A
+Most Outstanding Goalie
+Nick Marrocco, Georgetown, Sr., GK
+Passage 4:
+2012 America East Men's Lacrosse Tournament
+The 2012 America East men's lacrosse tournament was the 13 edition of the America East Conference men's lacrosse tournament and took place from May 2 to May 5 at the higher seeds home field. The winner of the tournament received the America East Conference's automatic bid to the 2012 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+denotes an overtime game
+
+All-Tournament
+Sean Brady, Stony Brook	
+Travis Lyons, Albany
+Jeff Tundo, Stony Brook	
+Tate Kildonas, Hartford
+Kyle Moeller, Stony Brook
+Ben Knapton, Hartford
+JJ Laforet, Stony Brook
+Scott Jones, UMBC
+Phil Poe, UMBC
+Joe Resetarits, Albany
+Lyle Thompson, Albany
+Most Outstanding Player
+Sean Brady, Stony Brook
+Passage 5:
+2011 America East Men's Lacrosse Tournament
+The 2011 America East men's lacrosse tournament was the 12th edition of the America East Conference men's lacrosse tournament and took place from May 4 to May 7 at the higher seeds home field. The winner of the tournament received the America East Conference's automatic bid to the 2011 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+denotes an overtime game
+
+All-Tournament
+Scott Bement, Hartford (GK)
+Conor Flynn, Hartford
+Rob Camposa, Stony Brook (GK)
+Kyle Moeller, Stony Brook
+Jeff Donigan, Binghamton
+Tyler Perrelle, Binghamton
+Rob Grimm, UMBC
+David Stock, UMBC
+Most Outstanding Player
+Scott Bement, Hartford (GK)
+Passage 6:
+2014 America East Men's Lacrosse Tournament
+The 2014 America East men's lacrosse tournament was the 15th edition of the America East Conference men's lacrosse tournament and took place from May 1 to May 3 that year at Kenneth P. LaValle Stadium in Stony Brook, New York. The winner of the tournament received the America East Conference's automatic bid to the 2014 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+Kenneth P. LaValle Stadium - Stony Brook, New York
+
+denotes an overtime game
+
+All-Tournament
+Doug Eich, Albany
+Lyle Thompson, Albany
+Miles Thompson, Albany
+Ty Thompson, Albany
+Blaze Riorden, Albany
+Zach Esser, UMBC
+Matt Gregoire, UMBC
+Phil Poe, UMBC
+Michael Antinozzi, Binghamton
+Greg Cove, Binghamton
+Mike Andreassi, Stony Brook
+Hayden Johnstone, Stony Brook
+Most Outstanding Player
+Lyle Thompson, Albany
+Most Outstanding Goalie
+Blaze Riorden, Albany
+
+Tournament notes
+Just like in the previous year's tournament Albany and Stony Brook again set a tournament record of combined goals with 33.
+Passage 7:
+2015 America East Men's Lacrosse Tournament
+The 2015 America East men's lacrosse tournament was the 16th edition of the America East Conference men's lacrosse tournament and took place from April 30 to May 2 that year at John Fallon Field in Albany, New York, United States. The winner of the tournament received the America East Conference's automatic bid to the 2015 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+John Fallon Field - Albany, New York
+
+denotes an overtime game
+
+External links
+Americaeast.com
+Americaeast.com
+Americaeast.com
+Passage 8:
+Kenneth P. LaValle Stadium
+The Kenneth P. LaValle Stadium is the main stadium for Stony Brook University in Stony Brook, New York, United States. Construction began in 2000 at a cost of approximately $22 million. With a capacity of 12,300 people (10,300 seating and 2,000 standing), it is the largest outdoor facility in Suffolk County. The stadium is home to the Division I Stony Brook Seawolves and their football, men's soccer, women's soccer, men's lacrosse, and women's lacrosse teams.The stadium opened on September 14, 2002. It was named in honor of New York state senator Kenneth LaValle on October 19, 2002. LaValle played a key role in the development and creation of the stadium. The stadium consists of a three-tier press box on the east side, as well as six luxury suites, a press box, television and radio booths, and a camera deck on the roof. Its most recent expansion came in 2017, with the addition of 2,000 seats in the north end zone and a new concessions and restrooms facility.
+LaValle Stadium has hosted the 2006 and 2010 NCAA Division I Men's Lacrosse Championship quarterfinals, as well as the 2011, 2012 and 2018 NCAA Division I Women's Lacrosse Championship final fours and title games.LaValle Stadium was listed at No. 22 on a 2012 Yahoo! Sports list of "College Football's Top 25 Toughest Places to Play".
+
+History
+As Stony Brook planned its transition to Division I from Division III, a new football stadium was immediately deemed necessary to replace Seawolves Field, a 1,000-seat bleacher stadium with muddy sinkholes that had existed since 1984. The first proposal in 1994 called for a $4 million multi-use stadium for football and lacrosse. However, 500 professors petitioned Governor Mario Cuomo to stop the stadium from being built along with Stony Brook's transition to Division I, because they worried a new stadium would add more traffic to the Three Villages, attract a rowdy crowd on weekends and take money from academic programs.Construction on a new stadium began in 2000. Originally slated to cost $12 million, the final structure cost $22 million and was fully supported by Stony Brook president Shirley Strum Kenny, who said she was "serious about the athletic program, serious about Division I", and expected Stony Brook to became "important" and "a contender."Seawolves Stadium opened on September 14, 2002 as the Stony Brook Seawolves football team faced the St. John's Red Storm in Stony Brook's first game as a Division I program. Stony Brook won 34–9, and the opening kickoff was returned for a touchdown by the Seawolves. At the time of its opening, the 8,136-seat stadium was the largest in Suffolk County, a record that is still held today.On October 19, 2002, the date of Stony Brook's Homecoming game against Sacred Heart, the stadium was renamed the Kenneth P. LaValle Stadium in honor of New York state senator Kenneth P. LaValle, a key figure in the development and creation of the $22 million facility. Before its opening, the Stony Brook Director of Marketing and Promotions for Athletics had opened up the possibility of renaming the stadium for a corporate partnership or a former president of Stony Brook University.The stadium's name has been the subject of numerous controversies, including in 2009 after LaValle voted against the legalization of gay marriage in New York and in 2019 when LaValle voted against a ban on gay conversion therapy.
+
+Expansions
+In October 2012, Stony Brook University allocated $5.7 million for the addition of at least 2,000 seats to LaValle Stadium, bringing the seating capacity from 8,300 to 10,300, with a standing capacity of 2,000 bringing the stadium's total capacity to 12,300.New York governor Andrew Cuomo vetoed a $22 million upgrade to the stadium in 2015, money which was originally allocated for a "computational biomedicine visualization and drug development magnet facility." The Senate had attempted to change the usage of the funds in the state budget as the intended programs no longer existed.An expansion was completed in the summer of 2017 and added 2,000 seats in the north end zone, as well as a new concessions and restrooms facility. Before the 2018 season, a new turf field was installed in LaValle Stadium, also adding red end zones and a new midfield logo.
+
+Events hosted
+In October 2005, LaValle Stadium was chosen to be the host site for the two North Region contests in the 2006 NCAA Men's Lacrosse Championship tournament, with both of the games aired on ESPN2. It was the first time that Stony Brook had hosted any NCAA postseason championship even since the program's move to Division I in 1999. A sold-out crowd of 8,335 attended the events. Stony Brook was again chosen to host the North Region games in the 2011 NCAA Men's Lacrosse Championship tournament quarterfinals.A sold-out crowd of 10,024 watched the 2010 NCAA Division I Men's Lacrosse Championship quarterfinals at LaValle Stadium, where No. 8-seeded Stony Brook fell 10–9 to No. 1-seeded Virginia, falling one goal short of the Final Four.LaValle Stadium first hosted the Final Four and championship game of the NCAA women's lacrosse tournament in 2011, after three consecutive seasons of being held at Towson University's Johnny Unitas Stadium. A crowd of 8,011 witnessed Northwestern beat Maryland in the title game. The event resulted in 20,000 people visiting the Stony Brook region and $100,000 in hotel revenue. Stony Brook was chosen to host the 2012 Final Four as well. The Final Four returned to Stony Brook in 2018.LaValle Stadium was set to host three games of the 2020 Premier Lacrosse League (PLL) season, including a nationally televised game on NBC in June, but due to the COVID-19 pandemic, the league held its season in a bubble in Utah instead.
+
+Attendance records
+The most attended game in Kenneth P. LaValle Stadium history occurred on October 5, 2019, when 12,812 showed up for a Homecoming game against James Madison in which Stony Brook lost, 45–38, in overtime.
+Asterisks indicate Homecoming games.
+
+See also
+List of NCAA Division I FCS football stadiums
+Passage 9:
+2015 Big Ten Conference Men's Lacrosse Tournament
+The 2015 Big Ten Men's Lacrosse Tournament took place April 30 to May 2 at Capital One Field at Byrd Stadium in  College Park, Maryland. The winner of the tournament received the Big Ten Conference's automatic bid to the 2015 NCAA Division I Men's Lacrosse Championship. Four teams competed in the inaugural Big Ten Conference Men's Lacrosse Tournament in a single elimination format. The seeds were based upon the teams' regular season conference record. Johns Hopkins won the tournament, beating Ohio State 13-6.
+
+Standings
+Only the top four teams in the Big Ten Conference advanced to the Big Ten Conference Tournament.Not including Big Ten Tournament and NCAA tournament results
+
+Schedule
+Bracket
+Capital One Field at Byrd Stadium – College Park, Maryland
+
+Awards
+MVP: Wells Stanwick, Johns Hopkins
+All-Tournament Team
+Wells Stanwick, Johns Hopkins
+Eric Schneider, Johns Hopkins
+Michael Pellegrino, Johns Hopkins
+Holden Cattoni, Johns Hopkins
+Jesse King, Ohio State
+David Planning, Ohio State
+Robby Haus, Ohio State
+Connor Darcey, Penn State
+Matt Florence, Penn State
+Bryan Cole, Maryland
+Passage 10:
+2013 America East Men's Lacrosse Tournament
+The 2013 America East men's lacrosse tournament was the 14 edition of the America East Conference men's lacrosse tournament  and took place from May 2 to May 4 at Kenneth P. LaValle Stadium in Stony Brook, New York. The winner of the tournament received the America East Conference's automatic bid to the 2013 NCAA Division I Men's Lacrosse Championship. Four teams from the America East conference will compete in the single elimination tournament. The seeds were based upon the teams' regular season conference record.
+
+Standings
+Only the top four teams in the America East conference advanced to the America East Conference Tournament.
+
+Schedule
+Bracket
+Kenneth P. LaValle Stadium - Stony Brook, New York
+
+denotes an overtime game
+
+All-Tournament
+Kevin Glueckert, Albany
+Anthony Ostrander, Albany
+Lyle Thompson, Albany
+Miles Thompson, Albany
+Scott Jones, UMBC
+Joe Lustgarten, UMBC
+Phil Poe, UMBC
+Jack Bobzien, Hartford
+Alex Matarazzo, Hartford
+Brody Eastwood, Stony Brook
+Jeff Tundo, Stony Brook
+Most Outstanding Player
+Lyle Thompson, Albany
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: In what year did construction begin on the stadium where the 2013 America East Men's Lacrosse Tournament was held?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  20%|██        | 2/10 [00:03<00:12,  1.53s/it]Evaluating hotpotqa_e (generate):  40%|████      | 4/10 [00:04<00:07,  1.17s/it]Evaluating hotpotqa_e (generate):  60%|██████    | 6/10 [00:08<00:05,  1.48s/it]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:08<00:00,  1.16it/s]
+
+
+[Generated output]:
+The construction of the stadium where the 2013 America East Men's Lacrosse Tournament was held began in 2000.
+================ End Example IO ================
+
+hotpotqa_e processed 3 samples, skipped 7
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.06666666666666667,
+  "num_samples": 3,
+  "length_buckets": {
+    "0-4k": {
+      "score": 0.09999999999999999,
+      "num_samples": 2
+    },
+    "4k-8k": {
+      "score": 0.0,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "406311f7ab0d87c7aa2a4886827e640bc0848e8206f816c2",
+      "score": 0.19999999999999998,
+      "input_length": 4019,
+      "length_bucket": "0-4k"
+    },
+    {
+      "_id": "4fbaf72dc6fc9bceb3746826579bb421ec7c2e65d97a5ef5",
+      "score": 0.0,
+      "input_length": 2819,
+      "length_bucket": "0-4k"
+    },
+    {
+      "_id": "b25c605406d7d878df1dfab8199dbba951b14e1fb2a65a35",
+      "score": 0.0,
+      "input_length": 6357,
+      "length_bucket": "4k-8k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/060_070/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [70, 80)
+Please install qwen-vl-utils to use VLM models
+Evaluating on dataset: longbench
+Available GPUs: 2
+Requested GPU IDs: [1]
+Answer method: generate
+Model /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca already has a chat template.
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s]Loading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 186.20it/s]
+Model /data/smy/lmy/C2C-compress-master/local/models/Qwen3-4B already has a chat template.
+Evaluating hotpotqa_e (generate):   0%|          | 0/10 [00:00<?, ?it/s][zero-sharer-kv] receiver hook active: layers=36, nonzero_after_zeroing=0; proceeding to fuser
+
+================ Example IO (hotpotqa_e) ================
+[Input with chat template]:
+<|im_start|>user
+<|im_start|>user
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+The following are given passages.
+Passage 1:
+Tennis New Zealand
+Tennis New Zealand (commonly known by the acronym Tennis NZ or TNZ) (formally the New Zealand Lawn Tennis Association) is the governing body of tennis in New Zealand. Founded in 1886, it is one of the world's oldest tennis associations. It is affiliated to both International Tennis Federation and Oceania Tennis Federation. Tennis NZ has six geographically divided regional centres. Tennis NZ operates all of the New Zealand's national representative tennis sides, including the New Zealand Davis Cup team, the New Zealand Billie Jean King Cup team and youth sides as well. Tennis NZ is also responsible for organising and hosting tennis tournaments within New Zealand and scheduling the home international fixtures.
+
+History
+The history of tennis in New Zealand dates back to the 1870s, the decade when the development of modern tennis began. The first New Zealand Tennis Championships were played at Farndon Park in Clive, Hawke's Bay, in December 1885. New Zealand Lawn Tennis Association (NZLTA) was formed at a meeting held in Hastings in December 1886. Shortly after its inauguration, the New Zealand Association became affiliated with the Lawn Tennis Association (England).In 1904 New Zealand Lawn Tennis Association amalgamated with six Australian state tennis associations to form the Lawn Tennis Association of Australasia. New Zealand Lawn Tennis Association played a significant role in the origin of the Australian Open. Lawn Tennis Association of Australasia created the tournament called The Australasian Mens Championships (which later became Australian Open) in 1905 and was first played in Warehouseman's Cricket Ground and it was decided that championships would be hosted by both Australian as well as New Zealand venues. New Zealand hosted the championship twice— Christchurch (1906) and Hastings (1912). The geographical remoteness of both the countries (Australia and New Zealand) made it difficult for foreign players to enter the tournament. In Christchurch in 1906, of a small field of 10 players, only two Australians attended, and the tournament was won by a New Zealander (Tony Wilding). Lawn Tennis Association of Australasia was one of the twelve national associations of tennis which established the International Lawn Tennis Federation (ILTF) in a conference in Paris, France, on 1 March 1913. From 1905 until 1919, New Zealand and Australian tennis players participated in the International Lawn Tennis Challenge (Davis Cup) under the alias of "Team Australasia", the team claimed a title six times (1907, 1908, 1909, 1911, 1914, 1919), however, there were attempts to severance this trans-Tasman partnership, in order to allow New Zealand players to represent their nation on international tennis events. In 1922, New Zealand dropped out from this partnership and on 16 March 1923 New Zealand Lawn Tennis Association was granted affiliation to the International Lawn Tennis Association and thereby became eligible to enter the International Lawn Tennis Challenge in its own right. New Zealand Lawn Tennis Association filed its first challenge with United States Lawn Tennis Association for 1924 International Lawn Tennis Challenge. Tennis New Zealand was the founding member of Oceania Tennis Federation in 1993.
+
+Structure
+Governing staff
+Constitution
+The constitution of the organisation was adopted on 12 August 2006 in the Special General Meeting in which the main purpose of the organisation is defined as to promote, develop, enhance and protect the sport of tennis mainly as an amateur sport for the recreation and entertainment of the general public in New Zealand.
+
+Affiliates
+Regional centres
+Tennis NZ consists of six regional centres which are affiliated to the national body. They control their own activities subject to any requirements which may, from time to time, be legislated for by the national body.
+
+Organisations
+Tennis NZ affiliates several different tennis related private organisations, which are:
+Aotearoa Maori Tennis Association (AMTA) - national tennis body of Māori people.
+NZ Tennis Umpires Association (NZTUA) -  national body, which governs tennis officiating in New Zealand.
+Tennis Coaches NZ (TCNZ) -  New Zealand's association for professional tennis coaches.
+International Lawn Tennis Club of NZ - member of Council of International Lawn Tennis Clubs, established in 1956 and has around 130 members.
+NZ Wheelchair Tennis - Hamilton based organisation affiliated with International Wheelchair Tennis Association (IWTA) governs Wheelchair tennis in New Zealand.
+Seniors Tennis NZ - national association for tennis players aged 35 years and above.
+
+Tournaments
+Tennis NZ annually organises range of events from local tournaments to national and international events. Tennis Auckland hosts two major events of international tennis tournaments each year at the ASB Tennis Centre, Parnell, just prior to Australian Open:
+ASB Classic - is a most prominent women's and men's tournament of New Zealand. This ATP Tour and WTA Tour event is an International series tournament and is played on outdoor hardcourts during the first week of the tennis season.
+Passage 2:
+Albert Costa
+Albert Costa Casals (Catalan pronunciation: [əlˈβɛɾ(t) ˈkɔstəj kəˈzals]; born 25 June 1975) is a Spanish former professional tennis player. He is best remembered for winning the men's singles title at the French Open in 2002.
+
+Tennis career
+Costa began playing tennis at the age of five. He first came to the tennis world's attention as an outstanding junior player. In 1993, he reached the French Open junior final and won the Orange Bowl. He turned professional later that year and quickly established a reputation as a strong clay court player. Spanish former player and commentator for Spanish television Andrés Gimeno used to call him "the man with two forehands", because he could hit with the same accuracy and strength both forehand and backhand. In 1994, he won two challenger series events and was named the ATP's Newcomer of the Year.
+Costa won his first top-level singles title in 1995 at Kitzbühel, beating the "King of Clay", Thomas Muster, in a five set final. It was Muster's first of only 2 losses on clay in 1995. Costa ended Muster's streak of 40 consecutive clay match wins and his 11 consecutive final wins . Costa won three further titles in 1996. In 1997, he won another two singles titles and was part of the Spanish team that won the World Team Cup. He won another two singles titles in 1998, including the Tennis Masters Series event in Hamburg and played at magnificent level at the French Open, only a brilliant Marcelo Ríos could stop him at fourth round, but he established the bases for his future winning in 2002. Three further titles followed in 1999.
+In 2000, Costa helped Spain win its first Davis Cup. Despite being knocked out in the first round in men's singles, he also captured a bronze medal in the men's doubles at the 2000 Olympic Games in Sydney, partnering Álex Corretja.
+Going into the French Open in 2002, Costa had not won a tour title of any kind since 1999 and was not considered to be among the favorites. Seeded 20th, he defeated Richard Gasquet, Nikolay Davydenko and Andrea Gaudenzi to reach the fourth round, where he defeated two time defending-champion and former world No. 1 Gustavo Kuerten in straight sets. Costa followed up with a five-set victory over Argentina's Guillermo Cañas in the quarterfinals. He then defeated fellow-Spaniard, former world No. 2 and long-time friend Àlex Corretja in a four-set semifinal. In the final, Costa came up against another Spaniard, future world No. 1, Juan Carlos Ferrero. Ferrero had been in fine form in the run-up to the event and most observers considered him to be the heavy favourite going into the final. But Costa won in four sets, 6–1, 6–0, 4–6, 6–3, to claim his first Grand Slam title. Costa destroyed Ferrero, who could only win nine points during Costa's service games in the first 2 sets. The win propelled him to his career-high singles ranking of World No. 6 in July 2002.
+Coming into the French Open as defending-champion in 2003, Costa spent a total of 21 hours and 15 minutes on court, winning four five-setters before eventually being knocked-out in a semifinal by Ferrero (who went on to win the title).
+During his career, Costa won 12 top-level singles titles. In 2005, he captured his first tour doubles title (in Doha, partnering Rafael Nadal).
+Citing recurring injuries and lack of desire, he officially announced his retirement from competitive professional tennis on 21 April 2006, at the completion of the Open Seat 2006 in his hometown in Barcelona. In his last tournament, Costa defeated American Vincent Spadea and Slovakian Dominik Hrbatý before losing 6–1, 5–7, 7–5 to Ferrero in the third round.
+In December 2008, Costa was named Spain's Davis Cup captain, replacing Emilio Sánchez Vicario. Costa became the most successful Spanish Davis Cup captain to date as he led Spain to two Davis Cup titles in 2009 and 2011, before handing the captaincy over to Àlex Corretja.
+Costa was coaching ATP pro Feliciano López.
+
+Personal life
+He grew up with John McEnroe as his idol. Besides tennis, he enjoys playing cards, table tennis, golf, and soccer. He is also a fan of Barcelona and his hometown team UE Lleida. He also admires Michael Jordan, Tiger Woods, and Ronaldo.
+Less than a week after his triumph at the 2002 French Open, Costa married his long-time girlfriend Cristina Ventura. Àlex Corretja was the best man at the wedding. The couple have twin daughters, Claudia and Alma, who were born on 21 April 2001.
+
+Career statistics
+Grand Slam tournament performance timeline
+Finals: 1 (1 title)
+Year-End Championship performance timeline
+See also
+List of Grand Slam men's singles champions
+
+Sources
+External links
+Albert Costa at the Association of Tennis Professionals 
+Albert Costa at the International Tennis Federation 
+Albert Costa at the Davis Cup 
+Albert Costa at ESPN.com 
+Albert Costa at Olympedia 
+Albert Costa at Olympics.com
+Passage 3:
+1995 Austrian Open
+The 1995 EA Generali Open, also known as Austrian Open, was a men's tennis tournament held at the Kitzbüheler Tennisclub in Kitzbühel, Austria and played on outdoor clay courts. The event was part of the World Series of the 1995 ATP Tour. It was the 25th edition of the tournament and was held from 31 July until 7 August 1995. Fifth-seeded Albert Costa won the singles title.
+
+Finals
+Singles
+Albert Costa defeated  Thomas Muster, 4–6, 6–4, 7–6(7–3), 2–6, 6–4
+
+It was Costa's first singles title of his career.
+
+Doubles
+Francisco Montana /  Greg Van Emburgh defeated  Jordi Arrese /  Wayne Arthurs 6–7, 6–3, 7–6
+Passage 4:
+1996 Campionati Internazionali di San Marino
+The 1996 Campionati Internazionali di San Marino was a men's tennis tournament played on outdoor clay courts at the Centro Tennis Cassa di Risparmio di Fonte dell'Ovo in the City of San Marino in San Marino and was part of the World Series of the 1996 ATP Tour. The tournament was held from 5 August until 11 August 1996. First-seeded Albert Costa won the singles title.
+
+Finals
+Singles
+Albert Costa defeated  Félix Mantilla 7–6(9–7), 6–3
+
+It was Costa's 2nd singles title of the year and the 3rd of his career.
+
+Doubles
+Pablo Albano /  Lucas Arnold defeated  Mariano Hood /  Sebastián Prieto 6–1, 6–3
+
+It was Albano's 1st title of the year and the 3rd of his career. It was Arnold's only title of the year and the 1st of his career.
+Passage 5:
+2009 Eurocup Formula Renault 2.0
+The 2009 Eurocup Formula Renault 2.0 season was the nineteenth Eurocup Formula Renault 2.0 season. The season began at Circuit de Catalunya on April 18 and finished at the Ciudad del Motor de Aragón on October 25, after fourteen rounds. This season was the last for the current specification Tatuus chassis introduced in 2000, as a new chassis will be introduced for the 2010 season. Albert Costa won the title holding off the challenges of Jean-Éric Vergne and António Félix da Costa, who finished tied on points, with Vergne finishing second on a tie-breaker.
+
+Teams and drivers
+This season saw a cap on entries, with the lineup being capped at 38 entries, depending on the circuit. Guest entries are listed in italics.
+
+Race calendar
+Championship standings
+Drivers
+Points are awarded to the drivers as follows:
+
+* – only awarded to race one polesitters
+
+† — Drivers did not finish the race, but were classified as they completed over 90% of the race distance.
+
+Teams
+Passage 6:
+Albert Costa career statistics
+This is an (incomplete) list of main career statistics page of Spanish professional tennis player Albert Costa.
+
+Significant finals
+Grand Slam finals
+Singles: 1 (1–0)
+Masters Series finals
+Singles: 3 (1–2)
+ATP career finals
+Singles: 21 (12 titles, 9 runners-up)
+Doubles: 1 (1 title)
+Performance timelines
+Singles
+
+
+== Top 10 wins ==
+Passage 7:
+Dallas Open (tennis)
+Dallas Open (tennis), may refer to:
+
+Dallas Open (1983), a defunct tennis tournament held only in 1983.
+Dallas Open (2022), a current tennis tournament held since 2022.
+
+See also
+All pages with titles containing Dallas Open (tennis)
+All pages with titles beginning with Dallas Open (tennis)
+Passage 8:
+2005 Rafael Nadal tennis season
+The 2005 Rafael Nadal tennis season is regarded as one of the greatest seasons of all time by a teenager. Nadal won a career-best 11 singles titles, including then-season-record 4 Masters 1000 titles and his maiden Grand Slam title at the French Open on his first attempt, making him the first teenager since Pete Sampras (1990 US Open) to win a major. He finished the year with 79 calendar match wins, the most by any teenager in ATP Tour history, and the world No. 2 ranking. He was awarded the ATP Most Improved Player of the Year award.
+
+Australian Open
+At the 2005 Australian Open, Nadal lost in the fourth round to eventual runner-up Lleyton Hewitt.
+
+Hard court
+Nadal reached the final of the 2005 Miami Masters, and despite being two points from a straight-sets victory, he was defeated in five sets by Roger Federer.
+
+Clay court
+Nadal dominated the 2005 clay court season. He won 24 consecutive singles matches, which broke Andre Agassi's Open Era record of consecutive match wins for a male teenager. Nadal won the Torneo Conde de Godó in Barcelona and beat 2004 French Open runner-up Guillermo Coria in the finals of the 2005 Monte Carlo Masters and the 2005 Rome Masters. During the Rome quarterfinals against Radek Štěpánek, Nadal hit what is considered by many as the greatest shot of his career, a no-look, running passing shot near the net. These victories raised his ranking to world No. 5 and made him one of the favorites at his career-first French Open. On his 19th birthday, Nadal defeated Federer in the 2005 French Open semifinals, as one of only four players who defeated the world No. 1 that year (along with Marat Safin, Richard Gasquet, and David Nalbandian). Two days later, he defeated Mariano Puerta in the final, becoming the second male player after Mats Wilander to win the French Open on his first attempt. He also became the first male teenager to win a Grand Slam singles title since Pete Sampras won the 1990 US Open at age 19. Winning the French Open improved Nadal's ranking to world No. 3.
+
+Grass court
+Three days after his victory in Paris, Nadal's 24-match winning streak was snapped in the first round of the grass court Gerry Weber Open in Halle, Germany, where he lost to the German Alexander Waske. He then lost in the second round of 2005 Wimbledon to Gilles Müller of Luxembourg.
+
+Summer hard court
+Immediately after Wimbledon, Nadal won 16 consecutive matches and three consecutive tournaments, bringing his ranking to world No. 2 on 25 July 2005. Nadal started his North American summer hard-court season by defeating Agassi in the final of the 2005 Canada Masters, but lost in the first round of the 2005 Cincinnati Masters. Nadal was seeded second at the 2005 US Open, where he was upset in the third round by world No. 49 James Blake in four sets.
+In September, he defeated Coria in the final of the China Open in Beijing and won both of his Davis Cup matches against Italy. In October, he won his fourth ATP Masters Series title of the year, defeating Ivan Ljubičić in the final of the 2005 Madrid Masters. He then suffered a foot injury that prevented him from competing in the year-ending Tennis Masters Cup.Both Nadal and Federer won eleven singles titles and four ATP Masters Series titles in 2005. Nadal broke Mats Wilander's previous teenage record of nine in 1983. Eight of Nadal's titles were on clay, and the remainder were on hard courts. Nadal won 79 matches, second only to Federer's 81.
+
+Singles Matches
+See also
+2005 ATP Tour
+2005 Roger Federer tennis season
+Passage 9:
+Steve Denton
+Steve Denton (born September 5, 1956) is a former professional tennis player for the ATP Tour. He is currently the head men's tennis coach at Texas A&M University.
+After becoming an all-American at the University of Texas in 1978, Denton spent nine seasons playing for the ATP Tour. He reached the final of both the 1981 and 1982 Australian Open, and won the 1982 US Open doubles championship with Kevin Curren, attaining career-high rankings of World No. 12 in singles and World No. 2 in doubles. He won a total of 18 tour level doubles titles and, despite reaching 6 finals, never won a singles title. In 1984, his 138 miles per hour (222 km/h) serve broke the world record, which would not be broken until 13 years later. After retiring from the pros, he moved to Corpus Christi, Texas, coaching several local junior tennis teams. In 2001, he debuted his college coaching career at Texas A&M University–Corpus Christi, where he led his teams to three conference championships and a first-ever NCAA tournament appearance. In 2006, he resigned to become the head coach at Texas A&M University.
+For his accomplishments, he is a member of the ITA Hall of Fame, the Texas Tennis Hall of Fame, the Blue-Gray Tennis Class Hall of Fame, and the Longhorn Hall of Honor.
+
+Playing career
+High school and college
+Denton attended Bishop High School in Bishop, Texas. As a prep, he won four consecutive UIL state 3A singles titles. He then attended the University of Texas at Austin, where he played tennis from 1976–79. He earned all-American honors in 1978. Along with teammate Kevin Curren, he won the U.S. Tennis Association amateur indoor and SWC doubles title in 1979. He completed his college career with an 85–22 singles record, which currently ranks third all-time in school history. He also compiled a 72–18 doubles record, and a 78–27 team record. For his collegiate and professional accomplishments, he was inducted into the Longhorn Hall of Honor in 2006.
+
+Professional
+Denton was ranked as high as World No. 12 on the ATP rankings in singles and No. 2 in doubles, both in 1983. Denton was known for his big serve and employed an unusual service motion which involved taking two steps forward prior to striking the ball.  Current ATP rules prohibit such a motion (or any service motion involving a running or walking start).  In 1984, Denton set a service record of 138 mph (222 km/h) that would stand for 13 years until it was broken in 1997 by Mark Philippoussis who recorded a 142 mph (229 km/h) delivery.  The current record of 163 mph (262 km/h) is held by Sam Groth.
+He reached six singles finals, most notably the Australian Open (in 1981 and 1982) and the Cincinnati Masters (in 1982). He also won 18 doubles titles (including the US Open and the Canada Masters) in 1982, and reaching 23 additional doubles finals.
+
+Grand Slam finals
+Singles (2 losses)
+Doubles (1 win, 1 loss)
+Mixed Doubles (3 losses)
+Grand Slam tournament performance timeline
+Singles
+Career finals
+Doubles (18 wins, 21 losses)
+Singles: 6 (6 losses)
+Coaching career
+Denton made his first head coaching debut at Texas A&M–Corpus Christi in 2001. In his five seasons there, he led the Islanders to three Southland Conference regular-season championships, two tournament championships, and the team's first-ever NCAA Tournament appearance. He was named Southland Conference Coach of the Year twice, in 2004 and 2005. He finished with a 64–48 overall record.On August 8, 2006, Denton became the head men's tennis coach at Texas A&M University. After struggling for two years in Big 12 Conference play, Denton led the Aggies to a 5-1 conference record and 2nd-place finish in his third year, earning Big 12 Coach of the Year honors.
+
+Coaching record
+Passage 10:
+1996 Bournemouth International
+The 1996 Bournemouth International (also known as the 1996 Samsung Open for sponsorship reasons) was a men's tennis tournament played on outdoor clay courts at the West Hants Tennis Club in Bournemouth in England and was part of the World Series of the 1996 ATP Tour. It was the inaugural edition of the tournament and was held from 9 to 15 September 1996. Albert Costa won the singles title.
+
+Finals
+Singles
+Albert Costa defeated  Marc-Kevin Goellner 6–7(4–7), 6–2, 6–2
+
+It was Costa's 3rd title of the year and the 4th of his career.
+
+Doubles
+
+ Marc-Kevin Goellner /  Greg Rusedski defeated  Rodolphe Gilbert /  Nuno Marques 6–3, 7–6
+
+It was Goellner's 1st title of the year and the 4th of his career. It was Rusedski's 1st title of the year and the 4th of his career.
+
+Answer the question based on the given passages. Only give me the answer and do not output any other words.
+
+Question: Steve Denton and Albert Costa are both tennis players, which one began playing at the age if five?
+Answer:<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+Evaluating hotpotqa_e (generate):  10%|█         | 1/10 [00:03<00:34,  3.81s/it]Evaluating hotpotqa_e (generate):  60%|██████    | 6/10 [00:06<00:04,  1.02s/it]Evaluating hotpotqa_e (generate):  70%|███████   | 7/10 [00:10<00:04,  1.47s/it]Evaluating hotpotqa_e (generate):  80%|████████  | 8/10 [00:12<00:03,  1.69s/it]Evaluating hotpotqa_e (generate):  90%|█████████ | 9/10 [00:14<00:01,  1.78s/it]Evaluating hotpotqa_e (generate): 100%|██████████| 10/10 [00:14<00:00,  1.47s/it]
+
+
+[Generated output]:
+Albert Costa began playing at the age of five.
+================ End Example IO ================
+
+hotpotqa_e processed 5 samples, skipped 5
+{
+  "subject": "hotpotqa_e",
+  "metric": "f1",
+  "score": 0.2507692307692308,
+  "num_samples": 5,
+  "length_buckets": {
+    "4k-8k": {
+      "score": 0.27179487179487183,
+      "num_samples": 4
+    },
+    "0-4k": {
+      "score": 0.16666666666666669,
+      "num_samples": 1
+    }
+  },
+  "details": [
+    {
+      "_id": "351bdad4f6d1d47cf299e4b7821c10cd834a874391987870",
+      "score": 0.19999999999999998,
+      "input_length": 5444,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "3cdadb5be4ed28de045f8fc2e382909260a2b70ff26884cb",
+      "score": 0.33333333333333337,
+      "input_length": 5183,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "63a9ac0273294a8066497413f2a767fefdd9aa39949c7537",
+      "score": 0.15384615384615385,
+      "input_length": 5170,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "e431ceccabc23b11ab492c9bf6f28c3b5692616abfdf5c2e",
+      "score": 0.4,
+      "input_length": 4447,
+      "length_bucket": "4k-8k"
+    },
+    {
+      "_id": "c6d7b3b756c44de21e714d0d2e76444a864e7537944085b8",
+      "score": 0.16666666666666669,
+      "input_length": 3318,
+      "length_bucket": "0-4k"
+    }
+  ],
+  "ablation": "receiver_zero_decoded_sharer_kv_before_fuser",
+  "representation": "adaptive_int",
+  "entropy_backend": "lz4",
+  "transport": "none",
+  "prediction_file": "/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/070_080/pred_e/cachejpeg/hotpotqa.jsonl"
+}
+[shard] rows [80, 90)
+Traceback (most recent call last):
+  File "/data/smy_data/tmp/eval_hotpotqa_e_zero_sharer_kv.py", line 14, in <module>
+    import script.evaluation.unified_evaluator as evaluator_module
+  File "/data/smy_data/script/evaluation/unified_evaluator.py", line 36, in <module>
+    from rosetta.utils.evaluate import (
+  File "/data/smy_data/rosetta/utils/evaluate.py", line 19, in <module>
+    from rosetta.model.wrapper import RosettaModel
+  File "/data/smy_data/rosetta/model/wrapper.py", line 9, in <module>
+    from transformers.modeling_utils import PreTrainedModel
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/transformers/modeling_utils.py", line 40, in <module>
+    import torch.distributed.tensor
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/distributed/tensor/__init__.py", line 4, in <module>
+    import torch.distributed.tensor._ops  # force import all built-in dtensor ops
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/distributed/tensor/_ops/__init__.py", line 2, in <module>
+    from ._conv_ops import *  # noqa: F403
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/distributed/tensor/_ops/_conv_ops.py", line 7, in <module>
+    from torch.distributed.tensor._dtensor_spec import DTensorSpec, TensorMeta
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/distributed/tensor/_dtensor_spec.py", line 6, in <module>
+    from torch.distributed.tensor.placement_types import (
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/distributed/tensor/placement_types.py", line 10, in <module>
+    from torch.distributed.tensor._collective_utils import (
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/distributed/tensor/_collective_utils.py", line 32, in <module>
+    def _shard_dim_alltoall_meta(input, gather_dim, shard_dim, group_name):
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/library.py", line 828, in register
+    use_lib._register_fake(op_name, func, _stacklevel=stacklevel + 1)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/library.py", line 177, in _register_fake
+    source = torch._library.utils.get_source(_stacklevel + 1)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/site-packages/torch/_library/utils.py", line 53, in get_source
+    frame = inspect.getframeinfo(sys._getframe(stacklevel))
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/inspect.py", line 1624, in getframeinfo
+    lines, lnum = findsource(frame)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/inspect.py", line 952, in findsource
+    module = getmodule(object, file)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/inspect.py", line 878, in getmodule
+    os.path.realpath(f)] = module.__name__
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/posixpath.py", line 393, in realpath
+    path, ok = _joinrealpath(filename[:0], filename, strict, {})
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/posixpath.py", line 435, in _joinrealpath
+    newpath = join(path, name)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/posixpath.py", line 83, in join
+    if b.startswith(sep):
+UnboundLocalError: local variable 'b' referenced before assignment
+Traceback (most recent call last):
+  File "/data/smy_data/tmp/eval_hotpotqa_e_zero_sharer_kv.py", line 186, in <module>
+    main()
+  File "/data/smy_data/tmp/eval_hotpotqa_e_zero_sharer_kv.py", line 125, in main
+    subprocess.run(command, check=True)
+  File "/home/ubuntu1/miniconda3/envs/rosetta/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/home/ubuntu1/miniconda3/envs/rosetta/bin/python', '/data/smy_data/tmp/eval_hotpotqa_e_zero_sharer_kv.py', '--start', '80', '--limit', '10', '--output-dir', '/data/smy_data/tmp/hotpotqa_e_zero_sharer_kv/shards/080_090']' returned non-zero exit status 1.
+ERROR conda.cli.main_run:execute(148): `conda run env PYTHONPATH=/data/smy_data:/data/smy/HomoC2C-KV/src CUDA_VISIBLE_DEVICES=0,1 python -u /data/smy_data/tmp/eval_hotpotqa_e_zero_sharer_kv.py --shard-size 10` failed. (See above for error)

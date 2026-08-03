@@ -19,6 +19,35 @@ except Exception:
     GreedySearchDecoderOnlyOutput = None
     SampleDecoderOnlyOutput = None
 
+
+def _safe_is_gradient_checkpointing_enabled(model: nn.Module) -> bool:
+        """
+        某些 transformers 模型在访问 is_gradient_checkpointing 时会进一步遍历
+        named_modules()；在我们当前的训练/评测路径里，这一步偶发抛异常。
+        这里做保护性探测，失败时退回 False，避免评测阶段被非核心状态查询打断。
+        """
+        try:
+            return bool(getattr(model, "is_gradient_checkpointing", False))
+        except Exception:
+            return False
+
+
+def _safe_toggle_gradient_checkpointing(model: nn.Module, enabled: bool) -> bool:
+        """
+        尝试安全地开关 gradient checkpointing。
+        返回值表示这次切换是否真的成功，便于 finally 中只恢复成功关闭过的状态。
+        """
+        method_name = "gradient_checkpointing_enable" if enabled else "gradient_checkpointing_disable"
+        toggle_fn = getattr(model, method_name, None)
+        if not callable(toggle_fn):
+            return False
+
+        try:
+            toggle_fn()
+            return True
+        except Exception:
+            return False
+
 def clone_kv_cache(kv_cache: DynamicCache) -> DynamicCache:
         new_cache = DynamicCache()
         for k, v in zip(kv_cache.key_cache, kv_cache.value_cache):
@@ -480,13 +509,14 @@ class RosettaModel(nn.Module):
 
                     model = self.model_list[source_model_idx]
                     was_training = model.training
-                    had_gc = getattr(model, "is_gradient_checkpointing", False)
+                    had_gc = _safe_is_gradient_checkpointing_enabled(model)
+                    disabled_gc = False
 
                     try:
                         if was_training:
                             model.eval()
                         if had_gc:
-                            model.gradient_checkpointing_disable()
+                            disabled_gc = _safe_toggle_gradient_checkpointing(model, enabled=False)
 
                         with torch.no_grad():
                             out = model(
@@ -499,8 +529,8 @@ class RosettaModel(nn.Module):
                             )
                             curr_source_kv_cache = out.past_key_values
                     finally:
-                        if had_gc:
-                            model.gradient_checkpointing_enable()
+                        if disabled_gc:
+                            _safe_toggle_gradient_checkpointing(model, enabled=True)
                         if was_training:
                             model.train()
                     

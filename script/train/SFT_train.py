@@ -18,7 +18,7 @@ import json
 import yaml
 import argparse
 import shutil
-import wandb
+import logging
 import torch.distributed as dist  # Added for Distributed Data Parallel support
 from torch.nn.parallel import DistributedDataParallel  # For type checking
 from datetime import datetime
@@ -244,16 +244,134 @@ def build_shared_mlp(source_dim: int, hidden_dim: int, target_dim: int, num_laye
         layers = [nn.Linear(source_dim, target_dim, dtype=dtype)]
         
     return nn.Sequential(*layers)
-    
+
+
+def setup_logging(log_dir: str, log_name: str = "train.log") -> logging.Logger:
+    """Configure a file + console logger for training metrics and progress."""
+    os.makedirs(log_dir, exist_ok=True)
+    logger = logging.getLogger("sft_train")
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+
+    # Avoid duplicate handlers when main() is re-entered in the same process.
+    for handler in list(logger.handlers):
+        logger.removeHandler(handler)
+
+    formatter = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+
+    file_handler = logging.FileHandler(os.path.join(log_dir, log_name), mode="a", encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+
+    return logger
+
+
+def log_metrics(logger: logging.Logger, prefix: str, step: Optional[int] = None, **metrics: Any) -> None:
+    """Log scalar metrics in a compact, structured form."""
+    parts = []
+    if step is not None:
+        parts.append(f"step={step}")
+    for key, value in metrics.items():
+        if isinstance(value, float):
+            parts.append(f"{prefix}/{key}={value:.6f}")
+        else:
+            parts.append(f"{prefix}/{key}={value}")
+    logger.info(" | ".join(parts))
+
+
+def resolve_model_load_path(model_config: Dict[str, Any], model_key: str, local_dir_key: str) -> str:
+    """Prefer a configured local model directory, otherwise use the repo id/name."""
+    model_name = model_config[model_key]
+    local_dir = model_config.get(local_dir_key)
+
+    if not local_dir:
+        return model_name
+
+    candidate = os.path.abspath(os.path.expanduser(str(local_dir)))
+    config_path = os.path.join(candidate, "config.json")
+    if os.path.isdir(candidate) and os.path.isfile(config_path):
+        print(f"Loading {model_key} from local directory: {candidate}")
+        return candidate
+
+    print(
+        f"Local directory for {model_key} is unavailable or missing config.json: "
+        f"{candidate}. Falling back to {model_name}"
+    )
+    return model_name
+
+
+def load_resume_checkpoint(
+    checkpoint_dir: str,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    scheduler: Any,
+    training_mode: str,
+    device: str,
+    logger: logging.Logger,
+) -> Dict[str, Any]:
+    """Load model/projector weights plus optimizer and scheduler state from a saved checkpoint."""
+    if not os.path.isdir(checkpoint_dir):
+        raise FileNotFoundError(f"resume_from_checkpoint does not exist or is not a directory: {checkpoint_dir}")
+
+    model_ref = model.module if isinstance(model, DistributedDataParallel) else model
+
+    if training_mode == "rosetta":
+        for i, projector in enumerate(model_ref.projector_list):
+            projector_path = os.path.join(checkpoint_dir, f"projector_{i}.pt")
+            if not os.path.isfile(projector_path):
+                raise FileNotFoundError(f"Missing projector checkpoint: {projector_path}")
+            projector_state = torch.load(projector_path, map_location=device)
+            projector.load_state_dict(projector_state)
+        logger.info("Loaded Rosetta projector weights from: %s", checkpoint_dir)
+    else:
+        model_state_path = os.path.join(checkpoint_dir, "model.pt")
+        if os.path.isfile(model_state_path):
+            model_state = torch.load(model_state_path, map_location=device)
+            missing_keys, unexpected_keys = model_ref.load_state_dict(model_state, strict=False)
+            logger.info(
+                "Loaded baseline model.pt from: %s | missing_keys=%s | unexpected_keys=%s",
+                checkpoint_dir,
+                len(missing_keys),
+                len(unexpected_keys),
+            )
+        else:
+            logger.warning(
+                "No model.pt found in baseline checkpoint %s. Optimizer/scheduler state will be restored, "
+                "but baseline model weights saved via save_pretrained are not reloaded by this resume path.",
+                checkpoint_dir,
+            )
+
+    training_state_path = os.path.join(checkpoint_dir, "training_state.pt")
+    if not os.path.isfile(training_state_path):
+        raise FileNotFoundError(f"Missing training state checkpoint: {training_state_path}")
+
+    training_state = torch.load(training_state_path, map_location=device)
+    optimizer.load_state_dict(training_state["optimizer_state_dict"])
+    scheduler.load_state_dict(training_state["scheduler_state_dict"])
+    logger.info(
+        "Loaded training state from: %s | step=%s | epoch=%s",
+        training_state_path,
+        training_state.get("step", 0),
+        training_state.get("epoch", 0),
+    )
+    return training_state
+     
 def setup_models(model_config: Dict[str, Any], training_mode: str, device: str = "cuda", dtype: torch.dtype = torch.bfloat16):
     """Setup models based on training mode (baseline or rosetta)"""
     
     if training_mode == "baseline":
         # Baseline mode: single model training
         model_name = model_config["baseline_model"]
+        model_load_path = resolve_model_load_path(model_config, "baseline_model", "baseline_model_local_dir")
         
         # Load tokenizer
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_load_path, trust_remote_code=True)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
             tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -261,51 +379,60 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
         
         # Load baseline model
         model = AutoModelForCausalLM.from_pretrained(
-            model_name,
+            model_load_path,
             torch_dtype=dtype,
-            attn_implementation=model_config.get("attn_implementation", None)
+            attn_implementation=model_config.get("attn_implementation", None),
+            trust_remote_code=True
         )
         
         return model, tokenizer, None, None
     
     else:  # rosetta mode
+        base_model_name = model_config["base_model"]
+        teacher_model_name = model_config["teacher_model"]
+        base_model_load_path = resolve_model_load_path(model_config, "base_model", "base_model_local_dir")
+        teacher_model_load_path = resolve_model_load_path(model_config, "teacher_model", "teacher_model_local_dir")
+
         # Load tokenizer (use base model tokenizer)
-        slm_tokenizer = AutoTokenizer.from_pretrained(model_config["base_model"])
+        slm_tokenizer = AutoTokenizer.from_pretrained(base_model_load_path, trust_remote_code=True)
 
         if slm_tokenizer.pad_token is None:
             slm_tokenizer.pad_token = slm_tokenizer.eos_token
             slm_tokenizer.pad_token_id = slm_tokenizer.eos_token_id
-        set_default_chat_template(slm_tokenizer, model_config["base_model"])
+        set_default_chat_template(slm_tokenizer, base_model_name)
         
         # Load LLM tokenizer if alignment is enabled
         llm_tokenizer = None
         if model_config.get("is_do_alignment", False):
-            llm_tokenizer = AutoTokenizer.from_pretrained(model_config["teacher_model"])
+            llm_tokenizer = AutoTokenizer.from_pretrained(teacher_model_load_path, trust_remote_code=True)
             if llm_tokenizer.pad_token is None:
                 llm_tokenizer.pad_token = llm_tokenizer.eos_token
                 llm_tokenizer.pad_token_id = llm_tokenizer.eos_token_id
-            set_default_chat_template(llm_tokenizer, model_config["teacher_model"])
+            set_default_chat_template(llm_tokenizer, teacher_model_name)
 
         # Load base model
         base_model = AutoModelForCausalLM.from_pretrained(
-            model_config["base_model"],
+            base_model_load_path,
             torch_dtype=dtype,
-            attn_implementation=model_config.get("attn_implementation", None)
+            attn_implementation=model_config.get("attn_implementation", None),
+            trust_remote_code=True
         )
         
         # Load teacher model  
-        if model_config["teacher_model"] == "google/gemma-3-1b-it":
+        if teacher_model_name == "google/gemma-3-1b-it":
             teacher_model = AutoModelForCausalLM.from_pretrained(
-                model_config["teacher_model"],
+                teacher_model_load_path,
                 torch_dtype=dtype,
                 attn_implementation=model_config.get("attn_implementation", None),
-                sliding_window=4096
+                sliding_window=4096,
+                trust_remote_code=True
             )
         else:
             teacher_model = AutoModelForCausalLM.from_pretrained(
-                model_config["teacher_model"],
+                teacher_model_load_path,
                 torch_dtype=dtype,
-                attn_implementation=model_config.get("attn_implementation", None)
+                attn_implementation=model_config.get("attn_implementation", None),
+                trust_remote_code=True
             )
         
         # Get model dimensions and layer counts
@@ -474,7 +601,7 @@ def main():
     or YAML configuration file. The mode is automatically detected from the config:
     - If 'baseline_model' is provided: baseline training
     - If 'base_model' and 'teacher_model' are provided: Rosetta training
-    Training progress is tracked with Weights & Biases and the original config
+    Training progress is recorded with the standard logging module and the original config
     is copied alongside checkpoints for full reproducibility.
     """
 
@@ -485,7 +612,10 @@ def main():
     parser.add_argument("--config", type=str, default="recipe/all_in_one.yaml", help="Path to JSON or YAML config file")
     parser.add_argument("--local_rank", type=int, default=-1, help="Local rank for distributed training")
     parser.add_argument("--output_dir", type=str, default="outputs", help="Directory to save outputs and checkpoints")
+    parser.add_argument("--log_dir", type=str, default=None, help="Directory to save training logs")
+    parser.add_argument("--log_name", type=str, default="training.log", help="Name for the training log file")
     parser.add_argument("--eval_only", action="store_true", help="Run evaluation only (no training)")
+    parser.add_argument("--resume_from_checkpoint", type=str, default=None, help="Path to a checkpoint directory to resume training from")
     args = parser.parse_args()
 
     cfg: Dict[str, Any] = load_config(args.config)
@@ -529,29 +659,21 @@ def main():
         device = training_config.get("device", "cuda")
 
     is_main_process = rank == 0
+    log_dir = args.log_dir or os.path.join(timestamped_output_dir, "logs")
+    log_name = args.log_name 
+    logger = setup_logging(log_dir, log_name)
 
-    # ------------------------------------------------------------------
-    # Weights & Biases initialisation
-    # ------------------------------------------------------------------
-    run_name = f"{output_config['wandb_config']['run_name']}_{timestamp}"
     if is_main_process:
-        wandb.init(
-            project=output_config["wandb_config"]["project"],
-            name=run_name,
-            config=cfg,
-            mode=output_config["wandb_config"]["mode"],
-            entity=output_config["wandb_config"]["entity"]
-        )
-    
-    print(f"Outputs will be saved to: {timestamped_output_dir}")
+        logger.info("Outputs will be saved to: %s", timestamped_output_dir)
+        logger.info("Logs will be saved to: %s", log_dir)
 
     # ------------------------------------------------------------------
     # Detect training mode and setup models
     # ------------------------------------------------------------------
     training_mode = detect_training_mode(model_config)
     if is_main_process:
-        print(f"Training mode: {training_mode}")
-        print("Setting up models鈥?)
+        logger.info("Training mode: %s", training_mode)
+        logger.info("Setting up models...")
     
     model, main_tokenizer, aligner, llm_tokenizer = setup_models(model_config, training_mode, device, torch.bfloat16)
     model = model.to(device)
@@ -589,6 +711,14 @@ def main():
         
         if is_main_process:
             print(f"Applying freeze configuration: {freeze_config}")
+
+        include_response = model_config.get("include_response", False)
+        if "base" in freeze_config and "teacher" in freeze_config and "projector" not in freeze_config and not include_response:
+            raise ValueError(
+                "Current config freezes both base and teacher while training only the projector, "
+                "but model.include_response is False. This disconnects the loss from trainable "
+                "parameters. Set model.include_response=true or unfreeze part of the base model."
+            )
         
         if "base" in freeze_config:
             freeze_model(model.model_list[0])  # Base model
@@ -625,7 +755,7 @@ def main():
     # ------------------------------------------------------------------
     # Dataset & dataloaders
     # ------------------------------------------------------------------
-    print("Loading dataset鈥?)
+    logger.info("Loading dataset...")
     # Create dataset using the auto-registration system
     instruct_ds = create_dataset(
         dataset_type=data_config["type"],
@@ -720,23 +850,16 @@ def main():
             dist.all_reduce(loss_tensor, op=dist.ReduceOp.AVG)
             avg_eval_loss = loss_tensor.item()
             if is_main_process:
-                print(f"Evaluation (eval_only) loss: {avg_eval_loss:.4f}")
-                wandb.log({
-                    "eval/loss": avg_eval_loss,
-                    "mode": "eval_only",
-                }, step=0)
+                logger.info("Evaluation (eval_only) loss: %.4f", avg_eval_loss)
+                log_metrics(logger, "eval", step=0, loss=avg_eval_loss, mode="eval_only")
         else:
             eval_loss = evaluate_model(model, eval_loader, main_tokenizer, training_config["max_length"], device, training_mode)
-            print(f"Evaluation (eval_only) loss: {eval_loss:.4f}")
+            logger.info("Evaluation (eval_only) loss: %.4f", eval_loss)
             if is_main_process:
-                wandb.log({
-                    "eval/loss": eval_loss,
-                    "mode": "eval_only",
-                }, step=0)
+                log_metrics(logger, "eval", step=0, loss=eval_loss, mode="eval_only")
 
         if is_main_process:
-            print("Evaluation-only run completed!")
-            wandb.finish()
+            logger.info("Evaluation-only run completed!")
         if distributed:
             dist.destroy_process_group()
         return
@@ -784,13 +907,48 @@ def main():
         num_training_steps=total_steps,
     )
 
+    resume_training_state = None
+    global_step = 0
+    start_epoch = 0
+    resume_macro_step_in_epoch = 0
+    if args.resume_from_checkpoint:
+        resume_checkpoint_dir = os.path.abspath(os.path.expanduser(args.resume_from_checkpoint))
+        resume_training_state = load_resume_checkpoint(
+            resume_checkpoint_dir,
+            model,
+            optimizer,
+            scheduler,
+            training_mode,
+            device,
+            logger,
+        )
+        global_step = int(resume_training_state.get("step", 0))
+        saved_epoch = int(resume_training_state.get("epoch", 0))
+        resume_macro_step_in_epoch = global_step % updates_per_epoch if updates_per_epoch > 0 else 0
+        start_epoch = saved_epoch + 1 if global_step > 0 and resume_macro_step_in_epoch == 0 else saved_epoch
+
+        if training_mode == "rosetta":
+            model_to_use = model.module if hasattr(model, "module") else model
+            for proj in model_to_use.projector_list:
+                if hasattr(proj, 'update_temperature') and callable(proj.update_temperature):
+                    proj.update_temperature(global_step)
+
+        if is_main_process:
+            logger.info(
+                "Resuming training from checkpoint: %s | global_step=%s | start_epoch=%s | "
+                "resume_macro_step_in_epoch=%s",
+                resume_checkpoint_dir,
+                global_step,
+                start_epoch,
+                resume_macro_step_in_epoch,
+            )
+
     # ------------------------------------------------------------------
     # Training loop
     # ------------------------------------------------------------------
-    print("Starting training鈥?)
-    global_step = 0
+    logger.info("Starting training...")
     optimizer.zero_grad()
-    for epoch in range(training_config["num_epochs"]):
+    for epoch in range(start_epoch, training_config["num_epochs"]):
         if distributed and train_sampler is not None:
             # Ensure different shuffles across epochs in distributed setup
             train_sampler.set_epoch(epoch)
@@ -801,14 +959,35 @@ def main():
         macro_step_in_epoch = 0
         accum_true_loss = 0.0
         micro_in_window = 0
+        skip_batches = 0
+        if resume_training_state is not None and epoch == start_epoch and resume_macro_step_in_epoch > 0:
+            macro_step_in_epoch = resume_macro_step_in_epoch
+            skip_batches = min(resume_macro_step_in_epoch * grad_accum_steps, len(train_loader))
+            if is_main_process:
+                progress_bar.update(resume_macro_step_in_epoch)
+                logger.info(
+                    "Skipping %s already-trained batches in epoch %s after resume.",
+                    skip_batches,
+                    epoch + 1,
+                )
 
         for batch_idx, batch in enumerate(train_loader):
+            if batch_idx < skip_batches:
+                continue
+
             # Forward/backward with gradient accumulation and DDP no_sync for micro-steps
             is_accum_step = ((batch_idx + 1) % grad_accum_steps) != 0
             sync_ctx = model.no_sync() if distributed and hasattr(model, "no_sync") and is_accum_step else contextlib.nullcontext()
 
             with sync_ctx:
                 loss = train_step(model, batch, main_tokenizer, training_config["max_length"], device, training_mode)
+                if not loss.requires_grad:
+                    raise RuntimeError(
+                        "Loss does not require gradients. This usually means the current training setup "
+                        "has disconnected all trainable parameters from the loss. For Rosetta training, "
+                        "a common cause is freezing both base and teacher while leaving "
+                        "model.include_response disabled."
+                    )
                 true_loss_value = loss.detach().item()
                 scaled_loss = loss / grad_accum_steps  # Gradient accumulation
                 scaled_loss.backward()
@@ -854,12 +1033,15 @@ def main():
                 progress_bar.set_postfix(postfix)
                 progress_bar.update(1)
 
-                wandb.log({
-                    "train/loss": avg_window_loss,
-                    "train/lr": scheduler.get_last_lr()[0],
-                    "train/grad_norm": grad_norm_value,
-                    "train/epoch": fractional_epoch,
-                }, step=global_step)
+                log_metrics(
+                    logger,
+                    "train",
+                    step=global_step,
+                    loss=avg_window_loss,
+                    lr=scheduler.get_last_lr()[0],
+                    grad_norm=grad_norm_value,
+                    epoch=fractional_epoch,
+                )
 
                 # reset window accumulators
                 accum_true_loss = 0.0
@@ -869,33 +1051,9 @@ def main():
             if did_step:
                 # Calculate fractional epoch based on macro steps
                 fractional_epoch = epoch + (macro_step_in_epoch / updates_per_epoch)
-                # Evaluation at regular intervals under DDP using broadcasted decision
-                want_eval = (global_step % output_config["eval_steps"] == 0)
-                want_eval = broadcast_decision_from_rank0(want_eval, distributed, device, rank)
-                if want_eval:
-                    if distributed:
-                        # All ranks evaluate their shard and average
-                        local_eval_loss = evaluate_model(model, eval_loader, main_tokenizer, training_config["max_length"], device, training_mode)
-                        loss_tensor = torch.tensor([local_eval_loss], device=device, dtype=torch.float32)
-                        dist.all_reduce(loss_tensor, op=dist.ReduceOp.AVG)
-                        avg_eval_loss = loss_tensor.item()
-                        if is_main_process:
-                            print(f"\nEvaluation (mid-epoch) at step {global_step}: {avg_eval_loss:.4f}")
-                            wandb.log({
-                                "eval/loss": avg_eval_loss,
-                                "eval/step": global_step,
-                                "eval/epoch": fractional_epoch
-                            }, step=global_step)
-                    else:
-                        eval_loss = evaluate_model(model, eval_loader, main_tokenizer, training_config["max_length"], device, training_mode)
-                        print(f"\nEvaluation loss at step {global_step}: {eval_loss:.4f}")
-                        wandb.log({
-                            "eval/loss": eval_loss,
-                            "eval/step": global_step,
-                            "eval/epoch": fractional_epoch
-                        }, step=global_step)
 
-                # Checkpointing under DDP using broadcasted decision
+                # Checkpointing under DDP using broadcasted decision. Save before eval so
+                # a checkpoint exists even if the heavier evaluation path fails.
                 want_save = (global_step % output_config["save_steps"] == 0)
                 want_save = broadcast_decision_from_rank0(want_save, distributed, device, rank)
                 if want_save:
@@ -932,7 +1090,25 @@ def main():
                             "scheduler_state_dict": scheduler.state_dict(),
                             "loss": true_loss_value,  # true loss for this batch window
                         }, os.path.join(checkpoint_dir, "training_state.pt"))
-                        print(f"\nCheckpoint saved at step {global_step}")
+                        logger.info("\nCheckpoint saved at step %s", global_step)
+
+                # Evaluation at regular intervals under DDP using broadcasted decision
+                want_eval = (global_step % output_config["eval_steps"] == 0)
+                want_eval = broadcast_decision_from_rank0(want_eval, distributed, device, rank)
+                if want_eval:
+                    if distributed:
+                        # All ranks evaluate their shard and average
+                        local_eval_loss = evaluate_model(model, eval_loader, main_tokenizer, training_config["max_length"], device, training_mode)
+                        loss_tensor = torch.tensor([local_eval_loss], device=device, dtype=torch.float32)
+                        dist.all_reduce(loss_tensor, op=dist.ReduceOp.AVG)
+                        avg_eval_loss = loss_tensor.item()
+                        if is_main_process:
+                            logger.info("\nEvaluation (mid-epoch) at step %s: %.4f", global_step, avg_eval_loss)
+                            log_metrics(logger, "eval", step=global_step, loss=avg_eval_loss, epoch=fractional_epoch)
+                    else:
+                        eval_loss = evaluate_model(model, eval_loader, main_tokenizer, training_config["max_length"], device, training_mode)
+                        logger.info("\nEvaluation loss at step %s: %.4f", global_step, eval_loss)
+                        log_metrics(logger, "eval", step=global_step, loss=eval_loss, epoch=fractional_epoch)
 
         avg_epoch_loss = epoch_loss / len(train_loader)
 
@@ -946,21 +1122,13 @@ def main():
             dist.all_reduce(loss_tensor, op=dist.ReduceOp.AVG)
             avg_eval_loss = loss_tensor.item()
             if is_main_process:
-                print(f"Epoch {epoch + 1} completed. Train loss: {avg_epoch_loss:.4f} | Eval loss: {avg_eval_loss:.4f}")
-                wandb.log({
-                    "eval/epoch_loss": avg_eval_loss,
-                    "epoch": epoch + 1,
-                    "train/epoch_avg_loss": avg_epoch_loss
-                }, step=global_step)
+                logger.info("Epoch %s completed. Train loss: %.4f | Eval loss: %.4f", epoch + 1, avg_epoch_loss, avg_eval_loss)
+                log_metrics(logger, "epoch", step=global_step, eval_loss=avg_eval_loss, epoch=epoch + 1, train_epoch_avg_loss=avg_epoch_loss)
         else:
-            print(f"Running end-of-epoch evaluation for epoch {epoch + 1}...")
+            logger.info("Running end-of-epoch evaluation for epoch %s...", epoch + 1)
             avg_eval_loss = evaluate_model(model, eval_loader, main_tokenizer, training_config["max_length"], device, training_mode)
-            print(f"Epoch {epoch + 1} completed. Train loss: {avg_epoch_loss:.4f} | Eval loss: {avg_eval_loss:.4f}")
-            wandb.log({
-                "eval/epoch_loss": avg_eval_loss,
-                "epoch": epoch + 1,
-                "train/epoch_avg_loss": avg_epoch_loss
-            }, step=global_step)
+            logger.info("Epoch %s completed. Train loss: %.4f | Eval loss: %.4f", epoch + 1, avg_epoch_loss, avg_eval_loss)
+            log_metrics(logger, "epoch", step=global_step, eval_loss=avg_eval_loss, epoch=epoch + 1, train_epoch_avg_loss=avg_epoch_loss)
 
     # ------------------------------------------------------------------
     # Save final artefacts
@@ -990,8 +1158,7 @@ def main():
             base_model_ref.save_projector_config(os.path.join(final_dir, "projector_config.json"))
 
     if is_main_process:
-        print("Training completed!")
-        wandb.finish()
+        logger.info("Training completed!")
 
     # Clean up distributed training
     if distributed:
@@ -1005,4 +1172,3 @@ if __name__ == "__main__":
     # debugpy.wait_for_client()
     # print("Debugger attached, running...")
     main()
-

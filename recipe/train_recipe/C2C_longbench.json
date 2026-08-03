@@ -4,6 +4,10 @@
         "teacher_model": "Qwen/Qwen2.5-0.5B-Instruct",
         "is_do_alignment": true,
         "alignment_strategy": "longest",
+<<<<<<< HEAD
+=======
+        "include_response": true,
+>>>>>>> end2end commit
         "projector": {
             "type": "C2CProjector",
             "params": {
@@ -22,21 +26,38 @@
         "learning_rate": 1e-4,
         "weight_decay": 0.01,
         "num_epochs": 1,
+<<<<<<< HEAD
         "max_length": 12000,
+=======
+        "max_length": 9216,
+>>>>>>> end2end commit
         "device": "cuda",
         "scheduler_type": "linear",
         "warmup_ratio": 0.1,
         "max_grad_norm": 1.0,
+<<<<<<< HEAD
         "gradient_accumulation_steps": 2,
         "per_device_train_batch_size": 1,
         "num_processes": 8,
+=======
+        "gradient_accumulation_steps": 1,
+        "per_device_train_batch_size": 1,
+        "num_processes": 8,
+        "find_unused_parameters": false,
+        "broadcast_buffers": false,
+        "step_sleep_seconds": 0.5,
+>>>>>>> end2end commit
         "freeze": ["teacher", "base"],
         "seed": 42
     },
     "output": {
         "output_dir": "local/checkpoints/0.6+0.5B_C2C_longbench_e",
         "save_steps": 50,
+<<<<<<< HEAD
         "eval_steps": 25,
+=======
+        "eval_steps": 3000,
+>>>>>>> end2end commit
         "wandb_config": {
             "project": "Rosetta",
             "mode": "online",
@@ -51,11 +72,18 @@
             "dataset_name": null,
             "use_longbench_e": true,
             "filter_mod4": true,
+<<<<<<< HEAD
             "max_length": 12000,
+=======
+            "max_length": 8192,
+>>>>>>> end2end commit
             "num_samples": 1896
         }
     }
 }
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> end2end commit
