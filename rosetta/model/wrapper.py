@@ -575,6 +575,8 @@ class RosettaModel(nn.Module):
 
                             quantized_source_by_target = None
                             if self.adaptive_quant_table is not None:
+                                # R_hat is estimated from routed sharer KV before the
+                                # split projector sees receiver KV or performs fusion.
                                 expected_layers = list(range(self.adaptive_quant_table.num_layers))
                                 layer_map = self.projector_dict[self.base_model_idx][source_model_idx]
                                 actual_layers = sorted(int(layer_idx) for layer_idx in layer_map)
@@ -697,6 +699,7 @@ class RosettaModel(nn.Module):
                 "estimated_payload_bits": float(
                     total_adaptive_payload_bits.detach().item()
                 ),
+                "rate_source": "sharer_raw_kv_pre_fusion",
                 "rate_weight": float(rate_weight),
                 "rate_loss": float(rate_loss.detach().item()),
                 "temperature": float(

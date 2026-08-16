@@ -1,6 +1,7 @@
 import json
 import logging
 
+import pytest
 import torch
 
 from rosetta.model.adaptive_quant_table import (
@@ -9,7 +10,10 @@ from rosetta.model.adaptive_quant_table import (
     _idct_iii_ortho,
     resolve_adaptive_quant_table_config,
 )
-from script.train.SFT_train import load_initial_projector_checkpoint
+from script.train.SFT_train import (
+    load_initial_projector_checkpoint,
+    resolve_model_load_path,
+)
 
 
 def _config(**overrides):
@@ -116,20 +120,61 @@ def test_stage2_warm_start_loads_projectors_without_codec_or_optimizer(tmp_path)
     assert torch.equal(target.bias, source.bias)
 
 
+def test_stage2_warm_start_accepts_json_list_for_runtime_tuple_mapping(tmp_path):
+    source = torch.nn.Linear(3, 2)
+    target = torch.nn.Linear(3, 2)
+    torch.save(source.state_dict(), tmp_path / "projector_0.pt")
+    (tmp_path / "projector_config.json").write_text(
+        json.dumps({0: {1: {0: [(0, 0)]}}}), encoding="utf-8"
+    )
+
+    holder = type("ProjectorHolder", (), {})()
+    holder.projector_list = torch.nn.ModuleList([target])
+    holder.projector_dict = {0: {1: {0: [(0, 0)]}}}
+    load_initial_projector_checkpoint(
+        str(tmp_path), holder, "cpu", logging.getLogger("test")
+    )
+
+    assert torch.equal(target.weight, source.weight)
+    assert torch.equal(target.bias, source.bias)
+
+
+def test_local_model_path_rejects_git_lfs_pointer(tmp_path):
+    (tmp_path / "config.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "model.safetensors").write_text(
+        "version https://git-lfs.github.com/spec/v1\n"
+        "oid sha256:deadbeef\n"
+        "size 3087467144\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="Git LFS pointer"):
+        resolve_model_load_path(
+            {
+                "teacher_model": "Qwen/Qwen2.5-1.5B-Instruct",
+                "teacher_model_local_dir": str(tmp_path),
+            },
+            "teacher_model",
+            "teacher_model_local_dir",
+        )
+
+
 def test_longbench_e_recipes_define_raw_then_qat_stages():
     with open(
-        "recipe/train_recipe/C2C_longbench_latent_kv_joint_raw_stage1.json",
+        "recipe/train_recipe/C2C_longbench_latent_kv_split_raw_stage1.json",
         "r",
         encoding="utf-8",
     ) as handle:
         raw = json.load(handle)
     with open(
-        "recipe/train_recipe/C2C_longbench_latent_kv_joint_adaptive_quant.json",
+        "recipe/train_recipe/C2C_longbench_latent_kv_split_adaptive_quant.json",
         "r",
         encoding="utf-8",
     ) as handle:
         qat = json.load(handle)
 
+    assert raw["model"]["fusion_type"] == "latent_kv_split"
+    assert qat["model"]["fusion_type"] == "latent_kv_split"
     assert raw["model"]["adaptive_quant_table"]["enabled"] is False
     assert raw["training"]["learning_rate"] == 3e-4
     assert qat["model"]["adaptive_quant_table"]["enabled"] is True

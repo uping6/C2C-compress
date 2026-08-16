@@ -9,6 +9,10 @@ from rosetta.cachejpeg_rosetta.fuser_bridge import (
     RosettaFuserBridge,
 )
 from rosetta.cachejpeg_rosetta.wrapper import CacheJPEGRosettaEvalWrapper
+from rosetta.model.adaptive_quant_table import (
+    AdaptiveCoefficientQuantizer,
+    resolve_adaptive_quant_table_config,
+)
 from rosetta.model.latent_kv import (
     LatentKVPayload,
     ReceiverKVDecoder,
@@ -195,6 +199,51 @@ def test_transmitted_latent_is_independent_of_receiver_cache():
 
     assert torch.equal(latent, latent_before)
     assert not torch.equal(output_a[0], output_b[0])
+
+
+def test_split_bridge_applies_adaptive_quantization_before_latent_encoding():
+    projectors = [_projector(residual_scale=0.1) for _ in range(2)]
+    assets = LoadedRosettaAssets(
+        base_model=DummyModel(),
+        base_tokenizer=None,
+        teacher_model=DummyModel(),
+        teacher_tokenizer=None,
+        projector_list=projectors,
+        projector_dict={0: {1: {0: [(0, 0)], 1: [(1, 1)]}}},
+    )
+    config = resolve_adaptive_quant_table_config(
+        {
+            "enabled": True,
+            "feature_bands": 2,
+            "hidden_dim": 8,
+            "alpha_candidates": [0.5, 1.0],
+        }
+    )
+    quantizer = AdaptiveCoefficientQuantizer(
+        num_layers=2, num_kv_heads=2, config=config
+    ).eval()
+    bridge = RosettaFuserBridge(assets, adaptive_quant_table=quantizer)
+    sharer_cache = _cache(
+        [
+            (torch.randn(1, 2, 4, 4), torch.randn(1, 2, 4, 4)),
+            (torch.randn(1, 2, 4, 4), torch.randn(1, 2, 4, 4)),
+        ]
+    )
+    receiver_cache = _cache(
+        [
+            (torch.randn(1, 1, 4, 8), torch.randn(1, 1, 4, 8)),
+            (torch.randn(1, 1, 4, 8), torch.randn(1, 1, 4, 8)),
+        ]
+    )
+
+    payload = bridge.encode_teacher_cache_to_latents(sharer_cache)
+    bridge.fuse_latents_to_base(payload, receiver_cache)
+
+    assert quantizer.last_result is not None
+    assert quantizer.last_result.estimated_payload_bits.item() > 0
+    assert bridge.last_fusion_stats["adaptive_quant_table"][
+        "estimated_payload_bits"
+    ] > 0
 
 
 def test_split_wrapper_runs_encode_transport_decode_generation_path():

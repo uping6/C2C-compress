@@ -15,6 +15,7 @@ eval_results/
 outputs/
 results/
 checkpoints/
+LongBench/
 
 recipe/experiments/
 script/evaluation/deprecated/

@@ -2641,6 +2641,16 @@ class UnifiedEvaluator:
                     for p in processes:
                         p.join()
 
+                    failed_processes = [
+                        p for p in processes if p.exitcode != 0
+                    ]
+                    if failed_processes:
+                        exit_codes = [p.exitcode for p in failed_processes]
+                        raise RuntimeError(
+                            "LongBench evaluation worker process failed; "
+                            f"exit_codes={exit_codes}"
+                        )
+
                 merged = self.merge_results(return_dict)
                 longbench_length_stats = merged[4]
                 longbench_cot_logs = merged[5]
@@ -2678,6 +2688,14 @@ class UnifiedEvaluator:
             
             for p in processes:
                 p.join()
+
+            failed_processes = [p for p in processes if p.exitcode != 0]
+            if failed_processes:
+                exit_codes = [p.exitcode for p in failed_processes]
+                raise RuntimeError(
+                    "Evaluation worker process failed; "
+                    f"exit_codes={exit_codes}"
+                )
         # Merge and save results
             results = self.merge_results(return_dict)
             self.save_results(*results)

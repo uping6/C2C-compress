@@ -304,6 +304,42 @@ def resolve_model_load_path(model_config: Dict[str, Any], model_key: str, local_
     candidate = os.path.abspath(os.path.expanduser(str(local_dir)))
     config_path = os.path.join(candidate, "config.json")
     if os.path.isdir(candidate) and os.path.isfile(config_path):
+        weight_files = [
+            os.path.join(candidate, name)
+            for name in os.listdir(candidate)
+            if name.endswith((".safetensors", ".bin"))
+        ]
+        if not weight_files:
+            raise FileNotFoundError(
+                f"Local model directory for {model_key} has no weight files: "
+                f"{candidate}. Configure {local_dir_key} with a complete snapshot."
+            )
+        for weight_path in weight_files:
+            if os.path.isfile(weight_path + ".aria2"):
+                raise RuntimeError(
+                    f"Local weights for {model_key} are still downloading: "
+                    f"{weight_path}.aria2"
+                )
+            if os.path.getsize(weight_path) <= 1024:
+                with open(weight_path, "rb") as handle:
+                    prefix = handle.read(200)
+                if prefix.startswith(b"version https://git-lfs.github.com/spec/v1"):
+                    raise RuntimeError(
+                        f"Local weights for {model_key} are a Git LFS pointer, not "
+                        f"model data: {weight_path}. Run git lfs pull or configure "
+                        f"{local_dir_key} with a complete model snapshot."
+                    )
+            if weight_path.endswith(".safetensors"):
+                try:
+                    from safetensors import safe_open
+
+                    with safe_open(weight_path, framework="pt") as handle:
+                        handle.keys()
+                except Exception as exc:
+                    raise RuntimeError(
+                        f"Local safetensors weights for {model_key} are incomplete "
+                        f"or corrupt: {weight_path}. Re-download the model snapshot."
+                    ) from exc
         print(f"Loading {model_key} from local directory: {candidate}")
         return candidate
 
@@ -405,10 +441,17 @@ def load_initial_projector_checkpoint(
     if os.path.isfile(mapping_path):
         with open(mapping_path, "r", encoding="utf-8") as handle:
             loaded_mapping = RosettaModel._convert_dict_keys_to_ints(json.load(handle))
-        if loaded_mapping != model.projector_dict:
+        # JSON turns configured (source_layer, projector_idx) tuples into lists.
+        # Normalize the in-memory mapping through the same JSON representation
+        # before comparing semantic layer routes.
+        current_mapping = RosettaModel._convert_dict_keys_to_ints(
+            json.loads(json.dumps(model.projector_dict))
+        )
+        if loaded_mapping != current_mapping:
             raise ValueError(
                 "initial_projector_checkpoint layer mapping does not match the "
-                "current training configuration."
+                "current training configuration. "
+                f"checkpoint={loaded_mapping}, current={current_mapping}"
             )
     logger.info(
         "Warm-started %s projectors from Stage 1 checkpoint: %s",
@@ -732,6 +775,8 @@ def main():
     training_config = cfg["training"]
     output_config = cfg["output"]
     data_config = cfg["data"]
+    if args.resume_from_checkpoint is None:
+        args.resume_from_checkpoint = training_config.get("resume_from_checkpoint")
 
     # Set seed for reproducibility and enable stricter determinism
     set_seed(seed = training_config["seed"])
@@ -784,6 +829,7 @@ def main():
     
     model, main_tokenizer, aligner, llm_tokenizer = setup_models(model_config, training_mode, device, torch.bfloat16)
     model = model.to(device)
+    # model.gradient_checkpointing_enable()
     if training_mode == "rosetta" and model_config.get("initial_projector_checkpoint"):
         load_initial_projector_checkpoint(
             str(model_config["initial_projector_checkpoint"]),

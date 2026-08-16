@@ -1,0 +1,69 @@
+{
+  "model": {
+    "training_stage": "raw_projector",
+    "base_model": "Qwen/Qwen3-0.6B",
+    "base_model_local_dir": null,
+    "teacher_model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "teacher_model_local_dir": "/home/limingyan/local/models/Qwen2.5-1.5B-Instruct",
+    "is_do_alignment": true,
+    "alignment_strategy": "longest",
+    "include_response": true,
+    "fusion_type": "latent_kv_split",
+    "latent_kv_bridge": {
+      "enabled": true,
+      "latent_dim": 128,
+      "mlp_ratio": 4.0,
+      "dropout": 0.0,
+      "use_head_scale": true,
+      "use_layer_gate": true,
+      "gate_mode": "sigmoid",
+      "gate_init": -4.0,
+      "residual_scale_init": 0.0,
+      "layer_mapping": "proportional",
+      "share_adapter_across_layers": false
+    },
+    "adaptive_quant_table": {
+      "enabled": false
+    }
+  },
+  "training": {
+    "learning_rate": 0.0003,
+    "weight_decay": 0.01,
+    "num_epochs": 2,
+    "max_length": 9216,
+    "device": "cuda",
+    "scheduler_type": "linear",
+    "warmup_ratio": 0.1,
+    "max_grad_norm": 1.0,
+    "gradient_accumulation_steps": 1,
+    "per_device_train_batch_size": 1,
+    "num_processes": 2,
+    "find_unused_parameters": false,
+    "broadcast_buffers": false,
+    "freeze": ["teacher", "base"],
+    "seed": 42
+  },
+  "output": {
+    "output_dir": "local/checkpoints/0.6+1.5B_latent_kv_split_raw_longbench_e",
+    "save_steps": 1896,
+    "eval_steps": 3000,
+    "wandb_config": {
+      "project": "Rosetta",
+      "mode": "online",
+      "entity": "nics-efc",
+      "run_name": "0.6B+1.5B_LatentKVSplit_Raw_Stage1_LongBench_E"
+    }
+  },
+  "data": {
+    "type": "LongBenchChatDataset",
+    "kwargs": {
+      "split": "test",
+      "dataset_name": null,
+      "use_longbench_e": true,
+      "local_data_dir": "/home/limingyan/C2C-compress/LongBench/data",
+      "filter_mod4": true,
+      "max_length": 8192,
+      "num_samples": 1896
+    }
+  }
+}

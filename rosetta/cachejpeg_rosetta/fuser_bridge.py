@@ -209,6 +209,42 @@ class RosettaFuserBridge:
         latent_dim: int | None = None
         sequence_length: int | None = None
         source_dtype: str | None = None
+        quantized_source_by_target = None
+        if self.adaptive_quant_table is not None:
+            expected_layers = list(range(self.adaptive_quant_table.num_layers))
+            actual_layers = sorted(int(layer_idx) for layer_idx in layer_map)
+            if actual_layers != expected_layers:
+                raise ValueError(
+                    "adaptive_quant_table evaluation requires one routed source cache "
+                    f"for every receiver layer; expected {expected_layers}, got {actual_layers}."
+                )
+            routed_source = []
+            for target_layer_idx in expected_layers:
+                pair_list = (
+                    layer_map[target_layer_idx]
+                    if isinstance(layer_map[target_layer_idx], list)
+                    else [layer_map[target_layer_idx]]
+                )
+                if len(pair_list) != 1:
+                    raise ValueError(
+                        "Pre-projector adaptive quantization requires exactly one "
+                        "source layer per receiver layer."
+                    )
+                source_layer_idx, _ = self._normalize_pair(pair_list[0])
+                routed_source.append(
+                    (
+                        teacher_cache.key_cache[source_layer_idx],
+                        teacher_cache.value_cache[source_layer_idx],
+                    )
+                )
+            with torch.no_grad():
+                quantized_source = self.adaptive_quant_table(tuple(routed_source))
+            quantized_source_by_target = {
+                layer_idx: reconstructed
+                for layer_idx, reconstructed in enumerate(
+                    quantized_source.past_key_values
+                )
+            }
         with torch.no_grad():
             for target_layer_idx, entry in layer_map.items():
                 pair_list = entry if isinstance(entry, list) else [entry]
@@ -224,6 +260,10 @@ class RosettaFuserBridge:
                     )
                 source_key = teacher_cache.key_cache[source_layer_idx]
                 source_value = teacher_cache.value_cache[source_layer_idx]
+                if quantized_source_by_target is not None:
+                    source_key, source_value = quantized_source_by_target[
+                        int(target_layer_idx)
+                    ]
                 projector = self._prepare_projector(projector, source_key)
                 latent = encode((source_key, source_value))
                 latent_dim = int(latent.shape[-1])
@@ -328,6 +368,14 @@ class RosettaFuserBridge:
             ),
             "layers": layer_stats,
         }
+        if self.adaptive_quant_table is not None:
+            result = self.adaptive_quant_table.last_result
+            self.last_fusion_stats["adaptive_quant_table"] = {
+                "estimated_payload_bits": float(
+                    result.estimated_payload_bits.detach().item()
+                ),
+                "mean_alpha": float(result.alpha.float().mean().item()),
+            }
         return fused_cache
 
     @staticmethod

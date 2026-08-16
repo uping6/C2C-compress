@@ -532,7 +532,8 @@ class LongBenchChatDataset(Dataset):
     def __init__(self, split: str = "test", num_samples: Optional[int] = None,
                  dataset_name: Optional[str] = None, language: Optional[str] = None,
                  max_word_count: Optional[int] = None, max_length: Optional[int] = 14000,
-                 use_longbench_e: bool = True, filter_mod4: bool = True):
+                 use_longbench_e: bool = True, filter_mod4: bool = True,
+                 local_data_dir: Optional[str] = None):
         """
         初始化LongBench数据集
         
@@ -545,6 +546,7 @@ class LongBenchChatDataset(Dataset):
             max_length: 最大字符长度限制
             use_longbench_e: 是否使用LongBench-E版本
             filter_mod4: 是否过滤_id mod4余1的样本
+            local_data_dir: LongBench根目录或包含jsonl文件的data目录
         """
         print(f"Loading LongBench{' -E' if use_longbench_e else ''} dataset (split: {split}, dataset: {dataset_name})...")
         
@@ -608,22 +610,37 @@ class LongBenchChatDataset(Dataset):
         all_data = []
         for dataset in target_datasets:
             try:
-                dataset_suffix = f"{dataset}" if use_longbench_e else dataset
-                
-                # --- 本地加载改造开始 ---
-                import os
-                # 根据你的实际路径拼接出本地 jsonl 的绝对路径
-                local_jsonl_path = f"/data/smy/KVCache-Factory/data/LongBench/{dataset_suffix}.jsonl"
-                
-                if os.path.exists(local_jsonl_path):
+                dataset_suffix = f"{dataset}_e" if use_longbench_e else dataset
+
+                local_roots = []
+                if local_data_dir:
+                    local_root = os.path.abspath(os.path.expanduser(local_data_dir))
+                    local_roots.extend((local_root, os.path.join(local_root, "data")))
+                else:
+                    local_roots.append("/data/smy/KVCache-Factory/data/LongBench")
+                local_jsonl_path = next(
+                    (
+                        os.path.join(root, f"{dataset_suffix}.jsonl")
+                        for root in local_roots
+                        if os.path.isfile(os.path.join(root, f"{dataset_suffix}.jsonl"))
+                    ),
+                    None,
+                )
+
+                if local_jsonl_path is not None:
                     print(f"  [Local] Loading {dataset_suffix} from {local_jsonl_path}...")
-                    # 使用本地 json 解析器加载数据，并指定对应的 split（LongBench 默认只有 'test' 类似的分片，这里保持原样）
                     data = load_dataset('json', data_files={split: local_jsonl_path}, split=split)
                 else:
-                    print(f"  [Online] Local file not found: {local_jsonl_path}. Trying HF Hub...")
-                    # 如果本地没找到对应的 jsonl 文件，则走原本的线上加载兜底
+                    searched_paths = [
+                        os.path.join(root, f"{dataset_suffix}.jsonl")
+                        for root in local_roots
+                    ]
+                    print(
+                        f"  [Online] Local file not found in {searched_paths}. "
+                        f"Loading THUDM/LongBench:{dataset_suffix} via "
+                        f"{os.environ.get('HF_ENDPOINT', 'https://huggingface.co')}..."
+                    )
                     data = load_dataset('THUDM/LongBench', dataset_suffix, split=split)
-                # --- 本地加载改造结束 ---
                 
                 print(f"  Loaded {len(data)} samples from {dataset}")
                 
