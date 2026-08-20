@@ -77,7 +77,7 @@ class RosettaModel(nn.Module):
     """
     Drop in replacement for the standard transformers LLM models, like Qwen3ForCausalLM
     """
-    def __init__(self, model_list: List[PreTrainedModel], base_model_idx = 0, projector_list: List[Projector] = [], include_response: bool = False, multi_source_fusion_mode: str = "parallel", adaptive_quant_table: Optional[AdaptiveCoefficientQuantizer] = None):
+    def __init__(self, model_list: List[PreTrainedModel], base_model_idx = 0, projector_list: List[Projector] = [], include_response: bool = False, multi_source_fusion_mode: str = "parallel", adaptive_quant_table: Optional[AdaptiveCoefficientQuantizer] = None, cache_alignment: str = "fuser"):
         super().__init__()
         # model list: a list of model, model 0 by default is the base model
         # projector list: a list of projector
@@ -103,6 +103,9 @@ class RosettaModel(nn.Module):
         self.kv_cache_dict = {}
         self._generation_hook_handlers = []
         self.last_fusion_stats = None
+        if cache_alignment not in {"fuser", "concat"}:
+            raise ValueError("cache_alignment must be 'fuser' or 'concat'.")
+        self.cache_alignment = cache_alignment
 
         # Multi-source fusion mode: 
         # "sequential" (default): each source updates base cache iteratively
@@ -390,6 +393,178 @@ class RosettaModel(nn.Module):
         for attn, orig_forward in hook_handlers:
             attn.forward = orig_forward
 
+    def _forward_concat_lcf_first(
+        self,
+        input_ids,
+        attention_mask,
+        labels,
+        output_attentions=None,
+        output_hidden_states=None,
+        **kwargs,
+    ) -> CausalLMOutputWithPast:
+        """Train LCF-first by prepending a decoded Sharer cache to Receiver.
+
+        The Sharer only sees the prompt.  Its keys are captured before RoPE,
+        each routed layer is compressed and expanded by an LCFFirstProjector,
+        and Receiver RoPE is then applied at compact prefix positions.  The
+        frozen Receiver supplies the language-model loss and its gradient flows
+        back through the prefix cache into the LCF modules.
+        """
+        from rosetta.cachejpeg_rosetta.pre_rope import (
+            apply_receiver_compact_rope,
+            capture_pre_rope_keys,
+            replace_cache_keys_with_pre_rope,
+        )
+        from rosetta.model.latent_kv import LCFFirstProjector
+        from rosetta.model.lcf_projected_kv import LCFProjectedKVProjector
+
+        if not isinstance(input_ids, list) or not isinstance(attention_mask, list):
+            raise ValueError(
+                "concat LCF-first training requires aligned per-model input_ids "
+                "and attention_mask lists (set model.is_do_alignment=true)."
+            )
+        if len(self.model_list) != 2:
+            raise ValueError("concat LCF-first training currently requires one Receiver and one Sharer.")
+        base_ids = input_ids[self.base_model_idx]
+        base_mask = attention_mask[self.base_model_idx]
+        sharer_idx = 1 if self.base_model_idx == 0 else 0
+        sharer_ids = input_ids[sharer_idx]
+        sharer_mask = attention_mask[sharer_idx]
+        if labels is None:
+            raise ValueError("concat LCF-first training requires labels to locate the prompt boundary.")
+        if base_ids.shape[0] != 1:
+            raise ValueError(
+                "concat LCF-first currently requires per_device_train_batch_size=1 "
+                "because prompt boundaries may differ within a batch."
+            )
+        supervised = (labels[0] != -100).nonzero(as_tuple=False)
+        if supervised.numel() == 0:
+            raise ValueError("Training sample has no supervised response tokens.")
+        prompt_length = int(supervised[0].item())
+        if prompt_length <= 0:
+            raise ValueError("Training sample has an empty prompt prefix.")
+
+        sharer_model = self.model_list[sharer_idx]
+        with torch.no_grad(), capture_pre_rope_keys(sharer_model) as captured:
+            sharer_output = sharer_model(
+                input_ids=sharer_ids[:, :prompt_length],
+                attention_mask=sharer_mask[:, :prompt_length],
+                use_cache=True,
+                return_dict=True,
+            )
+        sharer_cache = replace_cache_keys_with_pre_rope(
+            sharer_output.past_key_values, captured
+        )
+
+        routing = self.projector_dict.get(self.base_model_idx, {}).get(sharer_idx, {})
+        receiver_layers = self.model_list[self.base_model_idx].config.num_hidden_layers
+        if set(routing) != set(range(receiver_layers)):
+            raise ValueError("concat LCF-first requires exactly one route for every Receiver layer.")
+        encoded_layers = []
+        for receiver_layer in range(receiver_layers):
+            pairs = routing[receiver_layer]
+            if len(pairs) != 1:
+                raise ValueError("concat LCF-first requires one Sharer layer per Receiver layer.")
+            source_layer, projector_idx = pairs[0]
+            projector = self.projector_list[projector_idx]
+            if not isinstance(projector, (LCFFirstProjector, LCFProjectedKVProjector)):
+                raise TypeError(
+                    "concat cache_alignment requires LCFFirstProjector or "
+                    "LCFProjectedKVProjector modules."
+                )
+            projector_device = next(projector.parameters()).device
+            source_kv = (
+                sharer_cache.key_cache[source_layer].to(projector_device),
+                sharer_cache.value_cache[source_layer].to(projector_device),
+            )
+            if isinstance(projector, LCFProjectedKVProjector):
+                key_latent, value_latent = projector.encode(source_kv)
+            else:
+                latent = projector.encode(source_kv)  # Existing direct split path.
+                key_latent, value_latent = latent.chunk(2, dim=-1)
+            encoded_layers.append((projector, key_latent, value_latent))
+
+        quant_result = None
+        if self.adaptive_quant_table is not None:
+            # The wire representation is the LCF transport K/V, not the
+            # original Sharer KV. These are either the legacy direct halves or
+            # the learned projected views, both represented with one KV head.
+            latent_wire_cache = tuple(
+                (
+                    key_latent.unsqueeze(1),
+                    value_latent.unsqueeze(1),
+                )
+                for _projector, key_latent, value_latent in encoded_layers
+            )
+            quant_result = self.adaptive_quant_table(latent_wire_cache)
+
+        prefix = DynamicCache()
+        for receiver_layer, (projector, key_latent, value_latent) in enumerate(encoded_layers):
+            if quant_result is not None:
+                quantized_key, quantized_value = quant_result.past_key_values[receiver_layer]
+                key_latent = quantized_key.squeeze(1)
+                value_latent = quantized_value.squeeze(1)
+            if isinstance(projector, LCFProjectedKVProjector):
+                receiver_key, receiver_value = projector.decode_transport(
+                    key_latent, value_latent
+                )
+            else:
+                receiver_key, receiver_value = projector.decode(
+                    torch.cat((key_latent, value_latent), dim=-1)
+                )
+            prefix.key_cache.append(receiver_key)
+            prefix.value_cache.append(receiver_value)
+
+        receiver_model = self.model_list[self.base_model_idx]
+        prefix = apply_receiver_compact_rope(receiver_model, prefix)
+        prefix_length = prefix.key_cache[0].shape[-2]
+        prefix_mask = sharer_mask[:, :prompt_length].to(base_mask.device)
+        combined_mask = torch.cat((prefix_mask, base_mask), dim=-1)
+        position_ids = (
+            base_mask.long().cumsum(-1) - 1 + prefix_length
+        ).masked_fill(base_mask == 0, 0)
+        cache_position = torch.arange(
+            prefix_length,
+            prefix_length + base_ids.shape[1],
+            device=base_ids.device,
+        )
+        output = receiver_model(
+            input_ids=base_ids,
+            attention_mask=combined_mask,
+            position_ids=position_ids,
+            cache_position=cache_position,
+            past_key_values=prefix,
+            labels=labels,
+            use_cache=True,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            **kwargs,
+        )
+        if quant_result is not None:
+            rate_weight = self.adaptive_quant_table.rate_weight(
+                self.adaptive_quant_table_step
+            )
+            rate_loss = quant_result.estimated_payload_bits * rate_weight
+            if output.loss is not None:
+                output.loss = output.loss + rate_loss
+            self.last_adaptive_quant_table_metrics = {
+                "estimated_payload_bits": float(
+                    quant_result.estimated_payload_bits.detach().item()
+                ),
+                "rate_source": "lcf_latent_pre_decode",
+                "rate_weight": float(rate_weight),
+                "rate_loss": float(rate_loss.detach().item()),
+                "temperature": float(
+                    self.adaptive_quant_table.gumbel_temperature.item()
+                ),
+                "mean_alpha": float(
+                    quant_result.alpha.detach().float().mean().item()
+                ),
+            }
+        else:
+            self.last_adaptive_quant_table_metrics = None
+        return output
+
     def forward(
         self,
         kv_cache_index: Optional[List] = None,
@@ -420,6 +595,16 @@ class RosettaModel(nn.Module):
         
         input_ids: If LongTensor, same input for all models. If List, per-model inputs.
         """
+
+        if self.cache_alignment == "concat":
+            return self._forward_concat_lcf_first(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                labels=labels,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                **kwargs,
+            )
 
         # Handle different input formats: if input_ids is a list, use per-model inputs
         if isinstance(input_ids, list):

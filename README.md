@@ -485,6 +485,26 @@ model:
 
 ### `cachejpeg_rosetta_config`
 
+Cache 对齐默认仍使用现有 fuser。若要把 Sharer cache 作为 Receiver 的独立
+causal prefix，可选择平级的 concat 对齐后端：
+
+```yaml
+cachejpeg_rosetta_config:
+  cache_alignment: concat
+  fusion_type: original
+  codec:
+    method: cachejpeg
+```
+
+`concat` 使用 LCF-first 顺序：在 Sharer 侧捕获 pre-RoPE K，经
+`LCFFirstProjector.encode` 将每层联合 K/V 下采样为 latent；CacheJPEG 只对
+latent K/V halves 编解码；Receiver 再经 `LCFFirstProjector.decode` 上采样到
+Receiver KV geometry，并用 Receiver RoPE 按紧凑位置 `0..S-1` 编码。
+Receiver prompt 随后以 `S` 为位置偏移进行 prefill。对应 checkpoint 中的
+projector 类必须是 `LCFFirstProjector`。该路径不修改或调用
+`RosettaFuserBridge`，当前也不支持 layer streaming 和 fuser-side adaptive
+quant table。
+
 ```yaml
 cachejpeg_rosetta_config:
   fusion_type: latent_kv_split

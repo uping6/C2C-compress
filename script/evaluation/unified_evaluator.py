@@ -853,14 +853,14 @@ class UnifiedEvaluator:
         """Format MMLU-Redux example using unified prompt builder."""
         # Build choices string (A-D)
         choices = ""
-        for i, choice in enumerate(example['choices']):
+        for i, choice in enumerate(example.get('choices', example.get('endings', []))):
             choices += f"{chr(65+i)}. {choice}\n"
 
         # Use shared prompt builder for consistency with MMMLU
         prompt = build_prompt(
             dataset="mmlu-redux",
             locale="",
-            question=example['question'],
+            question=example.get('question', example.get('ctx', '')),
             choices=choices,
             use_cot=use_cot,
             use_template=use_template
@@ -1106,6 +1106,9 @@ class UnifiedEvaluator:
                 return None
 
         elif self.dataset_name == "mmlu-redux":  # mmlu-redux
+            raw_answer = example.get('answer')
+            if isinstance(raw_answer, str) and raw_answer.strip().upper() in ['A', 'B', 'C', 'D']:
+                return raw_answer.strip().upper()
             error_type = example.get('error_type', '')
             if error_type in ['no_correct_answer', 'expert']:
                 return None
@@ -1484,7 +1487,38 @@ class UnifiedEvaluator:
             base_subset = "main" if is_virtual_split else subject
             dataset = load_dataset(self.dataset_config["dataset_name"], base_subset)
         elif self.dataset_name == "openbookqa":
-            dataset = load_dataset(self.dataset_config["dataset_name"])
+            local_jsonl_file = self.eval_config.get("local_jsonl_file")
+            if local_jsonl_file:
+                local_jsonl_file = os.path.abspath(
+                    os.path.expanduser(str(local_jsonl_file))
+                )
+                if not os.path.isfile(local_jsonl_file):
+                    raise FileNotFoundError(
+                        f"OpenBookQA local_jsonl_file not found: {local_jsonl_file}"
+                    )
+
+                local_data = load_dataset(
+                    "json", data_files={"test": local_jsonl_file}, split="test"
+                )
+
+                # c2c_general_mcq_test stores OpenBookQA as
+                # {ctx, endings, answer}; normalize it to the schema used by
+                # the existing formatter, answer parser, and result logger.
+                def _normalize_openbookqa_example(example: Dict[str, Any]) -> Dict[str, Any]:
+                    endings = list(example.get("endings") or [])
+                    return {
+                        "question_stem": str(example.get("ctx", "")),
+                        "choices": {
+                            "text": [str(choice) for choice in endings],
+                            "label": [chr(ord("A") + index) for index in range(len(endings))],
+                        },
+                        "answerKey": example.get("answer"),
+                    }
+
+                test_data = local_data.map(_normalize_openbookqa_example)
+                dataset = None
+            else:
+                dataset = load_dataset(self.dataset_config["dataset_name"])
         elif self.dataset_name == "gpqa":
             base_subset = "gpqa_diamond" if is_virtual_split else subject
             dataset = load_dataset(self.dataset_config["dataset_name"], base_subset)
@@ -1497,10 +1531,29 @@ class UnifiedEvaluator:
             dataset = load_dataset(self.dataset_config["dataset_name"], subject)
         elif self.dataset_name == "longbench":
             dataset = self._load_longbench_dataset(subject)
+        elif (
+            self.dataset_name == "mmlu-redux"
+            and self.eval_config.get("local_jsonl_file")
+        ):
+            local_jsonl_file = os.path.abspath(
+                os.path.expanduser(str(self.eval_config["local_jsonl_file"]))
+            )
+            if not os.path.isfile(local_jsonl_file):
+                raise FileNotFoundError(
+                    f"MMLU-Redux local_jsonl_file not found: {local_jsonl_file}"
+                )
+            local_data = load_dataset(
+                "json", data_files={"test": local_jsonl_file}, split="test"
+            )
+            dataset = None
+            test_data = local_data.filter(
+                lambda example: example.get("subject") == subject
+            )
         else:
             dataset = load_dataset(self.dataset_config["dataset_name"], subject)
         # dataset = load_from_disk("local/teacher_datasets/MMMLU")
-        test_data = dataset[self.dataset_config["test_split"]]
+        if dataset is not None:
+            test_data = dataset[self.dataset_config["test_split"]]
         
         self.current_evaluating_subject = subject
         # Store the tokenizer on the evaluator instance for later use.
@@ -1895,11 +1948,14 @@ class UnifiedEvaluator:
                     all_probs.append(probs)
                 else:
                     is_correct = None
+
+                cachejpeg_stats = getattr(model, "last_codec_stats", None)
+                transport_stats = getattr(model, "last_transport_stats", None)
                     
                 # Collect length statistics
                 if self.eval_config["answer_method"] == 'generate' and input_length is not None and gen_length is not None:
                     length_ratio = gen_length / input_length if input_length > 0 else 0
-                    length_stats.append({
+                    length_entry = {
                         'subject': subject,
                         'question_id': i,
                         'input_length': input_length,
@@ -1907,8 +1963,100 @@ class UnifiedEvaluator:
                         'length_ratio': length_ratio,
                         'is_correct': is_correct,
                         'pred': pred,
-                        'true_answer': true_answer if self.dataset_name != "longbench" else None
-                    })
+                        'true_answer': true_answer if self.dataset_name != "longbench" else None,
+                        'end_to_end_latency_ms': (
+                            float(latency_ms) if latency_ms is not None else None
+                        ),
+                    }
+                    if isinstance(cachejpeg_stats, dict):
+                        original_bytes = cachejpeg_stats.get("original_kv_bytes")
+                        latent_bytes = cachejpeg_stats.get("lcf_latent_kv_bytes")
+                        payload_bytes = cachejpeg_stats.get("payload_bytes")
+                        length_entry.update({
+                            "sharer_cache_bytes": original_bytes,
+                            "lcf_latent_kv_bytes": latent_bytes,
+                            "payload_bytes": payload_bytes,
+                            "payload_bits": (
+                                int(payload_bytes) * 8
+                                if payload_bytes is not None
+                                else None
+                            ),
+                            "sharer_to_payload_compression_ratio": cachejpeg_stats.get(
+                                "compression_factor"
+                            ),
+                            "payload_to_sharer_ratio": (
+                                float(payload_bytes) / float(original_bytes)
+                                if payload_bytes is not None and original_bytes
+                                else None
+                            ),
+                            "space_saving_ratio": cachejpeg_stats.get(
+                                "space_saving_ratio"
+                            ),
+                            "compute_backend": cachejpeg_stats.get("compute_backend"),
+                            "layer_streaming": cachejpeg_stats.get("layer_streaming"),
+                            "transport_bandwidth_bytes_per_sec": cachejpeg_stats.get(
+                                "transport_bandwidth_bytes_per_sec"
+                            ),
+                            "bandwidth_only_transmit_ms": (
+                                float(cachejpeg_stats["bandwidth_only_transmit_seconds"])
+                                * 1000.0
+                                if cachejpeg_stats.get("bandwidth_only_transmit_seconds")
+                                is not None
+                                else None
+                            ),
+                            "encode_ms": (
+                                float(cachejpeg_stats["encode_seconds"]) * 1000.0
+                                if cachejpeg_stats.get("encode_seconds") is not None
+                                else None
+                            ),
+                            "decode_ms": (
+                                float(cachejpeg_stats["decode_seconds"]) * 1000.0
+                                if cachejpeg_stats.get("decode_seconds") is not None
+                                else None
+                            ),
+                            "lcf_encode_ms": (
+                                float(cachejpeg_stats["lcf_encode_seconds"]) * 1000.0
+                                if cachejpeg_stats.get("lcf_encode_seconds") is not None
+                                else None
+                            ),
+                            "lcf_decode_ms": (
+                                float(cachejpeg_stats["lcf_decode_seconds"]) * 1000.0
+                                if cachejpeg_stats.get("lcf_decode_seconds") is not None
+                                else None
+                            ),
+                            "sender_encode_ms": (
+                                float(cachejpeg_stats["sender_encode_seconds"]) * 1000.0
+                                if cachejpeg_stats.get("sender_encode_seconds") is not None
+                                else None
+                            ),
+                            "receiver_decode_ms": (
+                                float(cachejpeg_stats["receiver_decode_seconds"]) * 1000.0
+                                if cachejpeg_stats.get("receiver_decode_seconds") is not None
+                                else None
+                            ),
+                        })
+                    if transport_stats is not None:
+                        length_entry["transport_payload_bytes"] = int(
+                            transport_stats.payload_bytes
+                        )
+                        length_entry["serialize_ms"] = float(
+                            transport_stats.serialize_seconds * 1000.0
+                        )
+                        length_entry["transmit_ms"] = float(
+                            transport_stats.transmit_seconds * 1000.0
+                        )
+                        length_entry["deserialize_ms"] = float(
+                            transport_stats.deserialize_seconds * 1000.0
+                        )
+                        length_entry["transport_total_ms"] = float(
+                            (
+                                transport_stats.serialize_seconds
+                                + transport_stats.transmit_seconds
+                                + transport_stats.deserialize_seconds
+                            )
+                            * 1000.0
+                        )
+                    length_stats.append(length_entry)
             # Save LongBench predictions immediately for post-processing.
                 if self.dataset_name == "longbench":
                     length_bucket = self._longbench_length_bucket(input_length)
@@ -1928,7 +2076,6 @@ class UnifiedEvaluator:
                             "size": self.longbench_e_test_subset_size,
                             "seed": self.longbench_e_test_subset_seed,
                         }
-                    cachejpeg_stats = getattr(model, "last_codec_stats", None)
                     if cachejpeg_stats is not None:
                         output_entry["cachejpeg_stats"] = dict(cachejpeg_stats)
                     fusion_stats = getattr(model, "last_fusion_stats", None)
@@ -1941,7 +2088,6 @@ class UnifiedEvaluator:
                     output_entry["end_to_end_latency_ms"] = (
                         float(latency_ms) if latency_ms is not None else None
                     )
-                    transport_stats = getattr(model, "last_transport_stats", None)
                     if transport_stats is not None:
                         output_entry["transport_stats"] = dict(vars(transport_stats))
                 
@@ -2435,6 +2581,15 @@ class UnifiedEvaluator:
         if all_length_stats:
             length_summary = self._compute_length_statistics(all_length_stats)
             summary["length_statistics"] = length_summary
+            transfer_summary = self._compute_cache_transfer_statistics(all_length_stats)
+            if transfer_summary is not None:
+                summary["cache_transfer_statistics"] = transfer_summary
+            timing_summary = self._compute_timing_statistics(all_length_stats)
+            if timing_summary is not None:
+                if isinstance(summary.get("performance"), dict):
+                    summary["performance"].update(timing_summary)
+                else:
+                    summary["performance"] = timing_summary
         
         # Generate filename
         model_name_for_file = self.model_config["model_name"].split("/")[-1]
@@ -2500,6 +2655,142 @@ class UnifiedEvaluator:
         elif longbench_subject_metrics is not None:
             print(f"Final score: {overall_accuracy*100:.2f}%")
     
+    @staticmethod
+    def _compute_timing_statistics(
+        length_stats: List[Dict],
+    ) -> Optional[Dict[str, Any]]:
+        """Summarize end-to-end, codec, and transport timings for all datasets."""
+
+        def values(field: str) -> List[float]:
+            return [
+                float(row[field])
+                for row in length_stats
+                if row.get(field) is not None
+            ]
+
+        end_to_end = values("end_to_end_latency_ms")
+        if not end_to_end:
+            return None
+        result: Dict[str, Any] = {
+            "num_timed_samples": len(end_to_end),
+            "end_to_end_total_seconds": float(sum(end_to_end) / 1000.0),
+            "end_to_end_avg_ms": float(np.mean(end_to_end)),
+            "end_to_end_p50_ms": float(np.percentile(end_to_end, 50)),
+            "end_to_end_p95_ms": float(np.percentile(end_to_end, 95)),
+        }
+        field_names = {
+            "encode_ms": "avg_encode_ms",
+            "decode_ms": "avg_decode_ms",
+            "lcf_encode_ms": "avg_lcf_encode_ms",
+            "lcf_decode_ms": "avg_lcf_decode_ms",
+            "sender_encode_ms": "avg_sender_encode_ms",
+            "receiver_decode_ms": "avg_receiver_decode_ms",
+            "serialize_ms": "avg_serialize_ms",
+            "transmit_ms": "avg_transmit_ms",
+            "deserialize_ms": "avg_deserialize_ms",
+            "transport_total_ms": "avg_transport_total_ms",
+            "bandwidth_only_transmit_ms": "avg_bandwidth_only_transmit_ms",
+        }
+        for source, target in field_names.items():
+            samples = values(source)
+            if samples:
+                result[target] = float(np.mean(samples))
+                result[target.replace("avg_", "p50_")] = float(
+                    np.percentile(samples, 50)
+                )
+                result[target.replace("avg_", "p95_")] = float(
+                    np.percentile(samples, 95)
+                )
+        return result
+
+    @staticmethod
+    def _compute_cache_transfer_statistics(
+        length_stats: List[Dict],
+    ) -> Optional[Dict[str, Any]]:
+        """Aggregate actual serialized payload size against raw Sharer KV size."""
+
+        rows = [
+            row
+            for row in length_stats
+            if row.get("sharer_cache_bytes") is not None
+            and row.get("payload_bytes") is not None
+        ]
+        if not rows:
+            return None
+
+        def aggregate(items: List[Dict]) -> Dict[str, Any]:
+            original = [int(item["sharer_cache_bytes"]) for item in items]
+            payload = [int(item["payload_bytes"]) for item in items]
+            latent = [
+                int(item["lcf_latent_kv_bytes"])
+                for item in items
+                if item.get("lcf_latent_kv_bytes") is not None
+            ]
+            total_original = int(sum(original))
+            total_payload = int(sum(payload))
+            result = {
+                "num_samples": len(items),
+                "total_sharer_cache_bytes": total_original,
+                "total_payload_bytes": total_payload,
+                "total_payload_bits": total_payload * 8,
+                "avg_sharer_cache_bytes": float(np.mean(original)),
+                "avg_payload_bytes": float(np.mean(payload)),
+                "aggregate_sharer_to_payload_compression_ratio": (
+                    float(total_original / total_payload) if total_payload else None
+                ),
+                "aggregate_payload_to_sharer_ratio": (
+                    float(total_payload / total_original) if total_original else None
+                ),
+                "aggregate_space_saving_ratio": (
+                    float(1.0 - total_payload / total_original)
+                    if total_original
+                    else None
+                ),
+                "avg_sample_compression_ratio": float(
+                    np.mean([
+                        original_bytes / payload_bytes
+                        for original_bytes, payload_bytes in zip(original, payload)
+                        if payload_bytes
+                    ])
+                ),
+            }
+            if latent:
+                result["avg_lcf_latent_kv_bytes"] = float(np.mean(latent))
+                result["total_lcf_latent_kv_bytes"] = int(sum(latent))
+            transport_payload = [
+                int(item["transport_payload_bytes"])
+                for item in items
+                if item.get("transport_payload_bytes") is not None
+            ]
+            if transport_payload:
+                result["total_transport_payload_bytes"] = int(sum(transport_payload))
+                result["avg_transport_payload_bytes"] = float(
+                    np.mean(transport_payload)
+                )
+            return result
+
+        by_subject = defaultdict(list)
+        for row in rows:
+            by_subject[str(row.get("subject", "unknown"))].append(row)
+        backends = sorted(
+            {
+                str(row["compute_backend"])
+                for row in rows
+                if row.get("compute_backend") is not None
+            }
+        )
+        return {
+            "overall": aggregate(rows),
+            "subjects": {
+                subject: aggregate(subject_rows)
+                for subject, subject_rows in by_subject.items()
+            },
+            "compute_backends": backends,
+            "layer_streaming_enabled": any(
+                bool(row.get("layer_streaming")) for row in rows
+            ),
+        }
+
     def _compute_length_statistics(self, length_stats: List[Dict]) -> Dict:
         """
         Compute length statistics summary.

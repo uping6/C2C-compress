@@ -16,7 +16,8 @@ outputs/
 results/
 checkpoints/
 LongBench/
-
+OpenHermes-2.5/
+hf_cache/
 recipe/experiments/
 script/evaluation/deprecated/
 script/analysis/oracle/

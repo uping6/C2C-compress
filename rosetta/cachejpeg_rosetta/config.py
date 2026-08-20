@@ -18,6 +18,8 @@ from rosetta.model.adaptive_quant_table import (
 class LayerStreamingConfig:
     enabled: bool = False
     queue_size: int = 2
+    gpu_streams: int = 2
+    max_inflight_layers: int = 4
 
 
 @dataclass(frozen=True)
@@ -34,6 +36,7 @@ class CacheJPEGRosettaEvalConfig:
     codec: CacheJPEGEvalConfig = field(default_factory=CacheJPEGEvalConfig)
     layer_streaming: LayerStreamingConfig = field(default_factory=LayerStreamingConfig)
     fusion_type: str = "original"
+    cache_alignment: str = "fuser"
     latent_kv_bridge: LatentKVBridgeConfig = field(default_factory=LatentKVBridgeConfig)
     split_latent_cachejpeg: SplitLatentCacheJPEGConfig = field(
         default_factory=SplitLatentCacheJPEGConfig
@@ -63,6 +66,15 @@ def resolve_cachejpeg_rosetta_eval_config(config: dict[str, Any]) -> CacheJPEGRo
         split_latent_cachejpeg_cfg.get("enabled", False)
     )
     fusion_type = str(nested.get("fusion_type", "original")).lower()
+    cache_alignment = str(nested.get("cache_alignment", "fuser")).lower()
+    if cache_alignment not in {"fuser", "concat"}:
+        raise ValueError("cachejpeg_rosetta.cache_alignment must be 'fuser' or 'concat'.")
+    if cache_alignment == "concat" and fusion_type != "original":
+        raise ValueError("cache_alignment='concat' currently requires fusion_type='original'.")
+    if cache_alignment == "concat" and bool(adaptive_quant_table_cfg.get("enabled", False)):
+        raise ValueError(
+            "cache_alignment='concat' does not use the fuser-side adaptive_quant_table."
+        )
     if fusion_type not in {"original", "latent_kv_joint", "latent_kv_split"}:
         raise ValueError(
             "cachejpeg_rosetta.fusion_type must be 'original', "
@@ -103,8 +115,13 @@ def resolve_cachejpeg_rosetta_eval_config(config: dict[str, Any]) -> CacheJPEGRo
         layer_streaming=LayerStreamingConfig(
             enabled=bool(streaming_cfg.get("enabled", False)),
             queue_size=max(1, int(streaming_cfg.get("queue_size", 2))),
+            gpu_streams=max(1, int(streaming_cfg.get("gpu_streams", 2))),
+            max_inflight_layers=max(
+                1, int(streaming_cfg.get("max_inflight_layers", 4))
+            ),
         ),
         fusion_type=fusion_type,
+        cache_alignment=cache_alignment,
         latent_kv_bridge=resolve_latent_kv_bridge_config(latent_cfg),
         split_latent_cachejpeg=SplitLatentCacheJPEGConfig(
             enabled=split_latent_cachejpeg_enabled,

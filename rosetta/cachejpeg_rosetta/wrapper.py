@@ -24,8 +24,18 @@ from rosetta.model.adaptive_quant_table import AdaptiveCoefficientQuantizer
 from rosetta.utils.evaluate import apply_generation_config, load_hf_model, set_default_chat_template
 
 from .config import CacheJPEGRosettaEvalConfig, resolve_cachejpeg_rosetta_eval_config
+from .cache_aligner import ConcatCacheAligner
+from .projected_kv_cache_aligner import ProjectedKVConcatCacheAligner
 from .fuser_bridge import LoadedRosettaAssets, RosettaFuserBridge
 from .layer_streaming import LayerCompressionPipeline, LayerPrefillTimer, StreamingDynamicCache
+from .concat_layer_streaming import ConcatLayerPipeline
+from .pre_rope import (
+    StreamingPreRopeDynamicCache,
+    StreamingPreRopeKVPublisher,
+    capture_pre_rope_keys,
+    replace_cache_keys_with_pre_rope,
+    stream_pre_rope_keys,
+)
 
 
 def _hf_local_files_only() -> bool:
@@ -125,6 +135,16 @@ class CacheJPEGRosettaEvalWrapper:
         self.teacher_tokenizer = assets.teacher_tokenizer
         self.eval_codec_config: CacheJPEGRosettaEvalConfig = resolve_cachejpeg_rosetta_eval_config(codec_config)
         self.fusion_type = self.eval_codec_config.fusion_type
+        self.cache_alignment = self.eval_codec_config.cache_alignment
+        concat_projector_config = dict(codec_config.get("concat_projector") or {})
+        self.concat_projector_type = str(
+            concat_projector_config.get("type", "lcf_first")
+        ).lower()
+        if self.concat_projector_type not in {"lcf_first", "lcf_projected_kv"}:
+            raise ValueError(
+                "cachejpeg_rosetta.concat_projector.type must be 'lcf_first' "
+                "or 'lcf_projected_kv'."
+            )
         self.split_latent_cachejpeg_enabled = (
             self.eval_codec_config.split_latent_cachejpeg.enabled
         )
@@ -208,6 +228,37 @@ class CacheJPEGRosettaEvalWrapper:
         self.fuser_bridge = RosettaFuserBridge(
             assets, adaptive_quant_table=adaptive_quant_table
         )
+        self.concat_cache_aligner = None
+        if self.cache_alignment == "concat":
+            aligner_class = (
+                ProjectedKVConcatCacheAligner
+                if self.concat_projector_type == "lcf_projected_kv"
+                else ConcatCacheAligner
+            )
+            self.concat_cache_aligner = aligner_class(assets)
+        if self.cache_alignment == "concat" and not assets.projector_list:
+            raise ValueError(
+                "cache_alignment='concat' requires LCF-first projector checkpoints."
+            )
+        if self.cache_alignment == "concat":
+            expected_concat_projector = (
+                "LCFProjectedKVProjector"
+                if self.concat_projector_type == "lcf_projected_kv"
+                else "LCFFirstProjector"
+            )
+            unexpected = sorted(
+                {
+                    projector.__class__.__name__
+                    for projector in assets.projector_list
+                    if projector.__class__.__name__ != expected_concat_projector
+                }
+            )
+            if unexpected:
+                raise ValueError(
+                    f"concat_projector.type={self.concat_projector_type!r} requires "
+                    f"{expected_concat_projector}, "
+                    f"but loaded {unexpected}."
+                )
         transport_config = codec_config.get("transport") or (codec_config.get("codec") or {}).get("transport")
         self.transport = build_transport(dict(transport_config or {}))
         self.last_transport_stats = None
@@ -322,10 +373,26 @@ class CacheJPEGRosettaEvalWrapper:
         input_ids: torch.Tensor,
         attention_mask: Optional[torch.Tensor] = None,
         past_key_values=None,
+        *,
+        pre_rope: bool = False,
     ):
         model_kwargs = {}
         if past_key_values is not None:
             model_kwargs["past_key_values"] = past_key_values
+        if pre_rope:
+            if past_key_values is not None:
+                raise ValueError("pre-RoPE sharer capture does not support an existing cache.")
+            with capture_pre_rope_keys(self.teacher_model) as captured:
+                with torch.no_grad():
+                    outputs = self.teacher_model(
+                        input_ids=input_ids,
+                        attention_mask=attention_mask,
+                        use_cache=True,
+                    )
+            outputs.past_key_values = replace_cache_keys_with_pre_rope(
+                outputs.past_key_values, captured
+            )
+            return outputs
         with torch.no_grad():
             return self.teacher_model(
                 input_ids=input_ids,
@@ -663,7 +730,365 @@ class CacheJPEGRosettaEvalWrapper:
         )
         return torch.cat([base_input_ids, generated], dim=1)
 
+    def _decode_from_prefill_outputs(
+        self,
+        prefill_outputs,
+        *,
+        attention_mask: torch.Tensor,
+        max_new_tokens: int,
+        do_sample: bool,
+        temperature: float,
+    ) -> torch.Tensor:
+        """Decode without feeding the receiver prompt's final token a second time."""
+
+        generated = []
+        current_past = self._to_dynamic_cache(prefill_outputs.past_key_values)
+        current_logits = prefill_outputs.logits[:, -1, :]
+        current_attention_mask = attention_mask
+        eos_token_id = self.base_tokenizer.eos_token_id
+        for generated_index in range(max(1, int(max_new_tokens))):
+            if do_sample:
+                scaled = current_logits if temperature <= 0 else current_logits / temperature
+                next_token = torch.multinomial(torch.softmax(scaled, dim=-1), num_samples=1)
+            else:
+                next_token = torch.argmax(current_logits, dim=-1, keepdim=True)
+            generated.append(next_token)
+            if eos_token_id is not None and bool(torch.all(next_token == int(eos_token_id))):
+                break
+            if generated_index + 1 == max(1, int(max_new_tokens)):
+                break
+            current_attention_mask = torch.cat(
+                [
+                    current_attention_mask,
+                    torch.ones(
+                        (current_attention_mask.shape[0], 1),
+                        dtype=current_attention_mask.dtype,
+                        device=current_attention_mask.device,
+                    ),
+                ],
+                dim=1,
+            )
+            with torch.no_grad():
+                outputs = self.base_model(
+                    input_ids=next_token,
+                    attention_mask=current_attention_mask,
+                    past_key_values=current_past,
+                    use_cache=True,
+                )
+            current_past = self._to_dynamic_cache(outputs.past_key_values)
+            current_logits = outputs.logits[:, -1, :]
+        return torch.cat(generated, dim=1)
+
+    def _generate_with_concat_alignment(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+        generation_config: dict[str, Any],
+    ) -> torch.Tensor:
+        """Use mapped Sharer pre-RoPE KV as a prefix to Receiver prefill and decode."""
+
+        base_ids, teacher_ids, base_mask, teacher_mask = self._split_aligned_inputs(
+            input_ids, attention_mask
+        )
+        sharer_outputs = self.prefill_on_sharer(
+            input_ids=teacher_ids,
+            attention_mask=teacher_mask,
+            pre_rope=True,
+        )
+        legacy_sharer_cache = self._to_legacy_cache(sharer_outputs.past_key_values)
+        original_kv_bytes = sum(
+            int(key.numel() * key.element_size() + value.numel() * value.element_size())
+            for key, value in legacy_sharer_cache
+        )
+        teacher_device = next(self.teacher_model.parameters()).device
+        if teacher_device.type == "cuda":
+            torch.cuda.synchronize(teacher_device)
+        if self.concat_cache_aligner is None:
+            raise RuntimeError("Concat cache aligner was not initialized.")
+        lcf_encode_started = time.perf_counter()
+        lcf_latent_cache, lcf_routing = self.concat_cache_aligner.encode(
+            legacy_sharer_cache
+        )
+        if teacher_device.type == "cuda":
+            torch.cuda.synchronize(teacher_device)
+        lcf_encode_seconds = time.perf_counter() - lcf_encode_started
+        latent_kv_bytes = sum(
+            int(key.numel() * key.element_size() + value.numel() * value.element_size())
+            for key, value in lcf_latent_cache
+        )
+        encode_started = time.perf_counter()
+        payload = self.encode_cache(lcf_latent_cache)
+        if teacher_device.type == "cuda":
+            torch.cuda.synchronize(teacher_device)
+        encode_seconds = time.perf_counter() - encode_started
+        payload_bytes = len(serialize_payload(payload))
+        received_payload = self.transport.roundtrip(payload) if self.transport is not None else payload
+        self.last_transport_stats = (
+            self.transport.last_stats if self.transport is not None else None
+        )
+        if teacher_device.type == "cuda":
+            torch.cuda.synchronize(teacher_device)
+        decode_started = time.perf_counter()
+        decoded_latent_cache = self.decode_cache(received_payload)
+        if teacher_device.type == "cuda":
+            torch.cuda.synchronize(teacher_device)
+        decode_seconds = time.perf_counter() - decode_started
+
+        if bool(self.ablation_config.get("zero_sharer_cache_at_receiver", False)):
+            decoded_latent_cache = tuple(
+                (torch.zeros_like(key), torch.zeros_like(value))
+                for key, value in self._to_legacy_cache(decoded_latent_cache)
+            )
+        lcf_decode_started = time.perf_counter()
+        receiver_prefix = self.concat_cache_aligner.decode(
+            decoded_latent_cache, lcf_routing
+        )
+        receiver_device = next(self.base_model.parameters()).device
+        if receiver_device.type == "cuda":
+            torch.cuda.synchronize(receiver_device)
+        lcf_decode_seconds = time.perf_counter() - lcf_decode_started
+        self.last_fusion_stats = self.concat_cache_aligner.last_alignment_stats
+        prefix_length = int(receiver_prefix.key_cache[0].shape[2])
+
+        if base_mask is None:
+            base_mask = torch.ones_like(base_ids, dtype=torch.long)
+        prefix_mask = torch.ones(
+            (base_ids.shape[0], prefix_length),
+            dtype=base_mask.dtype,
+            device=base_mask.device,
+        )
+        combined_mask = torch.cat([prefix_mask, base_mask], dim=1)
+        receiver_position_ids = base_mask.long().cumsum(-1) - 1 + prefix_length
+        receiver_position_ids = receiver_position_ids.masked_fill(base_mask == 0, 0)
+        with torch.no_grad():
+            receiver_outputs = self.base_model(
+                input_ids=base_ids,
+                attention_mask=combined_mask,
+                position_ids=receiver_position_ids,
+                past_key_values=receiver_prefix,
+                use_cache=True,
+            )
+        generated = self._decode_from_prefill_outputs(
+            receiver_outputs,
+            attention_mask=combined_mask,
+            max_new_tokens=int(generation_config.get("max_new_tokens", 16)),
+            do_sample=bool(generation_config.get("do_sample", False)),
+            temperature=float(generation_config.get("temperature", 0.0)),
+        )
+        self.last_codec_stats = {
+            "original_kv_bytes": original_kv_bytes,
+            "lcf_latent_kv_bytes": latent_kv_bytes,
+            "payload_bytes": payload_bytes,
+            "compression_factor": float(original_kv_bytes / payload_bytes) if payload_bytes else 0.0,
+            "space_saving_ratio": float(1.0 - payload_bytes / original_kv_bytes) if original_kv_bytes else 0.0,
+            "encode_seconds": float(encode_seconds),
+            "decode_seconds": float(decode_seconds),
+            "lcf_encode_seconds": float(lcf_encode_seconds),
+            "lcf_decode_seconds": float(lcf_decode_seconds),
+            "sender_encode_seconds": float(lcf_encode_seconds + encode_seconds),
+            "receiver_decode_seconds": float(decode_seconds + lcf_decode_seconds),
+            "compute_backend": self.eval_codec_config.codec.compute.backend,
+            "transform_dtype": self.eval_codec_config.codec.compute.transform_dtype,
+            "entropy_backend": self.eval_codec_config.codec.entropy.backend,
+            "layer_streaming": False,
+            "layer_execution": "whole_cache_sequential",
+            "transport_mode": self.eval_codec_config.codec.transport.mode,
+            "transport_bandwidth_bytes_per_sec": (
+                self.eval_codec_config.codec.transport.bandwidth_bytes_per_sec
+            ),
+            "bandwidth_only_transmit_seconds": (
+                float(
+                    payload_bytes
+                    / self.eval_codec_config.codec.transport.bandwidth_bytes_per_sec
+                )
+                if self.eval_codec_config.codec.transport.bandwidth_bytes_per_sec
+                else None
+            ),
+            "cache_alignment": "concat",
+            "concat_projector_type": self.concat_projector_type,
+            "codec_order": (
+                "lcf_project_kv_cachejpeg_lcf_up"
+                if self.concat_projector_type == "lcf_projected_kv"
+                else "lcf_down_cachejpeg_lcf_up"
+            ),
+            "rope_mode": "pre_rope",
+            "prefix_tokens": prefix_length,
+            "latent_dim": lcf_routing.latent_dim,
+        }
+        return torch.cat([base_ids, generated], dim=1)
+
+    def _generate_with_concat_layer_streaming(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+        generation_config: dict[str, Any],
+    ) -> torch.Tensor:
+        """Overlap per-layer pre-RoPE concat compression with Sharer prefill."""
+
+        base_ids, teacher_ids, base_mask, teacher_mask = self._split_aligned_inputs(
+            input_ids, attention_mask
+        )
+        if self.concat_cache_aligner is None:
+            raise RuntimeError("Concat cache aligner was not initialized.")
+        teacher_parameter = next(self.teacher_model.parameters())
+        routing = self.concat_cache_aligner.prepare_routing()
+        self.concat_cache_aligner.prepare_projectors(
+            teacher_parameter.device, teacher_parameter.dtype
+        )
+        zero_sharer_cache = bool(
+            self.ablation_config.get("zero_sharer_cache_at_receiver", False)
+        )
+        streaming = self.eval_codec_config.layer_streaming
+        pipeline = ConcatLayerPipeline(
+            aligner=self.concat_cache_aligner,
+            codec=self.codec,
+            codec_config=self.codec_config,
+            transport=self.transport,
+            routing=routing,
+            gpu_streams=streaming.gpu_streams,
+            max_inflight_layers=streaming.max_inflight_layers,
+            zero_sharer_cache_at_receiver=zero_sharer_cache,
+        )
+        publisher = StreamingPreRopeKVPublisher(pipeline.submit)
+        streaming_cache = StreamingPreRopeDynamicCache(publisher)
+        prefill_timer = LayerPrefillTimer(
+            self.teacher_model, int(self.teacher_model.config.num_hidden_layers)
+        )
+        prefill_timer.start()
+        finish_attempted = False
+        try:
+            with stream_pre_rope_keys(self.teacher_model, publisher):
+                with torch.no_grad():
+                    self.teacher_model(
+                        input_ids=teacher_ids,
+                        attention_mask=teacher_mask,
+                        past_key_values=streaming_cache,
+                        use_cache=True,
+                    )
+            if teacher_parameter.device.type == "cuda":
+                torch.cuda.synchronize(teacher_parameter.device)
+            layer_prefill_seconds = prefill_timer.finish()
+            finish_attempted = True
+            receiver_prefix, routing = pipeline.finish()
+        except BaseException:
+            for handle in prefill_timer.handles:
+                handle.remove()
+            prefill_timer.handles.clear()
+            if not finish_attempted:
+                try:
+                    pipeline.finish()
+                except BaseException:
+                    pass
+            raise
+        pipeline_seconds = pipeline.pipeline_seconds
+        self.last_transport_stats = pipeline.aggregate_transport_stats()
+        self.last_fusion_stats = self.concat_cache_aligner.last_alignment_stats
+        prefix_length = int(receiver_prefix.key_cache[0].shape[2])
+
+        if base_mask is None:
+            base_mask = torch.ones_like(base_ids, dtype=torch.long)
+        prefix_mask = torch.ones(
+            (base_ids.shape[0], prefix_length),
+            dtype=base_mask.dtype,
+            device=base_mask.device,
+        )
+        combined_mask = torch.cat([prefix_mask, base_mask], dim=1)
+        receiver_position_ids = base_mask.long().cumsum(-1) - 1 + prefix_length
+        receiver_position_ids = receiver_position_ids.masked_fill(base_mask == 0, 0)
+        with torch.no_grad():
+            receiver_outputs = self.base_model(
+                input_ids=base_ids,
+                attention_mask=combined_mask,
+                position_ids=receiver_position_ids,
+                past_key_values=receiver_prefix,
+                use_cache=True,
+            )
+        generated = self._decode_from_prefill_outputs(
+            receiver_outputs,
+            attention_mask=combined_mask,
+            max_new_tokens=int(generation_config.get("max_new_tokens", 16)),
+            do_sample=bool(generation_config.get("do_sample", False)),
+            temperature=float(generation_config.get("temperature", 0.0)),
+        )
+
+        bandwidth = self.eval_codec_config.codec.transport.bandwidth_bytes_per_sec
+        ordered_timings = [
+            {"layer_idx": layer_idx, **pipeline.layer_timings.get(layer_idx, {})}
+            for layer_idx in range(pipeline.num_layers)
+        ]
+        codec_encode_wall = pipeline.stage_wall_seconds("encode")
+        codec_decode_wall = pipeline.stage_wall_seconds("decode")
+        lcf_encode_wall = pipeline.stage_wall_seconds("lcf_encode")
+        lcf_decode_wall = pipeline.stage_wall_seconds("lcf_decode")
+        sender_encode_wall = pipeline.stage_wall_seconds("lcf_encode", "encode")
+        receiver_decode_wall = pipeline.stage_wall_seconds("decode", "lcf_decode")
+        self.last_codec_stats = {
+            "mode": "concat_layer_streaming",
+            "num_layers": pipeline.num_layers,
+            "gpu_streams": streaming.gpu_streams,
+            "max_inflight_layers": streaming.max_inflight_layers,
+            "original_kv_bytes": pipeline.original_kv_bytes,
+            "lcf_latent_kv_bytes": pipeline.latent_kv_bytes,
+            "payload_bytes": pipeline.payload_bytes,
+            "compression_factor": (
+                float(pipeline.original_kv_bytes / pipeline.payload_bytes)
+                if pipeline.payload_bytes
+                else 0.0
+            ),
+            "space_saving_ratio": (
+                float(1.0 - pipeline.payload_bytes / pipeline.original_kv_bytes)
+                if pipeline.original_kv_bytes
+                else 0.0
+            ),
+            "encode_seconds": codec_encode_wall,
+            "decode_seconds": codec_decode_wall,
+            "lcf_encode_seconds": lcf_encode_wall,
+            "lcf_decode_seconds": lcf_decode_wall,
+            "sender_encode_seconds": sender_encode_wall,
+            "receiver_decode_seconds": receiver_decode_wall,
+            "encode_service_seconds": float(pipeline.codec_encode_seconds),
+            "decode_service_seconds": float(pipeline.codec_decode_seconds),
+            "lcf_encode_service_seconds": float(pipeline.lcf_encode_seconds),
+            "lcf_decode_service_seconds": float(pipeline.lcf_decode_seconds),
+            "pipeline_seconds": float(pipeline_seconds),
+            "layer_prefill_seconds": [float(value) for value in layer_prefill_seconds],
+            "layer_timings": ordered_timings,
+            "compute_backend": self.eval_codec_config.codec.compute.backend,
+            "transform_dtype": self.eval_codec_config.codec.compute.transform_dtype,
+            "entropy_backend": self.eval_codec_config.codec.entropy.backend,
+            "layer_streaming": True,
+            "layer_execution": "concat_staged_pipeline",
+            "transport_mode": self.eval_codec_config.codec.transport.mode,
+            "transport_bandwidth_bytes_per_sec": bandwidth,
+            "bandwidth_only_transmit_seconds": (
+                float(pipeline.payload_bytes / bandwidth) if bandwidth else None
+            ),
+            "cache_alignment": "concat",
+            "concat_projector_type": self.concat_projector_type,
+            "codec_order": (
+                "lcf_project_kv_cachejpeg_lcf_up"
+                if self.concat_projector_type == "lcf_projected_kv"
+                else "lcf_down_cachejpeg_lcf_up"
+            ),
+            "rope_mode": "pre_rope",
+            "prefix_tokens": prefix_length,
+            "latent_dim": routing.latent_dim,
+            "zero_sharer_cache_at_receiver": zero_sharer_cache,
+        }
+        return torch.cat([base_ids, generated], dim=1)
+
     def generate(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, **generation_config):
+        if getattr(self, "cache_alignment", "fuser") == "concat":
+            streaming_config = getattr(
+                getattr(self, "eval_codec_config", None), "layer_streaming", None
+            )
+            if streaming_config is not None and streaming_config.enabled:
+                return self._generate_with_concat_layer_streaming(
+                    input_ids, attention_mask, generation_config
+                )
+            return self._generate_with_concat_alignment(
+                input_ids, attention_mask, generation_config
+            )
         if getattr(self, "fusion_type", "original") == "latent_kv_split":
             return self._generate_with_split_latent(
                 input_ids, attention_mask, generation_config

@@ -22,6 +22,7 @@ def test_resolve_cachejpeg_rosetta_eval_config_reads_nested_values():
     assert cfg.layer_streaming.enabled is True
     assert cfg.layer_streaming.queue_size == 3
     assert cfg.fusion_type == "original"
+    assert cfg.cache_alignment == "fuser"
     assert cfg.latent_kv_bridge.enabled is False
 
 
@@ -113,3 +114,39 @@ def test_resolve_split_latent_cachejpeg_requires_zlib_and_split_mode():
         assert "zlib" in str(exc)
     else:
         raise AssertionError("Expected non-zlib split latent codec to be rejected")
+
+
+def test_resolve_cachejpeg_rosetta_eval_config_accepts_concat_alignment():
+    cfg = resolve_cachejpeg_rosetta_eval_config({"cache_alignment": "concat"})
+    assert cfg.cache_alignment == "concat"
+    assert cfg.fusion_type == "original"
+
+
+def test_concat_alignment_rejects_fuser_specific_modes():
+    for config in (
+        {"cache_alignment": "concat", "fusion_type": "latent_kv_joint"},
+        {"cache_alignment": "concat", "adaptive_quant_table": {"enabled": True}},
+    ):
+        try:
+            resolve_cachejpeg_rosetta_eval_config(config)
+        except ValueError as exc:
+            assert "concat" in str(exc)
+        else:
+            raise AssertionError("Expected incompatible concat configuration to fail")
+
+
+def test_concat_alignment_accepts_layer_streaming_settings():
+    cfg = resolve_cachejpeg_rosetta_eval_config(
+        {
+            "cache_alignment": "concat",
+            "layer_streaming": {
+                "enabled": True,
+                "queue_size": 3,
+                "gpu_streams": 2,
+                "max_inflight_layers": 5,
+            },
+        }
+    )
+    assert cfg.layer_streaming.enabled is True
+    assert cfg.layer_streaming.gpu_streams == 2
+    assert cfg.layer_streaming.max_inflight_layers == 5

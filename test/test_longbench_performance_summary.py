@@ -3,6 +3,85 @@ import json
 from script.evaluation.unified_evaluator import UnifiedEvaluator
 
 
+def test_cache_transfer_statistics_aggregate_serialized_payload_against_sharer_cache():
+    stats = [
+        {
+            "subject": "a",
+            "sharer_cache_bytes": 1000,
+            "lcf_latent_kv_bytes": 400,
+            "payload_bytes": 250,
+            "transport_payload_bytes": 250,
+            "compute_backend": "gpu",
+            "layer_streaming": False,
+        },
+        {
+            "subject": "a",
+            "sharer_cache_bytes": 3000,
+            "lcf_latent_kv_bytes": 1200,
+            "payload_bytes": 750,
+            "transport_payload_bytes": 750,
+            "compute_backend": "gpu",
+            "layer_streaming": False,
+        },
+    ]
+
+    summary = UnifiedEvaluator._compute_cache_transfer_statistics(stats)
+
+    assert summary["overall"]["total_sharer_cache_bytes"] == 4000
+    assert summary["overall"]["total_payload_bytes"] == 1000
+    assert summary["overall"]["total_payload_bits"] == 8000
+    assert summary["overall"]["aggregate_sharer_to_payload_compression_ratio"] == 4.0
+    assert summary["overall"]["aggregate_payload_to_sharer_ratio"] == 0.25
+    assert summary["overall"]["aggregate_space_saving_ratio"] == 0.75
+    assert summary["compute_backends"] == ["gpu"]
+    assert summary["layer_streaming_enabled"] is False
+
+
+def test_timing_statistics_cover_non_longbench_codec_and_transport_fields():
+    stats = [
+        {
+            "end_to_end_latency_ms": 100.0,
+            "encode_ms": 20.0,
+            "decode_ms": 10.0,
+            "lcf_encode_ms": 4.0,
+            "lcf_decode_ms": 3.0,
+            "sender_encode_ms": 24.0,
+            "receiver_decode_ms": 13.0,
+            "serialize_ms": 2.0,
+            "transmit_ms": 5.0,
+            "deserialize_ms": 1.0,
+            "transport_total_ms": 8.0,
+        },
+        {
+            "end_to_end_latency_ms": 200.0,
+            "encode_ms": 40.0,
+            "decode_ms": 20.0,
+            "lcf_encode_ms": 8.0,
+            "lcf_decode_ms": 5.0,
+            "sender_encode_ms": 48.0,
+            "receiver_decode_ms": 25.0,
+            "serialize_ms": 4.0,
+            "transmit_ms": 15.0,
+            "deserialize_ms": 3.0,
+            "transport_total_ms": 22.0,
+        },
+    ]
+
+    summary = UnifiedEvaluator._compute_timing_statistics(stats)
+
+    assert summary["num_timed_samples"] == 2
+    assert summary["end_to_end_avg_ms"] == 150.0
+    assert summary["end_to_end_p50_ms"] == 150.0
+    assert summary["avg_encode_ms"] == 30.0
+    assert summary["avg_decode_ms"] == 15.0
+    assert summary["avg_lcf_encode_ms"] == 6.0
+    assert summary["avg_lcf_decode_ms"] == 4.0
+    assert summary["avg_sender_encode_ms"] == 36.0
+    assert summary["avg_receiver_decode_ms"] == 19.0
+    assert summary["avg_transmit_ms"] == 10.0
+    assert summary["avg_transport_total_ms"] == 15.0
+
+
 def test_longbench_summary_aggregates_streaming_latency_and_layer_timings(tmp_path):
     evaluator = UnifiedEvaluator.__new__(UnifiedEvaluator)
     evaluator.dataset_name = "longbench"

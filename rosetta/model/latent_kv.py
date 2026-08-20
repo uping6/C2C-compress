@@ -889,6 +889,97 @@ class SplitLatentKVProjector(Projector):
         return self.decode(self.encode(source_kv), target_kv)
 
 
+@register_model
+@capture_init_args
+class LCFFirstProjector(Projector):
+    """Per-layer LCF-first encoder/decoder for concat-prefix cache alignment.
+
+    The encoder jointly downsamples pre-RoPE Sharer K/V to a fixed latent.  The
+    latent is split into K/V halves for transport, and the receiver-side
+    decoders independently upsample those halves into Receiver cache geometry.
+    No Receiver cache is read while constructing the prefix.
+    """
+
+    def __init__(
+        self,
+        sharer_num_kv_heads: int,
+        sharer_head_dim: int,
+        receiver_num_kv_heads: int,
+        receiver_head_dim: int,
+        latent_dim: int = 128,
+        dtype: torch.dtype = torch.float32,
+    ) -> None:
+        super().__init__()
+        if latent_dim <= 0 or latent_dim % 2:
+            raise ValueError("LCF-first latent_dim must be a positive even integer.")
+        self.sharer_num_kv_heads = int(sharer_num_kv_heads)
+        self.sharer_head_dim = int(sharer_head_dim)
+        self.receiver_num_kv_heads = int(receiver_num_kv_heads)
+        self.receiver_head_dim = int(receiver_head_dim)
+        self.latent_dim = int(latent_dim)
+        source_channels = self.sharer_num_kv_heads * self.sharer_head_dim
+        receiver_channels = self.receiver_num_kv_heads * self.receiver_head_dim
+        half_latent = self.latent_dim // 2
+        self.encoder = nn.Sequential(
+            nn.Linear(2 * source_channels, self.latent_dim, dtype=dtype),
+            nn.GELU(),
+            nn.Linear(self.latent_dim, 4 * self.latent_dim, dtype=dtype),
+            nn.GELU(),
+            nn.Linear(4 * self.latent_dim, self.latent_dim, dtype=dtype),
+        )
+        self.decoder_k = nn.Sequential(
+            nn.Linear(half_latent, 4 * half_latent, dtype=dtype),
+            nn.GELU(),
+            nn.Linear(4 * half_latent, receiver_channels, dtype=dtype),
+        )
+        self.decoder_v = nn.Sequential(
+            nn.Linear(half_latent, 4 * half_latent, dtype=dtype),
+            nn.GELU(),
+            nn.Linear(4 * half_latent, receiver_channels, dtype=dtype),
+        )
+
+    def encode(self, source_kv: tuple[Tensor, Tensor]) -> Tensor:
+        key, value = source_kv
+        if key.ndim != 4 or key.shape != value.shape:
+            raise ValueError("LCF-first expects matching Sharer K/V [B,H,S,D].")
+        batch, heads, sequence_length, head_dim = key.shape
+        if (heads, head_dim) != (self.sharer_num_kv_heads, self.sharer_head_dim):
+            raise ValueError("Sharer KV geometry does not match the LCF-first encoder.")
+        channels = torch.cat(
+            [
+                key.transpose(1, 2).contiguous().reshape(batch, sequence_length, -1),
+                value.transpose(1, 2).contiguous().reshape(batch, sequence_length, -1),
+            ],
+            dim=-1,
+        )
+        return self.encoder(channels.to(dtype=self.encoder[0].weight.dtype))
+
+    def decode(self, latent: Tensor) -> tuple[Tensor, Tensor]:
+        if latent.ndim != 3 or latent.shape[-1] != self.latent_dim:
+            raise ValueError(
+                f"LCF-first expects latent [B,S,{self.latent_dim}], got {tuple(latent.shape)}."
+            )
+        batch, sequence_length, _ = latent.shape
+        key_latent, value_latent = latent.chunk(2, dim=-1)
+        key_channels = self.decoder_k(key_latent.to(dtype=self.decoder_k[0].weight.dtype))
+        value_channels = self.decoder_v(value_latent.to(dtype=self.decoder_v[0].weight.dtype))
+        key = key_channels.reshape(
+            batch, sequence_length, self.receiver_num_kv_heads, self.receiver_head_dim
+        ).transpose(1, 2).contiguous()
+        value = value_channels.reshape(
+            batch, sequence_length, self.receiver_num_kv_heads, self.receiver_head_dim
+        ).transpose(1, 2).contiguous()
+        return key, value
+
+    def forward(
+        self,
+        source_kv: tuple[Tensor, Tensor],
+        target_kv: tuple[Tensor, Tensor] | None = None,
+    ) -> tuple[Tensor, Tensor]:
+        del target_kv
+        return self.decode(self.encode(source_kv))
+
+
 @dataclass
 class LatentKVLayerPayload:
     receiver_layer: int

@@ -551,7 +551,63 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
         projector_list = []
         source_target_mapping = None
 
-        if fusion_type in {"latent_kv_joint", "latent_kv_split"}:
+        cache_alignment = str(model_config.get("cache_alignment", "fuser")).lower()
+        if cache_alignment not in {"fuser", "concat"}:
+            raise ValueError("model.cache_alignment must be 'fuser' or 'concat'.")
+
+        if cache_alignment == "concat":
+            if fusion_type != "original":
+                raise ValueError("concat LCF-first requires model.fusion_type='original'.")
+            lcf_config = model_config.get("lcf_first", {})
+            concat_projector_config = dict(model_config.get("concat_projector") or {})
+            concat_projector_type = str(
+                concat_projector_config.get("type", "lcf_first")
+            ).lower()
+            if concat_projector_type not in {"lcf_first", "lcf_projected_kv"}:
+                raise ValueError(
+                    "model.concat_projector.type must be 'lcf_first' or "
+                    "'lcf_projected_kv'."
+                )
+            layer_mapping = str(
+                concat_projector_config.get(
+                    "layer_mapping", lcf_config.get("layer_mapping", "last_aligned")
+                )
+            )
+            if layer_mapping != "last_aligned":
+                raise ValueError("concat LCF-first currently supports layer_mapping='last_aligned'.")
+            source_target_mapping = last_aligned_sources(
+                slm_num_layers, llm_num_layers, 1
+            )
+            for _ in range(slm_num_layers):
+                common_projector_args = {
+                    "sharer_num_kv_heads": teacher_num_heads,
+                    "sharer_head_dim": teacher_dim,
+                    "receiver_num_kv_heads": base_num_heads,
+                    "receiver_head_dim": base_dim,
+                    "dtype": dtype,
+                }
+                if concat_projector_type == "lcf_projected_kv":
+                    projector = create_projector(
+                        "LCFProjectedKVProjector",
+                        shared_latent_dim=int(
+                            concat_projector_config.get("shared_latent_dim", 128)
+                        ),
+                        key_latent_dim=int(
+                            concat_projector_config.get("key_latent_dim", 64)
+                        ),
+                        value_latent_dim=int(
+                            concat_projector_config.get("value_latent_dim", 64)
+                        ),
+                        **common_projector_args,
+                    )
+                else:
+                    projector = create_projector(
+                        "LCFFirstProjector",
+                        latent_dim=int(lcf_config.get("latent_dim", 128)),
+                        **common_projector_args,
+                    )
+                projector_list.append(projector.to(device))
+        elif fusion_type in {"latent_kv_joint", "latent_kv_split"}:
             latent_config = resolve_latent_kv_bridge_config(
                 model_config.get("latent_kv_bridge")
             )
@@ -618,7 +674,9 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
         if adaptive_quant_config.enabled:
             adaptive_quant_table = AdaptiveCoefficientQuantizer(
                 num_layers=slm_num_layers,
-                num_kv_heads=teacher_num_heads,
+                # LCF-first transports a single-head pseudo K/V pair made by
+                # splitting the latent channel. Fuser still quantizes Sharer KV.
+                num_kv_heads=(1 if cache_alignment == "concat" else teacher_num_heads),
                 config=adaptive_quant_config,
             ).to(device)
 
@@ -632,6 +690,7 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
             include_response=model_config.get("include_response", False),
             multi_source_fusion_mode=model_config.get("multi_source_fusion_mode", "sequential"),
             adaptive_quant_table=adaptive_quant_table,
+            cache_alignment=cache_alignment,
         ).to(device).eval()
         
         
@@ -645,6 +704,11 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
             else:
                 raise ValueError(f"Invalid mapping strategy: {model_config['mapping']}")
             print(f"Using {model_config['mapping']} mapping strategy (target: [sources])")
+        elif cache_alignment == "concat":
+            print(
+                f"Using concat {concat_projector_type} last_aligned layer mapping "
+                "(target: [source])"
+            )
         else:
             print("Using latent_kv_bridge layer mapping (target: [sources])")
 
@@ -873,7 +937,13 @@ def main():
             print(f"Applying freeze configuration: {freeze_config}")
 
         include_response = model_config.get("include_response", False)
-        if "base" in freeze_config and "teacher" in freeze_config and "projector" not in freeze_config and not include_response:
+        if (
+            "base" in freeze_config
+            and "teacher" in freeze_config
+            and "projector" not in freeze_config
+            and not include_response
+            and model_config.get("cache_alignment", "fuser") != "concat"
+        ):
             raise ValueError(
                 "Current config freezes both base and teacher while training only the projector, "
                 "but model.include_response is False. This disconnects the loss from trainable "
@@ -931,7 +1001,11 @@ def main():
         )
     elif training_mode == "rosetta":  # rosetta mode
         if model_config.get("is_do_alignment", False) and aligner is not None:
-            full_dataset = AlignedChatDataset(instruct_ds, aligner)
+            full_dataset = AlignedChatDataset(
+                instruct_ds,
+                aligner,
+                max_length=training_config.get("max_length", 2048),
+            )
         else:
             full_dataset = ChatDataset(instruct_ds, main_tokenizer)
     else:

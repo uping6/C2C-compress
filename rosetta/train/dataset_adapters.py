@@ -749,7 +749,13 @@ class LongBenchChatDataset(Dataset):
 class MMLUChatDataset(Dataset):
     """Simple MMLU dataset converted to chat format"""
 
-    def __init__(self, split: str = "train", num_samples: Optional[int] = None, max_word_count: Optional[int] = None):
+    def __init__(
+        self,
+        split: str = "train",
+        num_samples: Optional[int] = None,
+        max_word_count: Optional[int] = None,
+        local_jsonl_file: Optional[str] = None,
+    ):
         """
         Initialize the dataset
 
@@ -759,9 +765,15 @@ class MMLUChatDataset(Dataset):
             max_word_count: If set, drop samples whose question + all choices exceed this word count
         """
         print(f"Loading MMLU dataset (split: {split})...")
-        # Load dataset
-        dataset = load_dataset("cais/mmlu", "all")
-        dataset = dataset[split]
+        if local_jsonl_file:
+            resolved_file = os.path.abspath(os.path.expanduser(local_jsonl_file))
+            if not os.path.isfile(resolved_file):
+                raise FileNotFoundError(f"MMLU local_jsonl_file not found: {resolved_file}")
+            dataset = load_dataset(
+                "json", data_files={split: resolved_file}, split=split
+            )
+        else:
+            dataset = load_dataset("cais/mmlu", "all")[split]
 
         # Ensure we have a proper Dataset object
         if hasattr(dataset, 'select'):
@@ -796,16 +808,20 @@ class MMLUChatDataset(Dataset):
 
     def _build_chat_messages(self, sample: Dict[str, Any]) -> List[Dict[str, str]]:
         choice_labels = ['A', 'B', 'C', 'D']
-        question = sample.get('question', '')
-        choices_list = sample.get('choices', [])
+        # Native cais/mmlu uses question/choices and the reference
+        # AdaptiveJPEG-KV JSONL uses ctx/endings.
+        question = sample.get('question', sample.get('ctx', ''))
+        choices_list = sample.get('choices', sample.get('endings', []))
         user_prompt = f"Question: {question}\n\nChoices:\n"
         for i, choice in enumerate(choices_list):
             label = choice_labels[i] if i < len(choice_labels) else chr(65 + i)
             user_prompt += f"{label}. {choice}\n"
-        ans_idx = sample.get('answer', 0)
-        if isinstance(ans_idx, str) and ans_idx.isdigit():
-            ans_idx = int(ans_idx)
-        ans_label = choice_labels[ans_idx] if 0 <= int(ans_idx) < len(choice_labels) else chr(65 + int(ans_idx))
+        answer = sample.get('answer', 0)
+        if isinstance(answer, str) and answer.strip().upper() in choice_labels:
+            ans_label = answer.strip().upper()
+        else:
+            ans_idx = int(answer)
+            ans_label = choice_labels[ans_idx] if 0 <= ans_idx < len(choice_labels) else chr(65 + ans_idx)
         assistant_text = f"The correct answer is {ans_label}."
         return [
             {"role": "user", "content": user_prompt.strip()},
@@ -1063,7 +1079,8 @@ class OpenHermesChatDataset(Dataset):
         """
         print(f"Loading OpenHermes dataset (split: {split})...")
         # Load dataset
-        dataset = load_dataset("teknium/OpenHermes-2.5")
+        # dataset = load_dataset("teknium/OpenHermes-2.5")
+        dataset = load_dataset('hf_cache')
         dataset = dataset[split]
 
         # Ensure we have a proper Dataset object
@@ -1214,8 +1231,9 @@ class AlignedChatDataset(Dataset):
         # Truncate inputs if needed
         if len(slm_ids) > self.max_length:
             slm_ids = slm_ids[:self.max_length]
-            # Truncate padding mask accordingly
+            # Keep every SLM-position tensor aligned after truncation.
             slm_pad_mask = slm_pad_mask[:self.max_length]
+            message_mask = message_mask[:self.max_length]
         if len(llm_ids) > self.max_length:
             llm_ids = llm_ids[:self.max_length]
             llm_pad_mask = llm_pad_mask[:self.max_length]
@@ -1223,6 +1241,11 @@ class AlignedChatDataset(Dataset):
         # KV cache index based on instruction length
         kv_cache_index = generate_kv_cache_index(instr_end, len(slm_ids))
         # Addtionally mask non-message parts
+        if message_mask.numel() != kv_cache_index.shape[0]:
+            raise RuntimeError(
+                "AlignedChatDataset produced inconsistent SLM sequence and message-mask lengths: "
+                f"slm_ids={len(slm_ids)}, message_mask={message_mask.numel()}"
+            )
         kv_cache_index[~message_mask] = torch.tensor([[-1,0]])
 
         return {
