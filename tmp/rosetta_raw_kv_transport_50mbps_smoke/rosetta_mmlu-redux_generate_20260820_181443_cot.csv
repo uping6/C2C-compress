@@ -1,0 +1,2 @@
+subject,question_id,question,A,B,C,D,E,F,G,H,I,J,true_answer,pred,is_correct,answer_method,cot_pred,cot_input_length,cot_gen_length,cot_output,answer_latency_ms,extraction_method_used,ground_truth_normalized,extracted_normalized
+abstract_algebra,0,,,,,,,,,,,,A,A,True,generate,A,192,2,A,477.9047230258584,,,

@@ -1,0 +1,18 @@
+[
+  {
+    "subject": "abstract_algebra",
+    "question_id": 0,
+    "input_length": 192,
+    "gen_length": 2,
+    "length_ratio": 0.010416666666666666,
+    "is_correct": true,
+    "pred": "A",
+    "true_answer": "A",
+    "end_to_end_latency_ms": 477.9047230258584,
+    "transport_payload_bytes": 5264786,
+    "serialize_ms": 5.8313829358667135,
+    "transmit_ms": 108.63736702594906,
+    "deserialize_ms": 3.8858220214024186,
+    "transport_total_ms": 118.3545719832182
+  }
+]

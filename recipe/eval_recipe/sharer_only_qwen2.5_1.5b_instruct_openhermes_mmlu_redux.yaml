@@ -1,0 +1,27 @@
+# Sharer-only baseline for the OpenHermes LCF-projected-KV experiment.
+# The sharer_only ablation loads only Qwen2.5-1.5B-Instruct; it does not load
+# the Qwen3 receiver, fuser, CacheJPEG codec, LCF module, or transport pipeline.
+model:
+  model_name: cachejpeg_rosetta
+  rosetta_config:
+    teacher_model: /data/smy_data/local/models/Qwen2.5-1.5B-Instruct
+
+  cachejpeg_rosetta_config:
+    ablation:
+      sharer_only: true
+
+  generation_config:
+    do_sample: false
+    max_new_tokens: 16
+
+output:
+  output_dir: local/final_results/openhermes_lcf_projected_kv/sharer_only/ceval
+
+eval:
+  dataset: ceval
+  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/ceval_test.jsonl
+  gpu_ids: [0]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1

@@ -13,6 +13,7 @@ import json
 from rosetta.model.projector import Projector
 from rosetta.model.adaptive_quant_table import AdaptiveCoefficientQuantizer
 from rosetta.model.sampling import sample_token
+from rosetta.model.transport import RawKVTransportStats, build_rosetta_transport
 from transformers.utils import ModelOutput
 try:
     from transformers.generation.utils import GreedySearchDecoderOnlyOutput, SampleDecoderOnlyOutput
@@ -77,7 +78,7 @@ class RosettaModel(nn.Module):
     """
     Drop in replacement for the standard transformers LLM models, like Qwen3ForCausalLM
     """
-    def __init__(self, model_list: List[PreTrainedModel], base_model_idx = 0, projector_list: List[Projector] = [], include_response: bool = False, multi_source_fusion_mode: str = "parallel", adaptive_quant_table: Optional[AdaptiveCoefficientQuantizer] = None, cache_alignment: str = "fuser"):
+    def __init__(self, model_list: List[PreTrainedModel], base_model_idx = 0, projector_list: List[Projector] = [], include_response: bool = False, multi_source_fusion_mode: str = "parallel", adaptive_quant_table: Optional[AdaptiveCoefficientQuantizer] = None, cache_alignment: str = "fuser", transport_config: Optional[dict] = None):
         super().__init__()
         # model list: a list of model, model 0 by default is the base model
         # projector list: a list of projector
@@ -98,6 +99,8 @@ class RosettaModel(nn.Module):
             self.adaptive_quant_table.to(device=device)
         self.adaptive_quant_table_step = 0
         self.last_adaptive_quant_table_metrics = None
+        self.transport = build_rosetta_transport(transport_config)
+        self.last_transport_stats: Optional[RawKVTransportStats] = None
 
         self.projector_dict = {}
         self.kv_cache_dict = {}
@@ -114,6 +117,49 @@ class RosettaModel(nn.Module):
         if multi_source_fusion_mode not in ["sequential", "parallel"]:
             raise ValueError(f"multi_source_fusion_mode must be 'sequential' or 'parallel', got '{multi_source_fusion_mode}'")
         self.multi_source_fusion_mode = multi_source_fusion_mode
+
+    @staticmethod
+    def _raw_cache_to_wire(cache: DynamicCache) -> tuple[tuple[torch.Tensor, torch.Tensor], ...]:
+        """Move the uncompressed sharer cache to a serializable CPU wire payload."""
+        return tuple(
+            (
+                key.detach().to(device="cpu").contiguous(),
+                value.detach().to(device="cpu").contiguous(),
+            )
+            for key, value in zip(cache.key_cache, cache.value_cache)
+        )
+
+    @staticmethod
+    def _raw_cache_from_wire(
+        wire_payload: tuple[tuple[torch.Tensor, torch.Tensor], ...],
+        device: torch.device,
+    ) -> DynamicCache:
+        restored = DynamicCache()
+        for key, value in wire_payload:
+            restored.key_cache.append(key.to(device=device, non_blocking=False))
+            restored.value_cache.append(value.to(device=device, non_blocking=False))
+        return restored
+
+    def _accumulate_transport_stats(self, stats: RawKVTransportStats) -> None:
+        previous = self.last_transport_stats
+        if previous is None:
+            self.last_transport_stats = stats
+            return
+        self.last_transport_stats = RawKVTransportStats(
+            payload_bytes=previous.payload_bytes + stats.payload_bytes,
+            serialize_seconds=previous.serialize_seconds + stats.serialize_seconds,
+            transmit_seconds=previous.transmit_seconds + stats.transmit_seconds,
+            deserialize_seconds=previous.deserialize_seconds + stats.deserialize_seconds,
+        )
+
+    def _transport_raw_cache(self, cache: DynamicCache, device: torch.device) -> DynamicCache:
+        if self.transport is None:
+            return cache
+        restored_payload = self.transport.roundtrip(self._raw_cache_to_wire(cache))
+        if self.transport.last_stats is None:
+            raise RuntimeError("Rosetta raw-KV transport completed without transport statistics.")
+        self._accumulate_transport_stats(self.transport.last_stats)
+        return self._raw_cache_from_wire(restored_payload, device)
 
     def update_adaptive_quant_table_schedule(self, step: int) -> None:
         self.adaptive_quant_table_step = max(0, int(step))
@@ -620,6 +666,7 @@ class RosettaModel(nn.Module):
 
         if seqlen > 1:
             self.kv_cache_dict = dict()
+            self.last_transport_stats = None
             
         num_sections = len(kv_cache_index) if kv_cache_index is not None else 1
 
@@ -736,6 +783,22 @@ class RosettaModel(nn.Module):
                     
                     curr_source_kv_cache = hybrid_to_dynamic(curr_source_kv_cache)
                     self.kv_cache_dict[self.base_model_idx][source_model_idx] = clone_kv_cache(curr_source_kv_cache)
+
+                # Send each selected sharer's complete, uncompressed KV cache
+                # through one serial transport boundary before fuser projection.
+                # This intentionally performs no layer-level parallelism.
+                if self.base_model_idx in self.projector_dict:
+                    sharer_mask = kv_cache_index[i][0][0][0].item()
+                    if sharer_mask > 0 and self.transport is not None:
+                        for source_model_idx in self.projector_dict[self.base_model_idx]:
+                            if sharer_mask & (1 << (source_model_idx - 1)):
+                                source_cache = self.kv_cache_dict[self.base_model_idx][source_model_idx]
+                                self.kv_cache_dict[self.base_model_idx][source_model_idx] = (
+                                    self._transport_raw_cache(
+                                        source_cache,
+                                        device=source_prefill_input_ids.device,
+                                    )
+                                )
 
                 # calculate source model kvcache and apply projections
                 if self.base_model_idx in self.projector_dict:

@@ -1,0 +1,32 @@
+# Pure C2C/Rosetta baseline: raw teacher KV -> serial 50 MB/s transport -> fuser -> receiver.
+# No CacheJPEG, LCF, latent bridge, quantization, or layer-parallel transfer is used.
+model:
+  model_name: rosetta
+  rosetta_config:
+    base_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
+    teacher_model: /data/smy_data/local/models/Qwen2.5-1.5B-Instruct
+    checkpoints_dir: local/checkpoints/0.6+1.5B_instruct_longbench_e
+    is_do_alignment: true
+    alignment_strategy: longest
+    transport:
+      mode: socketpair
+      bandwidth_bytes_per_sec: 50000000
+      fixed_latency_ms: 0
+      parallel: false
+
+  generation_config:
+    do_sample: false
+    max_new_tokens: 16
+
+output:
+  output_dir: local/final_results/openhermes_lcf_projected_kv/rosetta_raw_kv_transport_50mbps/openbookqa
+
+eval:
+  dataset: openbookqa
+  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/openbookqa_test.jsonl
+  gpu_ids: [1]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1
+  rosetta_checkpoint_subfolder: final
