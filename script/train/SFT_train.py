@@ -28,7 +28,16 @@ import contextlib
 
 from rosetta.model.wrapper import RosettaModel
 from rosetta.model.projector import create_projector, save_projector
-from rosetta.train.dataset_adapters import ChatDataset, AlignedChatDataset, RosettaDataCollator, create_dataset, BaselineDataCollator, BaselineChatDataset
+from rosetta.train.dataset_adapters import (
+    AlignedChatDataset,
+    BaselineChatDataset,
+    BaselineDataCollator,
+    ChatDataset,
+    IndependentDualTokenizerChatDataset,
+    IndependentDualTokenizerCollator,
+    RosettaDataCollator,
+    create_dataset,
+)
 from rosetta.model.aligner import TokenAligner, AlignmentStrategy
 from rosetta.train.model_utils import k_nearest_sources, last_aligned_sources
 from rosetta.model.projector import AllInOneProjector
@@ -498,9 +507,13 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
             slm_tokenizer.pad_token_id = slm_tokenizer.eos_token_id
         set_default_chat_template(slm_tokenizer, base_model_name)
         
-        # Load LLM tokenizer if alignment is enabled
+        # Concat needs a genuine Sharer token stream even when token alignment
+        # is disabled. Never feed Receiver vocabulary IDs into the Sharer.
         llm_tokenizer = None
-        if model_config.get("is_do_alignment", False):
+        if (
+            model_config.get("is_do_alignment", False)
+            or str(model_config.get("cache_alignment", "fuser")).lower() == "concat"
+        ):
             llm_tokenizer = AutoTokenizer.from_pretrained(teacher_model_load_path, trust_remote_code=True)
             if llm_tokenizer.pad_token is None:
                 llm_tokenizer.pad_token = llm_tokenizer.eos_token
@@ -776,6 +789,7 @@ def train_step(model: nn.Module, batch: Dict[str, Any], tokenizer: AutoTokenizer
             attention_mask=attention_mask,
             position_ids=position_ids,
             labels=labels,
+            sharer_prompt_only=batch.get("sharer_prompt_only", False),
             use_cache=True
         )
         
@@ -1000,7 +1014,23 @@ def main():
             max_length=training_config.get("max_length", 2048)
         )
     elif training_mode == "rosetta":  # rosetta mode
-        if model_config.get("is_do_alignment", False) and aligner is not None:
+        independent_concat_inputs = (
+            str(model_config.get("cache_alignment", "fuser")).lower() == "concat"
+            and bool(model_config.get("independent_tokenizers", True))
+            and not model_config.get("is_do_alignment", False)
+        )
+        if independent_concat_inputs:
+            if llm_tokenizer is None:
+                raise RuntimeError(
+                    "Independent concat training requires the Sharer tokenizer."
+                )
+            full_dataset = IndependentDualTokenizerChatDataset(
+                instruct_ds,
+                receiver_tokenizer=main_tokenizer,
+                sharer_tokenizer=llm_tokenizer,
+                max_length=training_config.get("max_length", 2048),
+            )
+        elif model_config.get("is_do_alignment", False) and aligner is not None:
             full_dataset = AlignedChatDataset(
                 instruct_ds,
                 aligner,
@@ -1040,14 +1070,22 @@ def main():
             pad_to_multiple_of=training_config.get("pad_to_multiple_of", None)
         )
     elif training_mode == "rosetta":  # rosetta mode
-        collator = RosettaDataCollator(
-            slm_tokenizer=main_tokenizer,
-            llm_tokenizer=llm_tokenizer,
-            pad_to_multiple_of=training_config.get("pad_to_multiple_of", None),
-            max_length=training_config.get("max_length", 2048),
-            aligner=aligner,
-            do_alignment=model_config.get("is_do_alignment", False)
-        )
+        if independent_concat_inputs:
+            collator = IndependentDualTokenizerCollator(
+                receiver_tokenizer=main_tokenizer,
+                sharer_tokenizer=llm_tokenizer,
+                pad_to_multiple_of=training_config.get("pad_to_multiple_of", None),
+                max_length=training_config.get("max_length", 2048),
+            )
+        else:
+            collator = RosettaDataCollator(
+                slm_tokenizer=main_tokenizer,
+                llm_tokenizer=llm_tokenizer,
+                pad_to_multiple_of=training_config.get("pad_to_multiple_of", None),
+                max_length=training_config.get("max_length", 2048),
+                aligner=aligner,
+                do_alignment=model_config.get("is_do_alignment", False)
+            )
     else:
         raise ValueError(f"Invalid training mode: {training_mode}")
 

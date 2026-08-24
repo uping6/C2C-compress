@@ -444,6 +444,7 @@ class RosettaModel(nn.Module):
         input_ids,
         attention_mask,
         labels,
+        sharer_prompt_only: bool = False,
         output_attentions=None,
         output_hidden_states=None,
         **kwargs,
@@ -466,8 +467,9 @@ class RosettaModel(nn.Module):
 
         if not isinstance(input_ids, list) or not isinstance(attention_mask, list):
             raise ValueError(
-                "concat LCF-first training requires aligned per-model input_ids "
-                "and attention_mask lists (set model.is_do_alignment=true)."
+                "concat LCF-first training requires per-model input_ids and "
+                "attention_mask lists. Use independent dual-tokenizer inputs or "
+                "set model.is_do_alignment=true."
             )
         if len(self.model_list) != 2:
             raise ValueError("concat LCF-first training currently requires one Receiver and one Sharer.")
@@ -483,18 +485,32 @@ class RosettaModel(nn.Module):
                 "concat LCF-first currently requires per_device_train_batch_size=1 "
                 "because prompt boundaries may differ within a batch."
             )
+        if torch.is_tensor(sharer_prompt_only):
+            sharer_prompt_only = bool(sharer_prompt_only.flatten()[0].item())
         supervised = (labels[0] != -100).nonzero(as_tuple=False)
         if supervised.numel() == 0:
             raise ValueError("Training sample has no supervised response tokens.")
-        prompt_length = int(supervised[0].item())
-        if prompt_length <= 0:
-            raise ValueError("Training sample has an empty prompt prefix.")
+        receiver_prompt_length = int(supervised[0].item())
+        if receiver_prompt_length <= 0:
+            raise ValueError("Training sample has an empty Receiver prompt prefix.")
+
+        if sharer_prompt_only:
+            sharer_prompt_ids = sharer_ids
+            sharer_prompt_mask = sharer_mask
+        else:
+            # Backward-compatible aligned input path. Both token streams share
+            # a padded positional grid, so the Receiver label boundary can be
+            # used to slice the Sharer prompt.
+            sharer_prompt_ids = sharer_ids[:, :receiver_prompt_length]
+            sharer_prompt_mask = sharer_mask[:, :receiver_prompt_length]
+        if not bool(sharer_prompt_mask.bool().any()):
+            raise ValueError("Training sample has an empty Sharer prompt prefix.")
 
         sharer_model = self.model_list[sharer_idx]
         with torch.no_grad(), capture_pre_rope_keys(sharer_model) as captured:
             sharer_output = sharer_model(
-                input_ids=sharer_ids[:, :prompt_length],
-                attention_mask=sharer_mask[:, :prompt_length],
+                input_ids=sharer_prompt_ids,
+                attention_mask=sharer_prompt_mask,
                 use_cache=True,
                 return_dict=True,
             )
@@ -564,7 +580,7 @@ class RosettaModel(nn.Module):
         receiver_model = self.model_list[self.base_model_idx]
         prefix = apply_receiver_compact_rope(receiver_model, prefix)
         prefix_length = prefix.key_cache[0].shape[-2]
-        prefix_mask = sharer_mask[:, :prompt_length].to(base_mask.device)
+        prefix_mask = sharer_prompt_mask.to(base_mask.device)
         combined_mask = torch.cat((prefix_mask, base_mask), dim=-1)
         position_ids = (
             base_mask.long().cumsum(-1) - 1 + prefix_length
@@ -620,6 +636,7 @@ class RosettaModel(nn.Module):
         past_key_values: Optional[Cache] = None,
         inputs_embeds: Optional[torch.FloatTensor] = None,
         labels: Optional[torch.LongTensor] = None,
+        sharer_prompt_only: bool = False,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
@@ -647,6 +664,7 @@ class RosettaModel(nn.Module):
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 labels=labels,
+                sharer_prompt_only=sharer_prompt_only,
                 output_attentions=output_attentions,
                 output_hidden_states=output_hidden_states,
                 **kwargs,

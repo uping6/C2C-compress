@@ -15,11 +15,11 @@ model:
     max_new_tokens: 16
 
 output:
-  output_dir: local/final_results/openhermes_lcf_projected_kv/receiver_only/openbookqa
+  output_dir: local/final_results/openhermes_lcf_projected_kv/receiver_only/ceval
 
 eval:
-  dataset: openbookqa
-  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/openbookqa_test.jsonl
+  dataset: ceval
+  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/ceval_test.jsonl
   gpu_ids: [0]
   answer_method: generate
   use_cot: false

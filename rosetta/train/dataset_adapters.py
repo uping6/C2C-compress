@@ -1187,6 +1187,96 @@ class ChatDataset(Dataset):
         }
 
 
+class IndependentDualTokenizerChatDataset(Dataset):
+    """Tokenize Receiver conversation and Sharer prompt independently.
+
+    Unlike :class:`AlignedChatDataset`, this dataset does not create a shared
+    token-position grid.  The Receiver owns labels and sees the full training
+    conversation, while the Sharer sees only the prompt in its own tokenizer.
+    """
+
+    def __init__(
+        self,
+        chat_dataset: Dataset,
+        receiver_tokenizer: AutoTokenizer,
+        sharer_tokenizer: AutoTokenizer,
+        max_length: int = 32768,
+    ):
+        self.chat_dataset = chat_dataset
+        self.receiver_tokenizer = receiver_tokenizer
+        self.sharer_tokenizer = sharer_tokenizer
+        self.max_length = int(max_length)
+        if hasattr(self.chat_dataset, "set_tokenizer"):
+            self.chat_dataset.set_tokenizer(receiver_tokenizer)
+
+    def __len__(self):
+        return len(self.chat_dataset)
+
+    @staticmethod
+    def _render(tokenizer, messages, *, add_generation_prompt: bool) -> str:
+        kwargs = {
+            "tokenize": False,
+            "add_generation_prompt": add_generation_prompt,
+        }
+        try:
+            return tokenizer.apply_chat_template(
+                messages, enable_thinking=False, **kwargs
+            )
+        except TypeError:
+            return tokenizer.apply_chat_template(messages, **kwargs)
+
+    def __getitem__(self, idx) -> Dict[str, Any]:
+        messages = self.chat_dataset[idx]
+        if len(messages) < 2:
+            raise ValueError(
+                "Independent concat training requires at least one prompt message "
+                "and one response message."
+            )
+        prompt_messages = messages[:-1]
+        receiver_prompt_text = self._render(
+            self.receiver_tokenizer,
+            prompt_messages,
+            add_generation_prompt=True,
+        )
+        receiver_full_text = self._render(
+            self.receiver_tokenizer,
+            messages,
+            add_generation_prompt=False,
+        )
+        sharer_prompt_text = self._render(
+            self.sharer_tokenizer,
+            prompt_messages,
+            add_generation_prompt=True,
+        )
+
+        receiver_prompt_ids = self.receiver_tokenizer(
+            receiver_prompt_text, add_special_tokens=False
+        )["input_ids"]
+        receiver_full_ids = self.receiver_tokenizer(
+            receiver_full_text, add_special_tokens=False
+        )["input_ids"][: self.max_length]
+        sharer_prompt_ids = self.sharer_tokenizer(
+            sharer_prompt_text, add_special_tokens=False
+        )["input_ids"][: self.max_length]
+        receiver_prompt_length = min(
+            len(receiver_prompt_ids), len(receiver_full_ids)
+        )
+        if not sharer_prompt_ids:
+            raise ValueError("Sharer tokenizer produced an empty prompt.")
+        labels = (
+            [-100] * receiver_prompt_length
+            + receiver_full_ids[receiver_prompt_length:]
+        )
+        return {
+            "input_ids": [receiver_full_ids, sharer_prompt_ids],
+            "labels": labels,
+            "kv_cache_index": generate_kv_cache_index(
+                receiver_prompt_length, len(receiver_full_ids)
+            ),
+            "sharer_prompt_only": True,
+        }
+
+
 class AlignedChatDataset(Dataset):
     """Dataset that precomputes aligned inputs for SLM/LLM using a TokenAligner"""
     
@@ -1311,6 +1401,98 @@ Data collator
 
 Batch chat data to model input
 """
+
+class IndependentDualTokenizerCollator:
+    """Pad Receiver and Sharer streams independently for concat training."""
+
+    def __init__(
+        self,
+        receiver_tokenizer: AutoTokenizer,
+        sharer_tokenizer: AutoTokenizer,
+        max_length: Optional[int] = None,
+        pad_to_multiple_of: Optional[int] = None,
+    ):
+        self.receiver_pad_token_id = int(receiver_tokenizer.pad_token_id)
+        self.sharer_pad_token_id = int(sharer_tokenizer.pad_token_id)
+        self.max_length = max_length
+        self.pad_to_multiple_of = pad_to_multiple_of
+
+    def _target_length(self, sequences: List[torch.Tensor]) -> int:
+        length = max(int(sequence.numel()) for sequence in sequences)
+        if self.max_length is not None:
+            length = min(length, int(self.max_length))
+        if self.pad_to_multiple_of:
+            multiple = int(self.pad_to_multiple_of)
+            length = ((length + multiple - 1) // multiple) * multiple
+            if self.max_length is not None:
+                length = min(length, int(self.max_length))
+        return length
+
+    @staticmethod
+    def _pad_1d(
+        sequences: List[torch.Tensor], target_length: int, padding_value: int
+    ) -> torch.Tensor:
+        output = torch.full(
+            (len(sequences), target_length),
+            padding_value,
+            dtype=sequences[0].dtype,
+        )
+        for row, sequence in enumerate(sequences):
+            truncated = sequence[:target_length]
+            output[row, : truncated.numel()] = truncated
+        return output
+
+    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        if not features:
+            return {}
+        receiver_ids = [
+            torch.as_tensor(feature["input_ids"][0], dtype=torch.long)
+            for feature in features
+        ]
+        sharer_ids = [
+            torch.as_tensor(feature["input_ids"][1], dtype=torch.long)
+            for feature in features
+        ]
+        labels = [
+            torch.as_tensor(feature["labels"], dtype=torch.long)
+            for feature in features
+        ]
+        receiver_length = self._target_length(receiver_ids)
+        sharer_length = self._target_length(sharer_ids)
+        padded_receiver = self._pad_1d(
+            receiver_ids, receiver_length, self.receiver_pad_token_id
+        )
+        padded_sharer = self._pad_1d(
+            sharer_ids, sharer_length, self.sharer_pad_token_id
+        )
+        receiver_mask = self._pad_1d(
+            [torch.ones_like(ids) for ids in receiver_ids], receiver_length, 0
+        )
+        sharer_mask = self._pad_1d(
+            [torch.ones_like(ids) for ids in sharer_ids], sharer_length, 0
+        )
+        padded_labels = self._pad_1d(labels, receiver_length, -100)
+        position_ids = (receiver_mask.long().cumsum(-1) - 1).masked_fill(
+            receiver_mask == 0, 0
+        )
+        # concat forward does not consume kv_cache_index, but train_step keeps a
+        # common Rosetta call signature. Preserve one correctly shaped section.
+        kv_cache_index = [
+            torch.full(
+                (len(features), receiver_length, 2),
+                -1,
+                dtype=torch.long,
+            )
+        ]
+        return {
+            "input_ids": [padded_receiver, padded_sharer],
+            "attention_mask": [receiver_mask.float(), sharer_mask.float()],
+            "labels": padded_labels,
+            "position_ids": position_ids,
+            "kv_cache_index": kv_cache_index,
+            "sharer_prompt_only": True,
+        }
+
 
 class RosettaDataCollator:
     """Improved data collator for RosettaModel training with cleaner logic"""
