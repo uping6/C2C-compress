@@ -3,7 +3,10 @@ from transformers.cache_utils import DynamicCache
 
 from rosetta.cachejpeg_rosetta.cache_aligner import ConcatCacheAligner
 from rosetta.cachejpeg_rosetta.fuser_bridge import LoadedRosettaAssets
-from rosetta.cachejpeg_rosetta.pre_rope import replace_cache_keys_with_pre_rope
+from rosetta.cachejpeg_rosetta.pre_rope import (
+    capture_pre_rope_keys,
+    replace_cache_keys_with_pre_rope,
+)
 from rosetta.model.adaptive_quant_table import (
     AdaptiveCoefficientQuantizer,
     resolve_adaptive_quant_table_config,
@@ -25,6 +28,28 @@ class DummyModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
         self.weight = torch.nn.Parameter(torch.zeros(1))
+
+
+class DummyPreRopeAttention(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.head_dim = 4
+        self.k_proj = torch.nn.Identity()
+        self.k_norm = None
+
+
+class DummyPreRopeLayer(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.self_attn = DummyPreRopeAttention()
+
+
+class DummyPreRopeModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.model = torch.nn.Module()
+        self.model.layers = torch.nn.ModuleList([DummyPreRopeLayer()])
+        self.model.rotary_emb = torch.nn.Identity()
 
 
 def _cache(values):
@@ -49,6 +74,21 @@ def test_replace_cache_keys_preserves_values_and_uses_captured_pre_rope_keys():
     assert torch.equal(result.key_cache[1], captured[1])
     assert torch.equal(result.value_cache[0], post_rope.value_cache[0])
     assert torch.equal(result.value_cache[1], post_rope.value_cache[1])
+
+
+def test_pre_rope_capture_reuses_one_persistent_hook_set():
+    model = DummyPreRopeModel()
+    projection = model.model.layers[0].self_attn.k_proj
+
+    with capture_pre_rope_keys(model) as first:
+        projection(torch.ones(1, 3, 4))
+    assert torch.equal(first[0], torch.ones(1, 1, 3, 4))
+    assert len(projection._forward_hooks) == 1
+
+    with capture_pre_rope_keys(model) as second:
+        projection(torch.full((1, 3, 4), 2.0))
+    assert torch.equal(second[0], torch.full((1, 1, 3, 4), 2.0))
+    assert len(projection._forward_hooks) == 1
 
 
 def test_concat_aligner_routes_and_projects_a_receiver_prefix(monkeypatch):

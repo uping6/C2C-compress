@@ -3,7 +3,7 @@ model:
   rosetta_config:
     base_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
     teacher_model: /data/smy_data/local/models/Qwen2.5-1.5B-Instruct
-    checkpoints_dir: local/checkpoints/0.6+1.5B_openhermes_50k_concat_lcf_projected_kv_adaptive_quant
+    checkpoints_dir: local/checkpoints/0.6+1.5B_openhermes_50k_concat_lcf_projected_kv_raw
     is_do_alignment: true
     alignment_strategy: longest
 
@@ -65,12 +65,11 @@ model:
     max_new_tokens: 16
 
 output:
-  output_dir: local/final_results/openhermes_lcf_projected_kv/mmlu/parallel
-
+  output_dir: tmp/lcf_quant_phase1/
 eval:
   dataset: mmlu-redux
   local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/mmlu_redux_test.jsonl
-  gpu_ids: [0]
+  gpu_ids: [1]
   answer_method: generate
   use_cot: false
   use_template: true

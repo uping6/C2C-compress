@@ -534,7 +534,11 @@ class RosettaModel(nn.Module):
                     "concat cache_alignment requires LCFFirstProjector or "
                     "LCFProjectedKVProjector modules."
                 )
-            projector_device = next(projector.parameters()).device
+            # Projectors and Sharer cache are placed on the Rosetta model device
+            # during setup. Avoid walking the projector parameter tree on every
+            # sample merely to rediscover that device; repeated module introspection
+            # is unnecessary here and can be fragile after hooks.
+            projector_device = sharer_cache.key_cache[source_layer].device
             source_kv = (
                 sharer_cache.key_cache[source_layer].to(projector_device),
                 sharer_cache.value_cache[source_layer].to(projector_device),

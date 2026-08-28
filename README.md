@@ -2,12 +2,13 @@
 
 `C2C-compress` 是一个围绕 Cache-to-Cache / Rosetta 的实验仓库。它的核心目标是让两个大语言模型不通过文本中间结果通信，而是直接在 KV cache 层面传递、投影、融合和压缩信息。
 
-仓库当前同时包含四条主要实验线：
+仓库当前同时包含四条主要实验线，其中当前主线是
+`concat + LCFProjectedKV + pre-RoPE + Adaptive Quant Table`：
 
 - Rosetta / C2C：把 sharer 模型的 KV cache 投影到 receiver 模型的 KV cache 空间，再由 receiver 继续生成。
 - Latent KV：把 KV 融合改成低维 latent bottleneck，支持 `latent_kv_joint` 和 `latent_kv_split`。
 - CacheJPEG：对 KV cache 或 latent cache 做编码、量化、熵编码和传输模拟，用于压缩率、延迟和质量评测。
-- Adaptive Quant Table：训练可学习量化表，在码率约束下自适应选择量化强度。
+- Adaptive Quant Table：在 LCF transport K/V 上训练可学习量化表，在码率约束下自适应选择量化强度。
 
 ## 目录结构
 
@@ -53,7 +54,7 @@
 
 主要能力：
 
-- 冻结 base/teacher，只训练 projector。
+- 可冻结 base/teacher，训练 projector；QAT 阶段也可联合训练 adaptive quantizer。
 - 支持单 sharer 和多 sharer。
 - 支持 `sequential` 与 `parallel` 多源融合。
 - 支持 `include_response`，可以选择是否把 response 段也纳入训练/融合。
@@ -68,9 +69,112 @@
 - `AllInOneProjector`：通用 C2C projector，支持 gate、weight、concat、SwiGLU、residual、token/head/value 粒度控制。
 - `C2CProjector`：兼容早期 C2C 用法的 projector 类型。
 - `LatentKVCompressor`：在 `rosetta/model/latent_kv.py` 中注册，用于 latent KV 融合。
+- `LCFFirstProjector`：joint LCF latent 直接拆成 pseudo K/V。
+- `LCFProjectedKVProjector`：joint LCF latent 后使用独立 learned K/V transport projection。
 - `AblationProjector`：用于消融实验。
 
 新增 projector 时，需要继承 `Projector`，用 `@register_model` 和 `@capture_init_args` 注册，然后在 recipe 的 `projector_type` 或 fusion 配置中引用。
+
+## 当前主线：concat + LCF + 自适应量化
+
+### 方法边界
+
+当前主线不是把 Sharer cache 加到 Receiver 当前 cache 上，也不经过原来的
+fuser。它把 Sharer 信息解码成一段独立的 Receiver KV prefix，再与 Receiver
+prompt 在序列维拼接：
+
+```text
+Sharer prompt
+  -> Sharer prefill，捕获 pre-RoPE K 和普通 V
+  -> 每层 LCF shared encoder
+  -> learned K/V transport projections
+  -> DCT + adaptive quantization + IDCT（训练阶段）
+  -> 每层 LCF K/V decoder
+  -> Receiver compact RoPE
+  -> concat(prefix cache, Receiver prompt cache)
+  -> Receiver prefill
+  -> Receiver autoregressive decode
+```
+
+`cache_alignment: concat` 与 `cache_alignment: fuser` 是平级后端。选择 concat
+不会进入 `RosettaFuserBridge`；`fusion_type: original` 在这里仅表示不使用
+`latent_kv_joint/split` fuser 分支。
+
+### 单层张量形状
+
+设 Sharer KV 为 `[B,Hs,Ss,Ds]`，Receiver KV 为 `[B,Hr,Sr,Dr]`。当前
+`lcf_projected_kv` 默认维度为 shared 128、transport K/V 各 64：
+
+| 阶段 | K/V 或 latent 形状 | 说明 |
+|---|---:|---|
+| Sharer pre-RoPE K / V | `[B,Hs,Ss,Ds]` | K 在 Sharer RoPE 之前捕获；V 来自正常 cache |
+| flatten + concat(K,V) | `[B,Ss,2*Hs*Ds]` | 只合并 head/channel，不改变 token 数 |
+| `shared_encoder` | `[B,Ss,128]` | LCF channel bottleneck |
+| `key_projection` | `[B,Ss,64]` | learned `128 -> 64` |
+| `value_projection` | `[B,Ss,64]` | 与 K 独立的 learned `128 -> 64` |
+| CacheJPEG pseudo K/V | 各 `[B,1,Ss,64]` | 增加一个 pseudo KV head，作为传输对象 |
+| DCT/量化/IDCT | 各 `[B,1,Ss,64]` | DCT 沿序列轴 `Ss`；量化分配按 layer/KV/head/frequency band |
+| `decoder_k/v` | 各 `[B,Hr,Ss,Dr]` | 恢复 Receiver cache geometry |
+| compact Receiver RoPE | K `[B,Hr,Ss,Dr]` | prefix 位置为 `0..Ss-1` |
+| Receiver prompt | token `[B,Sr]` | `position_ids` 从 `Ss` 开始偏移 |
+
+这里的 LCF 是 channel/head geometry 下采样与上采样，`Ss` 不变；它不是 token
+或序列长度下采样。跨层映射由 `layer_mapping: last_aligned` 决定，当前 concat
+要求每个 Receiver layer 恰好对应一个 Sharer layer/projector。
+
+### `lcf_first` 与 `lcf_projected_kv`
+
+| 配置 | transport K/V 的产生方式 | 对应类 |
+|---|---|---|
+| `lcf_first` | joint latent 直接沿最后一维 `chunk(2)` 成 pseudo K/V | `LCFFirstProjector` |
+| `lcf_projected_kv` | shared latent 后分别经过 learned K projection 和 V projection | `LCFProjectedKVProjector` |
+
+后者是当前主线。实现入口：
+
+- `rosetta/model/lcf_projected_kv.py`：shared encoder、K/V projection、K/V decoder。
+- `rosetta/model/wrapper.py::_forward_concat_lcf_first`：训练期主流程和 rate loss。
+- `rosetta/cachejpeg_rosetta/pre_rope.py`：Sharer pre-RoPE K 捕获与 Receiver RoPE。
+- `rosetta/cachejpeg_rosetta/projected_kv_cache_aligner.py`：评测期 concat encode/decode。
+- `rosetta/cachejpeg_rosetta/concat_layer_streaming.py`：跨层流水化压缩、传输和解码。
+
+### Tokenizer 与 cache 对齐不是一回事
+
+LCF 只处理 Sharer cache geometry，不要求两个 tokenizer 产生相同 token id。但训练
+仍必须给 Receiver 和 Sharer 各自提供正确的 `input_ids`、`attention_mask` 和 prompt
+边界，因此 concat 前向接收 per-model list，而不是单个共享 tensor。
+
+- 同 tokenizer 或旧的对齐实验可使用 `is_do_alignment: true`。
+- Qwen3-0.6B -> Qwen3-4B 主线使用 `is_do_alignment: false` 与
+  `independent_tokenizers: true`，两个模型分别 tokenize；Sharer 只读取自己的 prompt。
+- `alignment_strategy` 解决 token stream/padding 的组织问题；`layer_mapping`、LCF 和
+  concat 解决 cache layer/channel/position 的组织问题，不要混为一谈。
+
+### 两阶段训练
+
+两个阶段都冻结 Sharer 和 Receiver；Stage 1 训练 projector，Stage 2 从 Stage 1
+权重初始化后联合训练 projector 与 Adaptive Quant Table。
+
+| 阶段 | 通信路径 | 可训练模块 | 关键字段 |
+|---|---|---|---|
+| Stage 1 raw projector | LCF encode -> LCF decode | LCF projector | `training_stage: raw_projector`、`adaptive_quant_table.enabled: false` |
+| Stage 2 QAT | LCF encode -> adaptive DCT quant -> LCF decode | LCF projector + adaptive quantizer | `training_stage: adaptive_quant_qat`、`initial_projector_checkpoint` |
+
+主线 recipe：
+
+- 0.6B Receiver + 1.5B Sharer Stage 1：`recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_raw.json`
+- 0.6B Receiver + 1.5B Sharer Stage 2：`recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_adaptive_quant.json`
+- 0.6B Receiver + 4B Sharer Stage 1：`recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_raw_qwen3_4b.json`
+- 0.6B Receiver + 4B Sharer Stage 2：`recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_adaptive_quant_qwen3_4b.json`
+
+不要在 Stage 2 的 `training.freeze` 中加入 `projector`。正确设置是：
+
+```json
+"freeze": ["teacher", "base"]
+```
+
+`rate_weight` 乘的是估计 payload bits；`rate_warmup_steps` 让码率项逐步进入，
+`anneal_steps` 控制离散表选择温度。训练日志中的 `estimated_payload_bits` 是可微码率
+估计，不等同于评测时 entropy backend 序列化后的真实 `payload_bytes * 8`。
 
 ## 功能总览
 
@@ -195,9 +299,11 @@ cachejpeg_config:
 
 联合路径在 `rosetta/cachejpeg_rosetta/`：
 
-- `wrapper.py`：`CacheJPEGRosettaEvalWrapper`，执行 teacher/sharer prefill、压缩传输、Rosetta fuser、base/receiver generate。
+- `wrapper.py`：`CacheJPEGRosettaEvalWrapper`，执行 teacher/sharer prefill、压缩传输、fuser 或 concat、base/receiver generate。
 - `fuser_bridge.py`：把加载好的模型、projector 和 latent/adaptive quant 连接起来。
-- `layer_streaming.py`：层级流式压缩和 prefill 计时。
+- `layer_streaming.py`：fuser 路径的层级流式压缩和 prefill 计时。
+- `concat_layer_streaming.py`：concat 路径的 LCF/codec/transport 跨层流水线。
+- `cache_aligner.py`、`projected_kv_cache_aligner.py`：两种 concat LCF 对齐器。
 - `config.py`：联合配置解析。
 
 支持 fusion 类型：
@@ -224,11 +330,32 @@ cachejpeg_rosetta_config:
         backend: gpu
 ```
 
+concat 路径不使用上面的 latent fusion 类型，而是：
+
+```yaml
+cachejpeg_rosetta_config:
+  cache_alignment: concat
+  fusion_type: original
+  concat_projector:
+    type: lcf_projected_kv
+    shared_latent_dim: 128
+    key_latent_dim: 64
+    value_latent_dim: 64
+  codec:
+    method: cachejpeg
+    compute: {backend: gpu, transform_dtype: float32}
+  layer_streaming:
+    enabled: true
+    queue_size: 4
+    gpu_streams: 2
+    max_inflight_layers: 4
+```
+
 ### 6. Adaptive Quant Table
 
 实现：`rosetta/model/adaptive_quant_table.py`
 
-用途：在训练时学习每层、每个 KV head 或频带的量化参数选择，目标是在保持生成质量的同时降低 payload bit rate。
+用途：在训练时学习每层、K/V、pseudo KV head 和频带的量化参数选择，目标是在保持生成质量的同时降低 payload bit rate。当前主线中输入是 LCF 后的 pseudo K/V，而不是原始 Sharer KV。
 
 典型配置：
 
@@ -246,7 +373,7 @@ cachejpeg_rosetta_config:
 }
 ```
 
-训练完成后会保存 adaptive quant table 权重。评测时如果启用：
+训练完成后会同时保存更新后的 projector 和 adaptive quant table 权重。fuser 路径评测时可以启用：
 
 ```yaml
 cachejpeg_rosetta_config:
@@ -254,6 +381,15 @@ cachejpeg_rosetta_config:
     enabled: true
     checkpoint_path: local/checkpoints/.../final/adaptive_quant_table.pt
 ```
+
+注意：当前 `rosetta/cachejpeg_rosetta/config.py` 明确禁止在
+`cache_alignment: concat` 下启用 fuser-side `adaptive_quant_table`。因此现阶段：
+
+- concat QAT 训练中的 learned adaptive table 已接入训练 loss 和 checkpoint；
+- concat CacheJPEG 评测使用 `codec.quant` 与 entropy backend 产生真实码流；
+- 不能仅在 concat 评测 YAML 中加入 `adaptive_quant_table.enabled: true`，解析器会报错；
+- 若要评测 learned table 本身，需要先补齐 concat aligner 的 table checkpoint 加载与
+  DCT/IDCT 推理路径。复盘结果时务必区分“QAT 估计码率”和“CacheJPEG 实际码流”。
 
 ### 7. 数据集适配
 
@@ -326,6 +462,92 @@ python script/playground/gradio_demo.py
 - `script/consistency/`：检查 Rosetta 与 LLM 标签一致性。
 - `script/ablation/ablation_study.py`：统一消融实验入口。
 
+## 消融实验地图
+
+做消融时应保持模型、数据集、prompt template、`max_new_tokens`、checkpoint 和
+随机种子一致，只替换被研究的通信模块。不同 recipe 中目前存在 MMLU、CEval、
+OpenBookQA 和 LongBench 路径混用，不能直接横向比较不同数据集的 accuracy。
+
+### 模型贡献基线
+
+| 实验 | 实际执行路径 | 参考 recipe | 回答的问题 |
+|---|---|---|---|
+| Receiver-only | 只加载/运行 Receiver | `recipe/eval_recipe/receiver_only_qwen3_0.6b_openhermes_mmlu_redux.yaml` | 小模型本身的能力下界 |
+| Sharer-only | 只加载/运行 Sharer | `recipe/eval_recipe/sharer_only_qwen2.5_1.5b_instruct_openhermes_mmlu_redux.yaml` | 大模型本身的能力上界/参考 |
+| C2C/Rosetta | raw Sharer KV -> projector/fuser -> Receiver | `recipe/eval_recipe/rosetta_qwen3_0.6b_qwen2.5_1.5b_instruct_mmlu_redux.yaml` | 不压缩 cache 通信是否有效 |
+| Raw KV + 50 MB/s | raw KV 串行 socket transport -> fuser | `recipe/eval_recipe/rosetta_raw_kv_transport_50mbps_mmlu_redux.yaml` | 无压缩传输的 payload 和延迟基线 |
+
+`receiver_only` 和 `sharer_only` 配置放在 `cachejpeg_rosetta_config.ablation` 中，
+但 wrapper 会绕过另一个模型、projector、codec 和 transport；它们不是“传零 cache”。
+
+### CacheJPEG / JPEG-Rosetta
+
+| 实验 | 改变量 | 参考 recipe |
+|---|---|---|
+| CacheJPEG single | 单模型自身 KV 的压缩与恢复 | `recipe/eval_recipe/cachejpeg_single_eval.yaml`、`recipe/eval_recipe/cachejpeg_longbench_eval.yaml` |
+| JPEG-Rosetta | Sharer KV -> CacheJPEG -> fuser -> Receiver | `recipe/eval_recipe/C2C_longbench_0.6+1.5_jpegcache_rosetta_gpu0.yaml` |
+| Frequency prune | 不发送指定高频 DCT bands，Receiver 以 0 恢复 | `recipe/eval_recipe/C2C_longbench_0.6+1.5_jpegcache_rosetta_gpu0_prune_b4.yaml` |
+| Zero Sharer cache | 完整编解码后、fuser 前把 Sharer K/V 置零 | `recipe/eval_recipe/C2C_longbench_0.6+1.5_jpegcache_rosetta_gpu0_zero_sharer_cache.yaml` |
+| Shuffle Sharer cache | Receiver 样本使用另一个样本的 Sharer cache | `recipe/eval_recipe/C2C_longbench_0.6+1.5_jpegcache_rosetta_gpu0_sharer_cache_shuffle.yaml` |
+| Layer streaming + 50 MB/s | Sharer 层完成后立即排队压缩/传输/解码 | `recipe/eval_recipe/longbench_jpegcache_stream_50mbps.yaml` |
+
+Zero 与 Shuffle 用来验证提升是否来自与当前问题相关的 Sharer 信息；frequency prune
+用于研究频带贡献；single CacheJPEG 用来区分“codec 对单模型 cache 的损伤”和
+“跨模型 projector/fusion 的损伤”。
+
+### 对齐、融合与 LCF
+
+| 维度 | 选项 | 配置/实现位置 |
+|---|---|---|
+| Cache alignment | `fuser` / `concat` | `cachejpeg_rosetta_config.cache_alignment` |
+| Fuser representation | `original` / `latent_kv_joint` / `latent_kv_split` | `cachejpeg_rosetta_config.fusion_type` |
+| Concat projector | `lcf_first` / `lcf_projected_kv` | `concat_projector.type` |
+| Position encoding | post-RoPE legacy / `pre_rope` + Receiver re-RoPE | `rope_mode` 与 `pre_rope.py` |
+| Token input | aligned streams / independent tokenizers | `is_do_alignment`、`independent_tokenizers` |
+| Quantization | raw / fixed CacheJPEG / learned adaptive QAT | train/eval recipe 的 stage 和 codec 字段 |
+| Layer execution | whole-cache sequential / layer streaming | `layer_streaming.enabled` |
+
+推荐用下列链条逐步增加模块，便于归因：
+
+```text
+Receiver-only
+  -> raw C2C fuser
+  -> JPEG-Rosetta fuser
+  -> concat + LCF-first raw
+  -> concat + LCFProjectedKV raw
+  -> concat + LCFProjectedKV + adaptive QAT
+  -> concat + LCFProjectedKV + CacheJPEG transport
+  -> 上述路径 + layer streaming / 50 MB/s
+```
+
+旧 latent KV 消融仍可使用：
+
+- `recipe/eval_recipe/C2C_longbench_latent_kv_joint.yaml`
+- `recipe/eval_recipe/C2C_longbench_latent_kv_split.yaml`
+- `recipe/eval_recipe/C2C_longbench_latent_kv_split_adaptive_quant.yaml`
+- `recipe/eval_recipe/C2C_longbench_latent_kv_split_cachejpeg_zlib_subset200.yaml`
+- `recipe/eval_recipe/C2C_longbench_latent_kv_split_cachejpeg_zlib_full.yaml`
+
+`latent_kv_joint/split` 属于 fuser representation 消融，不等同于 concat 下的
+`LCFFirstProjector/LCFProjectedKVProjector`。
+
+### C2C projector 内部组件消融
+
+`AblationProjector` 通过 `ablation_level` 控制原 C2C projector 的 gate、scalar
+weight 和 target contribution：
+
+| level | 保留内容 | 移除内容 |
+|---:|---|---|
+| 0 | 完整 C2C | 无 |
+| 1 | gate、target | scalar weights |
+| 2 | target | scalar weights、gates |
+| 3 | source projection | target、scalar weights、gates |
+| 4 | scalar weights、target | gates |
+
+训练模板为 `recipe/train_recipe/C2C_ablation.json`，批量入口为
+`script/ablation/ablation_study.py`，评测模板为
+`recipe/eval_recipe/ablation_base.yaml`。
+
 ## 安装环境
 
 推荐使用 conda：
@@ -380,17 +602,18 @@ export ROSETTA_HTTPS_PROXY=http://host:port
 
 ### Step 2：选择训练 recipe
 
-普通 Rosetta：
+当前 0.6B -> 4B concat + LCFProjectedKV 主线：
 
 ```bash
-recipe/train_recipe/C2C_longbench_latent_kv_split.json
+recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_raw_qwen3_4b.json
+recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_adaptive_quant_qwen3_4b.json
 ```
 
-先训练 raw latent KV，再做 adaptive quant QAT：
+0.6B -> 1.5B 对应版本：
 
 ```bash
-recipe/train_recipe/C2C_longbench_latent_kv_split_raw_stage1.json
-recipe/train_recipe/C2C_longbench_latent_kv_split_adaptive_quant.json
+recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_raw.json
+recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_adaptive_quant.json
 ```
 
 baseline：
@@ -405,7 +628,22 @@ recipe/train_recipe/baseline_partial_config.json
 
 ```bash
 python script/train/SFT_train.py \
-  --config recipe/train_recipe/C2C_longbench_latent_kv_split_raw_stage1.json
+  --config recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_raw_qwen3_4b.json
+```
+
+Stage 1 完成后确认 Stage 2 的 `initial_projector_checkpoint` 指向其 `final/`，再运行：
+
+```bash
+python script/train/SFT_train.py \
+  --config recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_adaptive_quant_qwen3_4b.json
+```
+
+断点恢复会同时读取 projector、adaptive table、optimizer、scheduler 和 step：
+
+```bash
+python script/train/SFT_train.py \
+  --config recipe/train_recipe/cache-kv/C2C_openhermes_50k_concat_lcf_projected_kv_adaptive_quant_qwen3_4b.json \
+  --resume_from_checkpoint local/checkpoints/.../checkpoint-1000
 ```
 
 输出目录由配置控制：
@@ -443,6 +681,16 @@ recipe/eval_recipe/C2C_longbench_latent_kv_split_cachejpeg_zlib_subset200.yaml
 recipe/eval_recipe/C2C_longbench_latent_kv_split_cachejpeg_zlib_full.yaml
 ```
 
+concat + LCFProjectedKV + CacheJPEG：
+
+```bash
+recipe/eval_recipe/cachejpeg_rosetta_openhermes_lcf_projected_kv_mmlu.yaml
+```
+
+该文件当前默认指向 0.6B + 1.5B raw projector checkpoint；切换模型规模或 Stage 2
+checkpoint 时，需要同步修改 `base_model`、`teacher_model`、`checkpoints_dir` 和
+`rosetta_checkpoint_subfolder`，不能只替换一个权重路径。
+
 单模型 CacheJPEG：
 
 ```bash
@@ -463,6 +711,54 @@ python script/evaluation/unified_evaluator.py \
 - 汇总指标 JSON/CSV。
 - CacheJPEG payload bytes、compression factor、transport latency 等统计。
 - bad sample dump，便于排查失败样本。
+
+### Step 6：记录实验身份
+
+每次结果至少同时记录以下字段，否则后续很难判断两个目录是否可比较：
+
+```text
+receiver / sharer model id
+dataset + local_jsonl_file + sample_interval
+checkpoint directory + checkpoint subfolder
+cache_alignment + fusion_type + concat_projector.type
+token alignment / independent tokenizer mode
+codec compute + quant + entropy + frequency prune
+transport mode + bandwidth + layer_streaming
+generation max_new_tokens + template + CoT
+git commit / dirty diff
+```
+
+## 结果指标定义
+
+统一评测会把逐样本字段写入 `*_length.json`，并聚合到 `*_summary.json`、
+`*_performance.json`。主线复盘常用定义如下：
+
+| 指标 | 定义 |
+|---|---|
+| accuracy / score | 任务答案正确率；LongBench 为任务 scorer 的归一化 score，不一定是选择题 accuracy |
+| `sharer_cache_bytes` | 原始 Sharer K/V tensor 的元素数乘 dtype bytes，未包含 Python/pickle 元数据 |
+| `lcf_latent_kv_bytes` | LCF 后、codec 前 pseudo K/V tensor 的原始字节数 |
+| `payload_bytes` | codec 输出经过真实序列化后的 wire payload 大小 |
+| compression ratio | `sum(sharer_cache_bytes) / sum(payload_bytes)`；越大表示压缩越强 |
+| payload-to-sharer ratio | `sum(payload_bytes) / sum(sharer_cache_bytes)` |
+| space saving ratio | `1 - payload / sharer` |
+| `encode_seconds` | concat 中仅指 CacheJPEG encode；不包含 LCF encode |
+| `decode_seconds` | concat 中仅指 CacheJPEG decode；不包含 LCF decode |
+| `sender_encode_seconds` | `lcf_encode_seconds + encode_seconds` |
+| `receiver_decode_seconds` | `decode_seconds + lcf_decode_seconds` |
+| `transmit_seconds` | transport 实际测得的发送阶段时间，包含所选 transport 实现的等待 |
+| `bandwidth_only_transmit_seconds` | `payload_bytes / bandwidth_bytes_per_sec`，不含固定延迟和序列化 |
+| end-to-end latency | evaluator 包围整个单样本 generate 调用的 wall time，包括模型 prefill、通信管线和生成 |
+
+聚合压缩率应优先使用总字节比
+`aggregate_sharer_to_payload_compression_ratio`，而不是简单平均每条样本的 ratio；
+前者会正确按样本 payload 大小加权。`avg_encode_ms/avg_decode_ms` 是 codec wall
+time；分析完整 sender/receiver 开销时应使用 `avg_sender_encode_ms` 和
+`avg_receiver_decode_ms`。
+
+layer streaming 还会输出 service time 与 wall time：service time 是各层任务耗时之
+和，wall time 是流水线关键路径，两者不能相加当作端到端时间。50 MB/s 配置使用十进制
+`50,000,000 bytes/s`。
 
 ## 重要配置字段
 
@@ -492,18 +788,30 @@ causal prefix，可选择平级的 concat 对齐后端：
 cachejpeg_rosetta_config:
   cache_alignment: concat
   fusion_type: original
+  concat_projector:
+    type: lcf_projected_kv
+    shared_latent_dim: 128
+    key_latent_dim: 64
+    value_latent_dim: 64
   codec:
     method: cachejpeg
+    compute: {backend: gpu, transform_dtype: float32}
+    transport:
+      mode: socketpair
+      bandwidth_bytes_per_sec: 50000000
+  layer_streaming:
+    enabled: true
+    queue_size: 4
+    gpu_streams: 2
+    max_inflight_layers: 4
 ```
 
-`concat` 使用 LCF-first 顺序：在 Sharer 侧捕获 pre-RoPE K，经
-`LCFFirstProjector.encode` 将每层联合 K/V 下采样为 latent；CacheJPEG 只对
-latent K/V halves 编解码；Receiver 再经 `LCFFirstProjector.decode` 上采样到
-Receiver KV geometry，并用 Receiver RoPE 按紧凑位置 `0..S-1` 编码。
-Receiver prompt 随后以 `S` 为位置偏移进行 prefill。对应 checkpoint 中的
-projector 类必须是 `LCFFirstProjector`。该路径不修改或调用
-`RosettaFuserBridge`，当前也不支持 layer streaming 和 fuser-side adaptive
-quant table。
+concat 支持 `lcf_first` 与 `lcf_projected_kv` 两类 checkpoint。两者都在 Sharer
+侧捕获 pre-RoPE K，CacheJPEG 只编解码 pseudo/latent K/V，Receiver 端恢复
+Receiver KV geometry 后重新施加 compact RoPE。`lcf_projected_kv` 在 shared
+latent 后有独立 learned K/V projection，是当前主线。concat 不调用
+`RosettaFuserBridge`，但已经支持 `concat_layer_streaming`；它仍不接受
+fuser-side `adaptive_quant_table` eval 配置。
 
 ```yaml
 cachejpeg_rosetta_config:
@@ -544,6 +852,9 @@ pytest
 pytest test/test_latent_kv.py
 pytest test/test_cachejpeg_rosetta_wrapper.py
 pytest test/test_adaptive_quant_table.py
+pytest test/test_concat_cache_alignment.py
+pytest test/test_lcf_projected_kv.py
+pytest test/test_independent_dual_tokenizer_dataset.py
 ```
 
 `pyproject.toml` 默认启用 coverage 输出。如果只想快速检查某个文件，可以指定单个测试文件。
@@ -582,6 +893,29 @@ homo_c2c_kv_src: /path/to/HomoC2C-KV/src
 ### 5. README 里没有列出的临时输出
 
 仓库中 `tmp/`、`local/`、`LongBench/` 通常是数据、checkpoint 或实验产物，不是核心源码。阅读和修改源码时建议先排除这些目录。
+
+### 6. concat checkpoint 类型不匹配
+
+`concat_projector.type: lcf_first` 只能加载 `LCFFirstProjector`，
+`lcf_projected_kv` 只能加载 `LCFProjectedKVProjector`。YAML 的类型、训练 recipe
+和 checkpoint 内的 `projector_*.json` 必须一致。
+
+### 7. Stage 2 为什么没有更新 projector
+
+Stage 2 当前设计为 projector 与 adaptive quantizer 联合训练。检查：
+
+```json
+"freeze": ["teacher", "base"]
+```
+
+如果加入 `"projector"`，就会退化为只训练量化器的实验，不再是当前主线。
+
+### 8. concat 是否必须对齐 tokenizer
+
+不要求 token id 一致，但要求 forward 收到两个模型各自的输入 list。不同 tokenizer
+优先设置 `is_do_alignment: false` 和 `independent_tokenizers: true`；旧 aligned
+路径则设置 `is_do_alignment: true`。错误地只返回一个 tensor 会触发
+“requires per-model input_ids and attention_mask lists”。
 
 ## 开发建议
 

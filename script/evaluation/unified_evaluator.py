@@ -560,6 +560,94 @@ class UnifiedEvaluator:
         # Fall back to Hugging Face datasets
         return load_dataset(self.dataset_config["dataset_name"], subject)
 
+    def _load_local_jsonl_test_data(self):
+        """Load and normalize the optional unified local MCQ test file.
+
+        ``c2c_general_mcq_test`` stores multiple-choice examples in a shared
+        schema (``ctx``, ``endings``, ``answer``, and optionally ``subject``).
+        The Hugging Face versions of AI2-ARC, OpenBookQA, and C-EVAL use
+        different field names, so normalize only those datasets here and let
+        the rest of the evaluator keep using their existing formatters.
+        """
+        local_jsonl_file = self.eval_config.get("local_jsonl_file")
+        # LongBench already has its own subject-file loader controlled by
+        # ``longbench_local_data_dir``; keep that pre-existing path separate.
+        if not local_jsonl_file or self.dataset_name == "longbench":
+            return None
+
+        local_jsonl_file = os.path.abspath(
+            os.path.expanduser(str(local_jsonl_file))
+        )
+        if not os.path.isfile(local_jsonl_file):
+            raise FileNotFoundError(
+                f"{self.dataset_name} local_jsonl_file not found: {local_jsonl_file}"
+            )
+
+        local_data = load_dataset(
+            "json", data_files={"test": local_jsonl_file}, split="test"
+        )
+
+        def shared_question_and_choices(example: Dict[str, Any]) -> Tuple[str, List[str]]:
+            question = str(example.get("ctx", example.get("question", "")))
+            endings = example.get("endings")
+            if endings is None:
+                raw_choices = example.get("choices")
+                if isinstance(raw_choices, dict):
+                    endings = raw_choices.get("text", [])
+                elif isinstance(raw_choices, list):
+                    endings = [
+                        item.get("text", "") if isinstance(item, dict) else item
+                        for item in raw_choices
+                    ]
+                else:
+                    endings = [example.get(letter, "") for letter in "ABCD"]
+            return question, [str(choice) for choice in endings]
+
+        if self.dataset_name == "openbookqa":
+            def normalize_openbookqa(example: Dict[str, Any]) -> Dict[str, Any]:
+                question, choices = shared_question_and_choices(example)
+                return {
+                    "question_stem": question,
+                    "choices": {
+                        "text": choices,
+                        "label": [chr(ord("A") + index) for index in range(len(choices))],
+                    },
+                    "answerKey": example.get("answer", example.get("answerKey")),
+                }
+
+            return local_data.map(normalize_openbookqa)
+
+        if self.dataset_name == "ai2-arc":
+            def normalize_ai2_arc(example: Dict[str, Any]) -> Dict[str, Any]:
+                question, choices = shared_question_and_choices(example)
+                return {
+                    "question": question,
+                    "choices": {
+                        "text": choices,
+                        "label": [chr(ord("A") + index) for index in range(len(choices))],
+                    },
+                    "answerKey": example.get("answer", example.get("answerKey")),
+                }
+
+            return local_data.map(normalize_ai2_arc)
+
+        if self.dataset_name == "ceval":
+            def normalize_ceval(example: Dict[str, Any]) -> Dict[str, Any]:
+                question, choices = shared_question_and_choices(example)
+                normalized = {
+                    "question": question,
+                    "answer": example.get("answer", example.get("answerKey")),
+                }
+                normalized.update({
+                    letter: choices[index] if index < len(choices) else ""
+                    for index, letter in enumerate("ABCD")
+                })
+                return normalized
+
+            return local_data.map(normalize_ceval)
+
+        return local_data
+
     def _prepare_longbench_e_test_subset(self, subjects: List[str]) -> None:
         """Select an exact, deterministic held-out subset across LongBench-E subjects."""
 
@@ -1481,44 +1569,26 @@ class UnifiedEvaluator:
                 split_index = int(m.group(1))
                 total_splits = max(1, int(m.group(2)))
 
-        if self.dataset_name == "math-500":
+        local_test_data = self._load_local_jsonl_test_data()
+        if local_test_data is not None:
+            # C-EVAL and MMLU-Redux local files contain all subjects in one
+            # JSONL; retain the current worker's subject before evaluation.
+            # AI2-ARC uses virtual splits below, so it deliberately keeps the
+            # complete local test set at this point.
+            if self.dataset_name in ["ceval", "mmlu-redux"]:
+                test_data = local_test_data.filter(
+                    lambda example: example.get("subject") == subject
+                )
+            else:
+                test_data = local_test_data
+            dataset = None
+        elif self.dataset_name == "math-500":
             dataset = load_dataset(self.dataset_config["dataset_name"])
         elif self.dataset_name == "gsm8k":
             base_subset = "main" if is_virtual_split else subject
             dataset = load_dataset(self.dataset_config["dataset_name"], base_subset)
         elif self.dataset_name == "openbookqa":
-            local_jsonl_file = self.eval_config.get("local_jsonl_file")
-            if local_jsonl_file:
-                local_jsonl_file = os.path.abspath(
-                    os.path.expanduser(str(local_jsonl_file))
-                )
-                if not os.path.isfile(local_jsonl_file):
-                    raise FileNotFoundError(
-                        f"OpenBookQA local_jsonl_file not found: {local_jsonl_file}"
-                    )
-
-                local_data = load_dataset(
-                    "json", data_files={"test": local_jsonl_file}, split="test"
-                )
-
-                # c2c_general_mcq_test stores OpenBookQA as
-                # {ctx, endings, answer}; normalize it to the schema used by
-                # the existing formatter, answer parser, and result logger.
-                def _normalize_openbookqa_example(example: Dict[str, Any]) -> Dict[str, Any]:
-                    endings = list(example.get("endings") or [])
-                    return {
-                        "question_stem": str(example.get("ctx", "")),
-                        "choices": {
-                            "text": [str(choice) for choice in endings],
-                            "label": [chr(ord("A") + index) for index in range(len(endings))],
-                        },
-                        "answerKey": example.get("answer"),
-                    }
-
-                test_data = local_data.map(_normalize_openbookqa_example)
-                dataset = None
-            else:
-                dataset = load_dataset(self.dataset_config["dataset_name"])
+            dataset = load_dataset(self.dataset_config["dataset_name"])
         elif self.dataset_name == "gpqa":
             base_subset = "gpqa_diamond" if is_virtual_split else subject
             dataset = load_dataset(self.dataset_config["dataset_name"], base_subset)
@@ -1531,24 +1601,6 @@ class UnifiedEvaluator:
             dataset = load_dataset(self.dataset_config["dataset_name"], subject)
         elif self.dataset_name == "longbench":
             dataset = self._load_longbench_dataset(subject)
-        elif (
-            self.dataset_name == "mmlu-redux"
-            and self.eval_config.get("local_jsonl_file")
-        ):
-            local_jsonl_file = os.path.abspath(
-                os.path.expanduser(str(self.eval_config["local_jsonl_file"]))
-            )
-            if not os.path.isfile(local_jsonl_file):
-                raise FileNotFoundError(
-                    f"MMLU-Redux local_jsonl_file not found: {local_jsonl_file}"
-                )
-            local_data = load_dataset(
-                "json", data_files={"test": local_jsonl_file}, split="test"
-            )
-            dataset = None
-            test_data = local_data.filter(
-                lambda example: example.get("subject") == subject
-            )
         else:
             dataset = load_dataset(self.dataset_config["dataset_name"], subject)
         # dataset = load_from_disk("local/teacher_datasets/MMMLU")

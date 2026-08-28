@@ -58,8 +58,6 @@ try:
 except ImportError:
     PEFT_AVAILABLE = False
 
-torch.autograd.set_detect_anomaly(True)
-
 def set_seed(seed: int = 42):
     """Set all random seeds for reproducibility"""
     random.seed(seed)
@@ -853,6 +851,18 @@ def main():
     training_config = cfg["training"]
     output_config = cfg["output"]
     data_config = cfg["data"]
+    # Autograd anomaly detection records a Python traceback for every forward
+    # operation. That is useful for short debugging sessions but is extremely
+    # expensive for 4B-model training and has triggered traceback-state
+    # corruption in long projector loops. Keep normal training on the stable
+    # fast path unless a debug config explicitly opts in.
+    torch.autograd.set_detect_anomaly(
+        bool(training_config.get("detect_anomaly", False))
+    )
+    if bool(training_config.get("disable_tqdm", False)):
+        # Background runs already emit structured step logs. Avoid tqdm's
+        # monitor thread and terminal refresh work in long detached jobs.
+        tqdm.monitor_interval = 0
     if args.resume_from_checkpoint is None:
         args.resume_from_checkpoint = training_config.get("resume_from_checkpoint")
 
@@ -1146,8 +1156,9 @@ def main():
 
     if training_mode == "baseline":
         # Simple optimizer for baseline mode
+        trainable_params = [p for p in model.parameters() if p.requires_grad]
         optimizer = AdamW(
-            [p for p in model.parameters() if p.requires_grad], 
+            trainable_params,
             lr=lr, 
             weight_decay=training_config["weight_decay"]
         )
@@ -1166,6 +1177,11 @@ def main():
                 else:
                     other_params.append(param)
 
+        # Keep a stable reference to the parameters owned by the optimizer.
+        # Re-walking the complete Receiver + Sharer module tree at every step is
+        # unnecessary (and particularly expensive for multi-billion-parameter
+        # frozen models); the freeze configuration is fixed before this point.
+        trainable_params = gate_params + weight_params + other_params
         optimizer = AdamW([
             {"params": gate_params, "lr": lr},
             {"params": weight_params, "lr": lr},
@@ -1227,7 +1243,14 @@ def main():
             train_sampler.set_epoch(epoch)
         model.train()
         epoch_loss = 0.0
-        progress_bar = tqdm(total=updates_per_epoch, desc=f"Epoch {epoch + 1}/{training_config['num_epochs']}", disable=not is_main_process)
+        progress_bar = tqdm(
+            total=updates_per_epoch,
+            desc=f"Epoch {epoch + 1}/{training_config['num_epochs']}",
+            disable=(
+                not is_main_process
+                or bool(training_config.get("disable_tqdm", False))
+            ),
+        )
 
         macro_step_in_epoch = 0
         accum_true_loss = 0.0
@@ -1275,7 +1298,7 @@ def main():
             grad_norm_value = None
             if did_step:
                 grad_norm = torch.nn.utils.clip_grad_norm_(
-                    [p for p in model.parameters() if p.requires_grad],
+                    trainable_params,
                     max_norm=training_config["max_grad_norm"]
                 )
                 grad_norm_value = grad_norm.item() if isinstance(grad_norm, torch.Tensor) else float(grad_norm)

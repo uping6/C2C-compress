@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import threading
 from dataclasses import dataclass
 from contextlib import contextmanager
 from typing import Any, Iterator
@@ -92,34 +93,70 @@ def _reshape_projected_key(output: torch.Tensor, head_dim: int) -> torch.Tensor:
     )
 
 
-@contextmanager
-def capture_pre_rope_keys(model: Any) -> Iterator[dict[int, torch.Tensor]]:
-    """Capture each Qwen attention layer's K after optional k_norm and before RoPE."""
+class _PersistentPreRopeKeyCapture:
+    """Install one hook set per model and reuse it across all forwards.
 
-    layers, _ = _decoder_layers_and_rotary(model)
-    captured: dict[int, torch.Tensor] = {}
-    hooks = []
+    Registering and removing every layer hook for every training sample creates
+    close to a million hook lifecycle operations in a full OpenHermes run.  The
+    hooks themselves are static, so keep them installed and only switch the
+    destination dictionary while a capture context is active.
+    """
 
-    def make_hook(layer_index: int, attention: Any):
-        def hook(_module: Any, _inputs: tuple[Any, ...], output: torch.Tensor) -> None:
-            key = _reshape_projected_key(output, int(attention.head_dim))
-            key_norm = getattr(attention, "k_norm", None)
-            if key_norm is not None:
-                key = key_norm(key)
-            captured[layer_index] = key.detach()
+    def __init__(self, model: Any) -> None:
+        layers, _ = _decoder_layers_and_rotary(model)
+        self._active: dict[int, torch.Tensor] | None = None
+        self._owner_thread: int | None = None
+        self._handles = []
 
-        return hook
-
-    try:
         for layer_index, layer in enumerate(layers):
             attention = layer.self_attn
-            hooks.append(
-                attention.k_proj.register_forward_hook(make_hook(layer_index, attention))
-            )
+
+            def hook(
+                _module: Any,
+                _inputs: tuple[Any, ...],
+                output: torch.Tensor,
+                *,
+                index: int = layer_index,
+                head_dim: int = int(attention.head_dim),
+                key_norm: Any = getattr(attention, "k_norm", None),
+            ) -> None:
+                captured = self._active
+                if captured is None:
+                    return
+                key = _reshape_projected_key(output, head_dim)
+                if key_norm is not None:
+                    key = key_norm(key)
+                captured[index] = key.detach()
+
+            self._handles.append(attention.k_proj.register_forward_hook(hook))
+
+    @contextmanager
+    def capture(self) -> Iterator[dict[int, torch.Tensor]]:
+        thread_id = threading.get_ident()
+        if self._active is not None:
+            raise RuntimeError("Nested or concurrent pre-RoPE capture is not supported.")
+        captured: dict[int, torch.Tensor] = {}
+        self._owner_thread = thread_id
+        self._active = captured
+        try:
+            yield captured
+        finally:
+            self._active = None
+            self._owner_thread = None
+
+
+@contextmanager
+def capture_pre_rope_keys(model: Any) -> Iterator[dict[int, torch.Tensor]]:
+    """Capture pre-RoPE K using a persistent, model-local hook set."""
+
+    manager = getattr(model, "_rosetta_pre_rope_key_capture", None)
+    if manager is None:
+        manager = _PersistentPreRopeKeyCapture(model)
+        # The manager is not an nn.Module, so this does not alter state_dict or
+        # trainable parameters. It simply shares hook handles for model lifetime.
+        setattr(model, "_rosetta_pre_rope_key_capture", manager)
+    with manager.capture() as captured:
         yield captured
-    finally:
-        for hook in hooks:
-            hook.remove()
 
 
 @contextmanager

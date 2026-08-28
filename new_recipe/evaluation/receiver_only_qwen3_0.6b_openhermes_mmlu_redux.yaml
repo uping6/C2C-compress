@@ -1,0 +1,27 @@
+# Receiver-only baseline for the OpenHermes LCF-projected-KV experiment.
+# The receiver_only ablation loads only Qwen3-0.6B; it does not load a teacher,
+# fuser, CacheJPEG codec, LCF module, or transport pipeline.
+model:
+  model_name: cachejpeg_rosetta
+  rosetta_config:
+    base_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
+
+  cachejpeg_rosetta_config:
+    ablation:
+      receiver_only: true
+
+  generation_config:
+    do_sample: false
+    max_new_tokens: 16
+
+output:
+  output_dir: local/final_results/openhermes_lcf_projected_kv/receiver_only/ceval
+
+eval:
+  dataset: ceval
+  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/ceval_test.jsonl
+  gpu_ids: [0]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1

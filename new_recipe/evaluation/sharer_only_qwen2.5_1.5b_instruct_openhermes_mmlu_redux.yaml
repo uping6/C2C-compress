@@ -1,0 +1,28 @@
+# Sharer-only baseline for the OpenHermes LCF-projected-KV experiment.
+# The sharer_only ablation loads only Qwen2.5-1.5B-Instruct; it does not load
+# the Qwen3 receiver, fuser, CacheJPEG codec, LCF module, or transport pipeline.
+model:
+  model_name: cachejpeg_rosetta
+  rosetta_config:
+    teacher_model: ./hf_cache/Qwen3-4B-Instruct-2507
+
+  cachejpeg_rosetta_config:
+    ablation:
+      sharer_only: true
+
+  generation_config:
+    do_sample: false
+    max_new_tokens: 16
+
+output:
+  output_dir: local/final_results/cache-kv/openhermes_0.6+4b/sharer_only/ai2_arc
+
+
+eval:
+  dataset: ai2-arc
+  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/arc_challenge_test.jsonl
+  gpu_ids: [1]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1
