@@ -574,10 +574,14 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
             concat_projector_type = str(
                 concat_projector_config.get("type", "lcf_first")
             ).lower()
-            if concat_projector_type not in {"lcf_first", "lcf_projected_kv"}:
+            if concat_projector_type not in {
+                "lcf_first",
+                "lcf_projected_kv",
+                "direct_pre_rope_mlp",
+            }:
                 raise ValueError(
                     "model.concat_projector.type must be 'lcf_first' or "
-                    "'lcf_projected_kv'."
+                    "'lcf_projected_kv' or 'direct_pre_rope_mlp'."
                 )
             layer_mapping = str(
                 concat_projector_config.get(
@@ -597,7 +601,18 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
                     "receiver_head_dim": base_dim,
                     "dtype": dtype,
                 }
-                if concat_projector_type == "lcf_projected_kv":
+                if concat_projector_type == "direct_pre_rope_mlp":
+                    projector = create_projector(
+                        "DirectPreRopeMLPProjector",
+                        hidden_dim=int(
+                            concat_projector_config.get("hidden_dim", 1024)
+                        ),
+                        activation=str(
+                            concat_projector_config.get("activation", "gelu")
+                        ),
+                        **common_projector_args,
+                    )
+                elif concat_projector_type == "lcf_projected_kv":
                     projector = create_projector(
                         "LCFProjectedKVProjector",
                         shared_latent_dim=int(
@@ -683,6 +698,14 @@ def setup_models(model_config: Dict[str, Any], training_mode: str, device: str =
         )
         adaptive_quant_table = None
         if adaptive_quant_config.enabled:
+            if (
+                cache_alignment == "concat"
+                and concat_projector_type == "direct_pre_rope_mlp"
+            ):
+                raise ValueError(
+                    "direct_pre_rope_mlp is an uncompressed ablation and requires "
+                    "model.adaptive_quant_table.enabled=false."
+                )
             adaptive_quant_table = AdaptiveCoefficientQuantizer(
                 num_layers=slm_num_layers,
                 # LCF-first transports a single-head pseudo K/V pair made by

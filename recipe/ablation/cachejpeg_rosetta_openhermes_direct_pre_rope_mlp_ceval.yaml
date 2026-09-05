@@ -1,0 +1,43 @@
+model:
+  # Reuse the CacheJPEG-Rosetta loader, but direct_pre_rope_mlp explicitly
+  # bypasses CacheJPEG, DCT, quantization, serialization, and transport.
+  model_name: cachejpeg_rosetta
+  rosetta_config:
+    base_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
+    teacher_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen2.5-0.5B-Instruct/snapshots/7ae557604adf67be50417f59c2c2f167def9a775
+    checkpoints_dir: local/checkpoints/cache-kv/0.6+0.5B/ablation/openhermes_50k_concat_direct_pre_rope_mlp
+    is_do_alignment: false
+    alignment_strategy: longest
+
+  cachejpeg_rosetta_config:
+    sharer_model_role: teacher
+    receiver_model_role: base
+    cache_alignment: concat
+    fusion_type: original
+    concat_projector:
+      type: direct_pre_rope_mlp
+      hidden_dim: 1024
+      activation: gelu
+      layer_mapping: last_aligned
+      rope_mode: pre_rope
+    adaptive_quant_table:
+      enabled: false
+    layer_streaming:
+      enabled: false
+
+  generation_config:
+    do_sample: false
+    max_new_tokens: 16
+
+output:
+  output_dir: /data/smy_data/local/final_results/cache-kv/openhermes_0.6+0.5b/ablation/direct_pre_rope_mlp/openbookqa
+
+eval:
+  dataset: openbookqa
+  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/openbookqa_test.jsonl
+  gpu_ids: [1]
+  answer_method: generate
+  use_cot: false
+  use_template: true
+  sample_interval: 1
+  rosetta_checkpoint_subfolder: final

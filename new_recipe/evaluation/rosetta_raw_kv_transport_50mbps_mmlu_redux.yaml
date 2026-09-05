@@ -19,11 +19,11 @@ model:
     max_new_tokens: 16
 
 output:
-  output_dir: local/final_results/cache-kv/openhermes_0.6+4b/rosetta_raw_kv_transport_50mbps/mmlu_redux
+  output_dir: local/final_results/cache-kv/openhermes_0.6+4b/rosetta_raw_kv_transport_50mbps/arc_challenge
 
 eval:
-  dataset: mmlu-redux
-  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/mmlu_redux_test.jsonl
+  dataset: ai2-arc
+  local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/arc_challenge_test.jsonl
   gpu_ids: [0]
   answer_method: generate
   use_cot: false

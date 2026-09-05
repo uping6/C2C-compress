@@ -122,12 +122,13 @@ Sharer prompt
 或序列长度下采样。跨层映射由 `layer_mapping: last_aligned` 决定，当前 concat
 要求每个 Receiver layer 恰好对应一个 Sharer layer/projector。
 
-### `lcf_first` 与 `lcf_projected_kv`
+### concat projector 类型
 
 | 配置 | transport K/V 的产生方式 | 对应类 |
 |---|---|---|
 | `lcf_first` | joint latent 直接沿最后一维 `chunk(2)` 成 pseudo K/V | `LCFFirstProjector` |
 | `lcf_projected_kv` | shared latent 后分别经过 learned K projection 和 V projection | `LCFProjectedKVProjector` |
+| `direct_pre_rope_mlp` | pre-RoPE K 与普通 V 分别通过 MLP 直接映射到 Receiver geometry；无 LCF、codec 或 transport | `DirectPreRopeMLPProjector` |
 
 后者是当前主线。实现入口：
 
@@ -136,6 +137,13 @@ Sharer prompt
 - `rosetta/cachejpeg_rosetta/pre_rope.py`：Sharer pre-RoPE K 捕获与 Receiver RoPE。
 - `rosetta/cachejpeg_rosetta/projected_kv_cache_aligner.py`：评测期 concat encode/decode。
 - `rosetta/cachejpeg_rosetta/concat_layer_streaming.py`：跨层流水化压缩、传输和解码。
+
+`direct_pre_rope_mlp` 是无压缩上界消融。它仍使用相同的 layer mapping、Receiver
+compact RoPE 和 causal-prefix concat，但不会初始化 CacheJPEG、adaptive quantizer、
+transport 或 fuser。训练和评测配置分别位于：
+
+- `recipe/ablation/C2C_openhermes_50k_concat_direct_pre_rope_mlp_qwen3_4b.json`
+- `recipe/ablation/cachejpeg_rosetta_openhermes_direct_pre_rope_mlp_ceval.yaml`
 
 ### Tokenizer 与 cache 对齐不是一回事
 
@@ -806,7 +814,7 @@ cachejpeg_rosetta_config:
     max_inflight_layers: 4
 ```
 
-concat 支持 `lcf_first` 与 `lcf_projected_kv` 两类 checkpoint。两者都在 Sharer
+concat 的压缩路径支持 `lcf_first` 与 `lcf_projected_kv` 两类 checkpoint。两者都在 Sharer
 侧捕获 pre-RoPE K，CacheJPEG 只编解码 pseudo/latent K/V，Receiver 端恢复
 Receiver KV geometry 后重新施加 compact RoPE。`lcf_projected_kv` 在 shared
 latent 后有独立 learned K/V projection，是当前主线。concat 不调用
@@ -897,7 +905,8 @@ homo_c2c_kv_src: /path/to/HomoC2C-KV/src
 ### 6. concat checkpoint 类型不匹配
 
 `concat_projector.type: lcf_first` 只能加载 `LCFFirstProjector`，
-`lcf_projected_kv` 只能加载 `LCFProjectedKVProjector`。YAML 的类型、训练 recipe
+`lcf_projected_kv` 只能加载 `LCFProjectedKVProjector`，`direct_pre_rope_mlp` 只能
+加载 `DirectPreRopeMLPProjector`。YAML 的类型、训练 recipe
 和 checkpoint 内的 `projector_*.json` 必须一致。
 
 ### 7. Stage 2 为什么没有更新 projector

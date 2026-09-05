@@ -67,13 +67,32 @@ def resolve_cachejpeg_rosetta_eval_config(config: dict[str, Any]) -> CacheJPEGRo
     )
     fusion_type = str(nested.get("fusion_type", "original")).lower()
     cache_alignment = str(nested.get("cache_alignment", "fuser")).lower()
+    concat_projector_cfg = _mapping(nested.get("concat_projector"))
+    concat_projector_type = str(
+        concat_projector_cfg.get("type", "lcf_first")
+    ).lower()
     if cache_alignment not in {"fuser", "concat"}:
         raise ValueError("cachejpeg_rosetta.cache_alignment must be 'fuser' or 'concat'.")
     if cache_alignment == "concat" and fusion_type != "original":
         raise ValueError("cache_alignment='concat' currently requires fusion_type='original'.")
-    if cache_alignment == "concat" and bool(adaptive_quant_table_cfg.get("enabled", False)):
+    if cache_alignment == "concat" and concat_projector_type == "direct_pre_rope_mlp":
+        if bool(adaptive_quant_table_cfg.get("enabled", False)):
+            raise ValueError(
+                "direct_pre_rope_mlp disables LCF/DCT/quantization and requires "
+                "adaptive_quant_table.enabled=false."
+            )
+        if bool(streaming_cfg.get("enabled", False)):
+            raise ValueError(
+                "direct_pre_rope_mlp currently requires layer_streaming.enabled=false."
+            )
+    if (
+        cache_alignment == "concat"
+        and bool(adaptive_quant_table_cfg.get("enabled", False))
+        and bool(streaming_cfg.get("enabled", False))
+    ):
         raise ValueError(
-            "cache_alignment='concat' does not use the fuser-side adaptive_quant_table."
+            "concat adaptive_quant_table requires layer_streaming.enabled=false "
+            "because table selection uses joint features from all routed layers."
         )
     if fusion_type not in {"original", "latent_kv_joint", "latent_kv_split"}:
         raise ValueError(

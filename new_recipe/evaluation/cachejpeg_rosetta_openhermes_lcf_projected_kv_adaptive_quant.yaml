@@ -3,7 +3,7 @@ model:
   rosetta_config:
     base_model: /home/ubuntu/.cache/huggingface/hub/models--Qwen--Qwen3-0.6B/snapshots/c1899de289a04d12100db370d81485cdf75e47ca
     teacher_model: "./hf_cache/Qwen3-4B-Instruct-2507"
-    checkpoints_dir: local/checkpoints/cache-kv/0.6+4B/0.6+4B_openhermes_50k_concat_lcf_projected_kv_raw
+    checkpoints_dir: local/checkpoints/cache-kv/0.6+4B/0.6+4B_openhermes_50k_concat_lcf_projected_kv_adaptive_quant
     is_do_alignment: false
     alignment_strategy: longest
 
@@ -17,6 +17,23 @@ model:
       shared_latent_dim: 128
       key_latent_dim: 64
       value_latent_dim: 64
+    adaptive_quant_table:
+      enabled: true
+      feature_bands: 8
+      hidden_dim: 128
+      alpha_candidates: [0.125, 0.25, 0.5, 1.0, 2.0]
+      initial_alpha_index: 0
+      initial_temperature: 1.0
+      final_temperature: 0.1
+      anneal_steps: 3094
+      q_base_min: 1.0
+      q_base_max: 8.0
+      q_base_power: 1.0
+      scale_side_info_bits: 16
+      detach_allocator_features: true
+      rate_weight: 0.000001
+      rate_warmup_steps: 1000
+      checkpoint_path: /data/smy_data/local/checkpoints/cache-kv/0.6+4B/0.6+4B_openhermes_50k_concat_lcf_projected_kv_adaptive_quant/final/adaptive_quant_table.pt
     homo_c2c_kv_src: /data/smy/HomoC2C-KV/src
     codec:
       method: cachejpeg
@@ -54,8 +71,9 @@ model:
         mode: socketpair
         bandwidth_bytes_per_sec: 50000000
         fixed_latency_ms: 0
+    # The learned allocator chooses tables from joint all-layer features.
     layer_streaming:
-      enabled: true
+      enabled: false
       queue_size: 4
       gpu_streams: 2
       max_inflight_layers: 4
@@ -65,11 +83,11 @@ model:
     max_new_tokens: 16
 
 output:
-  output_dir: local/final_results/cache-kv/openhermes_0.6+4b/cachecodec_phase1/ceval
+  output_dir: local/final_results/cache-kv/openhermes_0.6+4b/lcf_adaptive_quant/ceval
 eval:
   dataset: ceval
   local_jsonl_file: /data/smy/AdaptiveJPEG-KV/data/c2c_general_mcq_test/ceval_test.jsonl
-  gpu_ids: [0]
+  gpu_ids: [1]
   answer_method: generate
   use_cot: false
   use_template: true

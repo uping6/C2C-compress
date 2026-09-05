@@ -1,3 +1,5 @@
+import pytest
+
 from rosetta.cachejpeg_rosetta.config import resolve_cachejpeg_rosetta_eval_config
 
 
@@ -49,12 +51,14 @@ def test_resolve_cachejpeg_rosetta_eval_config_reads_adaptive_quant_table():
             "adaptive_quant_table": {
                 "enabled": True,
                 "alpha_candidates": [0.25, 1.0, 4.0],
+                "fixed_alpha": 1.0,
                 "rate_weight": 1e-6,
             }
         }
     )
     assert cfg.adaptive_quant_table.enabled is True
     assert cfg.adaptive_quant_table.alpha_candidates == (0.25, 1.0, 4.0)
+    assert cfg.adaptive_quant_table.fixed_alpha == 1.0
     assert cfg.adaptive_quant_table.rate_weight == 1e-6
 
 
@@ -123,16 +127,33 @@ def test_resolve_cachejpeg_rosetta_eval_config_accepts_concat_alignment():
 
 
 def test_concat_alignment_rejects_fuser_specific_modes():
-    for config in (
-        {"cache_alignment": "concat", "fusion_type": "latent_kv_joint"},
-        {"cache_alignment": "concat", "adaptive_quant_table": {"enabled": True}},
-    ):
-        try:
-            resolve_cachejpeg_rosetta_eval_config(config)
-        except ValueError as exc:
-            assert "concat" in str(exc)
-        else:
-            raise AssertionError("Expected incompatible concat configuration to fail")
+    with pytest.raises(ValueError, match="concat"):
+        resolve_cachejpeg_rosetta_eval_config(
+            {"cache_alignment": "concat", "fusion_type": "latent_kv_joint"}
+        )
+
+
+def test_concat_alignment_accepts_adaptive_quant_without_layer_streaming():
+    cfg = resolve_cachejpeg_rosetta_eval_config(
+        {
+            "cache_alignment": "concat",
+            "adaptive_quant_table": {"enabled": True},
+            "layer_streaming": {"enabled": False},
+        }
+    )
+    assert cfg.adaptive_quant_table.enabled is True
+    assert cfg.layer_streaming.enabled is False
+
+
+def test_concat_adaptive_quant_rejects_layer_streaming():
+    with pytest.raises(ValueError, match="layer_streaming.enabled=false"):
+        resolve_cachejpeg_rosetta_eval_config(
+            {
+                "cache_alignment": "concat",
+                "adaptive_quant_table": {"enabled": True},
+                "layer_streaming": {"enabled": True},
+            }
+        )
 
 
 def test_concat_alignment_accepts_layer_streaming_settings():

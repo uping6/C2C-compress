@@ -22,6 +22,7 @@ class AdaptiveQuantTableConfig:
     feature_bands: int = 8
     hidden_dim: int = 128
     alpha_candidates: tuple[float, ...] = (0.125, 0.25, 0.5, 1.0, 2.0)
+    fixed_alpha: float | None = None
     initial_alpha_index: int = 0
     initial_temperature: float = 1.0
     final_temperature: float = 0.1
@@ -43,11 +44,14 @@ def resolve_adaptive_quant_table_config(
         float(value)
         for value in cfg.get("alpha_candidates", (0.125, 0.25, 0.5, 1.0, 2.0))
     )
+    raw_fixed_alpha = cfg.get("fixed_alpha")
+    fixed_alpha = None if raw_fixed_alpha is None else float(raw_fixed_alpha)
     resolved = AdaptiveQuantTableConfig(
         enabled=bool(cfg.get("enabled", False)),
         feature_bands=int(cfg.get("feature_bands", 8)),
         hidden_dim=int(cfg.get("hidden_dim", 128)),
         alpha_candidates=alpha_candidates,
+        fixed_alpha=fixed_alpha,
         initial_alpha_index=int(cfg.get("initial_alpha_index", 0)),
         initial_temperature=float(cfg.get("initial_temperature", 1.0)),
         final_temperature=float(cfg.get("final_temperature", 0.1)),
@@ -62,6 +66,17 @@ def resolve_adaptive_quant_table_config(
     )
     if not resolved.alpha_candidates or any(value <= 0 for value in resolved.alpha_candidates):
         raise ValueError("adaptive_quant_table.alpha_candidates must be positive.")
+    if resolved.fixed_alpha is not None:
+        if not math.isfinite(resolved.fixed_alpha) or resolved.fixed_alpha <= 0:
+            raise ValueError("adaptive_quant_table.fixed_alpha must be a positive finite value.")
+        if not any(
+            math.isclose(resolved.fixed_alpha, candidate, rel_tol=1e-9, abs_tol=1e-12)
+            for candidate in resolved.alpha_candidates
+        ):
+            raise ValueError(
+                "adaptive_quant_table.fixed_alpha must match one of alpha_candidates "
+                "so the existing wire-format table index remains valid."
+            )
     if not 0 <= resolved.initial_alpha_index < len(resolved.alpha_candidates):
         raise ValueError("adaptive_quant_table.initial_alpha_index is out of range.")
     if min(resolved.feature_bands, resolved.hidden_dim) <= 0:
@@ -273,6 +288,28 @@ class AdaptiveCoefficientQuantizer(nn.Module):
 
     def _select_alpha(self, coefficients: Tensor, scale: Tensor) -> tuple[Tensor, Tensor]:
         batch = coefficients.shape[0]
+        if self.config.fixed_alpha is not None:
+            fixed_index = next(
+                index
+                for index, candidate in enumerate(self.config.alpha_candidates)
+                if math.isclose(
+                    self.config.fixed_alpha,
+                    candidate,
+                    rel_tol=1e-9,
+                    abs_tol=1e-12,
+                )
+            )
+            alpha = coefficients.new_full(
+                (batch, self.num_groups), float(self.config.fixed_alpha)
+            )
+            indices = torch.full(
+                (batch, self.num_groups),
+                fixed_index,
+                dtype=torch.long,
+                device=coefficients.device,
+            )
+            return alpha, indices
+
         embeddings = torch.cat(
             (
                 self.layer_embedding(self.group_layer_ids),

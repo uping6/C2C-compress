@@ -1032,6 +1032,7 @@ def load_projector(file_path: str, override_args: Optional[dict] = None) -> Proj
     # serialized projector config is resolved.
     from rosetta.model import latent_kv  # noqa: F401
     from rosetta.model import lcf_projected_kv  # noqa: F401
+    from rosetta.model import direct_pre_rope_mlp  # noqa: F401
 
     return load_object(file_path, get_projector_class, override_args)
 
@@ -1049,6 +1050,7 @@ def create_projector(projector_type: str, **kwargs) -> Projector:
     # Register projectors implemented in separate modules before lookup.
     from rosetta.model import latent_kv  # noqa: F401
     from rosetta.model import lcf_projected_kv  # noqa: F401
+    from rosetta.model import direct_pre_rope_mlp  # noqa: F401
 
     # Prefer using the unified registry getter (handles case-insensitive keys)
     try:

@@ -21,7 +21,8 @@ hf_cache/
 recipe/experiments/
 script/evaluation/deprecated/
 script/analysis/oracle/
-recipe/
+recipe/eval_recipe
+recipe/train_recipe
 
 # Special files
 run.sh

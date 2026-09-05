@@ -4,6 +4,12 @@ import logging
 import pytest
 import torch
 
+from rosetta.cachejpeg.transport import deserialize_payload, serialize_payload
+from rosetta.cachejpeg_rosetta.adaptive_quant_codec import (
+    AdaptiveQuantizedCachePayload,
+    decode_adaptive_quantized_cache,
+    encode_adaptive_quantized_cache,
+)
 from rosetta.model.adaptive_quant_table import (
     AdaptiveCoefficientQuantizer,
     _dct_ii_ortho,
@@ -59,6 +65,96 @@ def test_adaptive_quantizer_preserves_shapes_and_reports_tables():
     assert result.rounded_symbols.shape == (1, 2, 2, 2, 9, 4)
     assert result.estimated_payload_bits.item() > 0
     assert torch.equal(result.table_indices, torch.ones_like(result.table_indices))
+
+
+def test_fixed_alpha_bypasses_allocator_and_reports_matching_table_index():
+    torch.manual_seed(0)
+    module = AdaptiveCoefficientQuantizer(
+        num_layers=2,
+        num_kv_heads=2,
+        config=_config(fixed_alpha=1.0),
+    ).eval()
+    with torch.no_grad():
+        module.alpha_head.bias[0] = 100.0
+        module.alpha_head.bias[2] = -100.0
+
+    result = module(_cache())
+
+    assert torch.equal(result.alpha, torch.ones_like(result.alpha))
+    assert torch.equal(result.table_indices, torch.full_like(result.table_indices, 2))
+
+
+@pytest.mark.parametrize("fixed_alpha", [-1.0, 0.0, float("inf"), 0.75])
+def test_fixed_alpha_must_be_positive_finite_candidate(fixed_alpha):
+    with pytest.raises(ValueError, match="fixed_alpha"):
+        _config(fixed_alpha=fixed_alpha)
+
+
+def test_existing_state_dict_loads_strictly_with_fixed_alpha_override():
+    original = AdaptiveCoefficientQuantizer(
+        num_layers=2, num_kv_heads=1, config=_config()
+    )
+    overridden = AdaptiveCoefficientQuantizer(
+        num_layers=2, num_kv_heads=1, config=_config(fixed_alpha=1.0)
+    )
+
+    overridden.load_state_dict(original.state_dict(), strict=True)
+
+
+@pytest.mark.parametrize("representation", ["dense_int16", "adaptive_int"])
+def test_adaptive_quant_wire_codec_round_trip(representation):
+    torch.manual_seed(0)
+    module = AdaptiveCoefficientQuantizer(
+        num_layers=2, num_kv_heads=1, config=_config()
+    ).eval()
+    cache = _cache(heads=1)
+
+    payload, result = encode_adaptive_quantized_cache(
+        module,
+        cache,
+        representation=representation,
+        backend="zlib1",
+    )
+    received = deserialize_payload(serialize_payload(payload))
+    assert isinstance(received, AdaptiveQuantizedCachePayload)
+    restored = decode_adaptive_quantized_cache(
+        received,
+        module,
+        device=torch.device("cpu"),
+        dtype=torch.float32,
+    )
+
+    for restored_pair, expected_pair in zip(restored, result.past_key_values):
+        assert restored_pair[0].shape == expected_pair[0].shape
+        assert restored_pair[1].shape == expected_pair[1].shape
+        assert torch.allclose(restored_pair[0], expected_pair[0], atol=2e-3, rtol=2e-3)
+        assert torch.allclose(restored_pair[1], expected_pair[1], atol=2e-3, rtol=2e-3)
+
+
+def test_fixed_alpha_wire_codec_round_trip_uses_existing_candidate_index():
+    torch.manual_seed(0)
+    module = AdaptiveCoefficientQuantizer(
+        num_layers=2, num_kv_heads=1, config=_config(fixed_alpha=1.0)
+    ).eval()
+    cache = _cache(heads=1)
+
+    payload, result = encode_adaptive_quantized_cache(
+        module,
+        cache,
+        representation="dense_int16",
+        backend="zlib1",
+    )
+    restored = decode_adaptive_quantized_cache(
+        deserialize_payload(serialize_payload(payload)),
+        module,
+        device=torch.device("cpu"),
+        dtype=torch.float32,
+    )
+
+    assert torch.equal(result.table_indices, torch.full_like(result.table_indices, 2))
+    for restored_pair, expected_pair in zip(restored, result.past_key_values):
+        assert torch.allclose(restored_pair[0], expected_pair[0], atol=2e-3, rtol=2e-3)
+        assert torch.allclose(restored_pair[1], expected_pair[1], atol=2e-3, rtol=2e-3)
 
 
 def test_adaptive_quantizer_backpropagates_task_and_rate_gradients():

@@ -464,6 +464,7 @@ class RosettaModel(nn.Module):
         )
         from rosetta.model.latent_kv import LCFFirstProjector
         from rosetta.model.lcf_projected_kv import LCFProjectedKVProjector
+        from rosetta.model.direct_pre_rope_mlp import DirectPreRopeMLPProjector
 
         if not isinstance(input_ids, list) or not isinstance(attention_mask, list):
             raise ValueError(
@@ -529,10 +530,17 @@ class RosettaModel(nn.Module):
                 raise ValueError("concat LCF-first requires one Sharer layer per Receiver layer.")
             source_layer, projector_idx = pairs[0]
             projector = self.projector_list[projector_idx]
-            if not isinstance(projector, (LCFFirstProjector, LCFProjectedKVProjector)):
+            if not isinstance(
+                projector,
+                (
+                    LCFFirstProjector,
+                    LCFProjectedKVProjector,
+                    DirectPreRopeMLPProjector,
+                ),
+            ):
                 raise TypeError(
                     "concat cache_alignment requires LCFFirstProjector or "
-                    "LCFProjectedKVProjector modules."
+                    "LCFProjectedKVProjector or DirectPreRopeMLPProjector modules."
                 )
             # Projectors and Sharer cache are placed on the Rosetta model device
             # during setup. Avoid walking the projector parameter tree on every
@@ -543,6 +551,12 @@ class RosettaModel(nn.Module):
                 sharer_cache.key_cache[source_layer].to(projector_device),
                 sharer_cache.value_cache[source_layer].to(projector_device),
             )
+            if isinstance(projector, DirectPreRopeMLPProjector):
+                receiver_key, receiver_value = projector.project(source_kv)
+                encoded_layers.append(
+                    (projector, receiver_key, receiver_value)
+                )
+                continue
             if isinstance(projector, LCFProjectedKVProjector):
                 key_latent, value_latent = projector.encode(source_kv)
             else:
@@ -552,6 +566,13 @@ class RosettaModel(nn.Module):
 
         quant_result = None
         if self.adaptive_quant_table is not None:
+            if any(
+                isinstance(projector, DirectPreRopeMLPProjector)
+                for projector, _key, _value in encoded_layers
+            ):
+                raise ValueError(
+                    "Direct pre-RoPE MLP concat does not support adaptive quantization."
+                )
             # The wire representation is the LCF transport K/V, not the
             # original Sharer KV. These are either the legacy direct halves or
             # the learned projected views, both represented with one KV head.
@@ -570,7 +591,9 @@ class RosettaModel(nn.Module):
                 quantized_key, quantized_value = quant_result.past_key_values[receiver_layer]
                 key_latent = quantized_key.squeeze(1)
                 value_latent = quantized_value.squeeze(1)
-            if isinstance(projector, LCFProjectedKVProjector):
+            if isinstance(projector, DirectPreRopeMLPProjector):
+                receiver_key, receiver_value = key_latent, value_latent
+            elif isinstance(projector, LCFProjectedKVProjector):
                 receiver_key, receiver_value = projector.decode_transport(
                     key_latent, value_latent
                 )

@@ -24,8 +24,14 @@ from rosetta.model.adaptive_quant_table import AdaptiveCoefficientQuantizer
 from rosetta.utils.evaluate import apply_generation_config, load_hf_model, set_default_chat_template
 
 from .config import CacheJPEGRosettaEvalConfig, resolve_cachejpeg_rosetta_eval_config
+from .adaptive_quant_codec import (
+    AdaptiveQuantizedCachePayload,
+    decode_adaptive_quantized_cache,
+    encode_adaptive_quantized_cache,
+)
 from .cache_aligner import ConcatCacheAligner
 from .projected_kv_cache_aligner import ProjectedKVConcatCacheAligner
+from .direct_mlp_cache_aligner import DirectMLPConcatCacheAligner
 from .fuser_bridge import LoadedRosettaAssets, RosettaFuserBridge
 from .layer_streaming import LayerCompressionPipeline, LayerPrefillTimer, StreamingDynamicCache
 from .concat_layer_streaming import ConcatLayerPipeline
@@ -140,11 +146,19 @@ class CacheJPEGRosettaEvalWrapper:
         self.concat_projector_type = str(
             concat_projector_config.get("type", "lcf_first")
         ).lower()
-        if self.concat_projector_type not in {"lcf_first", "lcf_projected_kv"}:
+        if self.concat_projector_type not in {
+            "lcf_first",
+            "lcf_projected_kv",
+            "direct_pre_rope_mlp",
+        }:
             raise ValueError(
                 "cachejpeg_rosetta.concat_projector.type must be 'lcf_first' "
-                "or 'lcf_projected_kv'."
+                "or 'lcf_projected_kv' or 'direct_pre_rope_mlp'."
             )
+        self.direct_mlp_concat = (
+            self.cache_alignment == "concat"
+            and self.concat_projector_type == "direct_pre_rope_mlp"
+        )
         self.split_latent_cachejpeg_enabled = (
             self.eval_codec_config.split_latent_cachejpeg.enabled
         )
@@ -158,7 +172,19 @@ class CacheJPEGRosettaEvalWrapper:
             **codec_config.get("codec", {}),
             "homo_c2c_kv_src": self.eval_codec_config.homo_c2c_kv_src,
         }
-        if self.fusion_type == "latent_kv_split":
+        if self.direct_mlp_concat:
+            # The direct ablation has no serialized wire representation and must
+            # not import or initialize the external HomoC2C/CacheJPEG codec.
+            self.codec = None
+            self._to_legacy_cache = CacheAdapter.to_legacy
+
+            def to_dynamic_cache(cache):
+                if isinstance(cache, DynamicCache):
+                    return cache
+                return DynamicCache.from_legacy_cache(CacheAdapter.to_legacy(cache))
+
+            self._to_dynamic_cache = to_dynamic_cache
+        elif self.fusion_type == "latent_kv_split":
             # Split mode transmits LatentKVPayload directly and therefore has no
             # dependency on the CacheJPEG/HomoC2C codec implementation.
             self.codec = None
@@ -202,11 +228,15 @@ class CacheJPEGRosettaEvalWrapper:
             base_config = self.base_model.config
             adaptive_quant_table = AdaptiveCoefficientQuantizer(
                 num_layers=int(base_config.num_hidden_layers),
-                num_kv_heads=int(
-                    getattr(
-                        self.teacher_model.config,
-                        "num_key_value_heads",
-                        self.teacher_model.config.num_attention_heads,
+                num_kv_heads=(
+                    1
+                    if self.cache_alignment == "concat"
+                    else int(
+                        getattr(
+                            self.teacher_model.config,
+                            "num_key_value_heads",
+                            self.teacher_model.config.num_attention_heads,
+                        )
                     )
                 ),
                 config=self.eval_codec_config.adaptive_quant_table,
@@ -225,27 +255,33 @@ class CacheJPEGRosettaEvalWrapper:
                 torch.load(state_path, map_location="cpu")
             )
             adaptive_quant_table.to(next(self.base_model.parameters()).device).eval()
-        self.fuser_bridge = RosettaFuserBridge(
-            assets, adaptive_quant_table=adaptive_quant_table
+        self.adaptive_quant_table = adaptive_quant_table
+        self.fuser_bridge = (
+            None
+            if self.direct_mlp_concat
+            else RosettaFuserBridge(
+                assets, adaptive_quant_table=adaptive_quant_table
+            )
         )
         self.concat_cache_aligner = None
         if self.cache_alignment == "concat":
-            aligner_class = (
-                ProjectedKVConcatCacheAligner
-                if self.concat_projector_type == "lcf_projected_kv"
-                else ConcatCacheAligner
-            )
+            if self.concat_projector_type == "direct_pre_rope_mlp":
+                aligner_class = DirectMLPConcatCacheAligner
+            elif self.concat_projector_type == "lcf_projected_kv":
+                aligner_class = ProjectedKVConcatCacheAligner
+            else:
+                aligner_class = ConcatCacheAligner
             self.concat_cache_aligner = aligner_class(assets)
         if self.cache_alignment == "concat" and not assets.projector_list:
             raise ValueError(
                 "cache_alignment='concat' requires LCF-first projector checkpoints."
             )
         if self.cache_alignment == "concat":
-            expected_concat_projector = (
-                "LCFProjectedKVProjector"
-                if self.concat_projector_type == "lcf_projected_kv"
-                else "LCFFirstProjector"
-            )
+            expected_concat_projector = {
+                "lcf_first": "LCFFirstProjector",
+                "lcf_projected_kv": "LCFProjectedKVProjector",
+                "direct_pre_rope_mlp": "DirectPreRopeMLPProjector",
+            }[self.concat_projector_type]
             unexpected = sorted(
                 {
                     projector.__class__.__name__
@@ -260,7 +296,11 @@ class CacheJPEGRosettaEvalWrapper:
                     f"but loaded {unexpected}."
                 )
         transport_config = codec_config.get("transport") or (codec_config.get("codec") or {}).get("transport")
-        self.transport = build_transport(dict(transport_config or {}))
+        self.transport = (
+            None
+            if self.direct_mlp_concat
+            else build_transport(dict(transport_config or {}))
+        )
         self.last_transport_stats = None
         self.last_codec_stats: dict[str, Any] | None = None
         self.last_fusion_stats: dict[str, Any] | None = None
@@ -779,6 +819,99 @@ class CacheJPEGRosettaEvalWrapper:
             current_logits = outputs.logits[:, -1, :]
         return torch.cat(generated, dim=1)
 
+    def _generate_with_direct_mlp_concat(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+        generation_config: dict[str, Any],
+    ) -> torch.Tensor:
+        """Project Sharer pre-RoPE KV directly into an uncompressed prefix."""
+
+        base_ids, teacher_ids, base_mask, teacher_mask = self._split_aligned_inputs(
+            input_ids, attention_mask
+        )
+        sharer_outputs = self.prefill_on_sharer(
+            input_ids=teacher_ids,
+            attention_mask=teacher_mask,
+            pre_rope=True,
+        )
+        legacy_sharer_cache = self._to_legacy_cache(sharer_outputs.past_key_values)
+        original_kv_bytes = sum(
+            int(key.numel() * key.element_size() + value.numel() * value.element_size())
+            for key, value in legacy_sharer_cache
+        )
+        if not isinstance(self.concat_cache_aligner, DirectMLPConcatCacheAligner):
+            raise RuntimeError("Direct MLP concat aligner was not initialized.")
+
+        receiver_device = next(self.base_model.parameters()).device
+        if receiver_device.type == "cuda":
+            torch.cuda.synchronize(receiver_device)
+        projection_started = time.perf_counter()
+        receiver_prefix = self.concat_cache_aligner.align(legacy_sharer_cache)
+        if receiver_device.type == "cuda":
+            torch.cuda.synchronize(receiver_device)
+        projection_seconds = time.perf_counter() - projection_started
+        self.last_fusion_stats = self.concat_cache_aligner.last_alignment_stats
+        prefix_length = int(receiver_prefix.key_cache[0].shape[2])
+
+        if base_mask is None:
+            base_mask = torch.ones_like(base_ids, dtype=torch.long)
+        if teacher_mask is not None and teacher_mask.shape[1] == prefix_length:
+            prefix_mask = teacher_mask.to(
+                device=base_mask.device, dtype=base_mask.dtype
+            )
+        else:
+            prefix_mask = torch.ones(
+                (base_ids.shape[0], prefix_length),
+                dtype=base_mask.dtype,
+                device=base_mask.device,
+            )
+        combined_mask = torch.cat((prefix_mask, base_mask), dim=1)
+        receiver_position_ids = (
+            base_mask.long().cumsum(-1) - 1 + prefix_length
+        ).masked_fill(base_mask == 0, 0)
+        cache_position = torch.arange(
+            prefix_length,
+            prefix_length + base_ids.shape[1],
+            device=base_ids.device,
+        )
+        with torch.no_grad():
+            receiver_outputs = self.base_model(
+                input_ids=base_ids,
+                attention_mask=combined_mask,
+                position_ids=receiver_position_ids,
+                cache_position=cache_position,
+                past_key_values=receiver_prefix,
+                use_cache=True,
+            )
+        generated = self._decode_from_prefill_outputs(
+            receiver_outputs,
+            attention_mask=combined_mask,
+            max_new_tokens=int(generation_config.get("max_new_tokens", 16)),
+            do_sample=bool(generation_config.get("do_sample", False)),
+            temperature=float(generation_config.get("temperature", 0.0)),
+        )
+        self.last_transport_stats = None
+        self.last_codec_stats = {
+            "original_kv_bytes": original_kv_bytes,
+            "lcf_latent_kv_bytes": None,
+            "payload_bytes": None,
+            "compression_factor": None,
+            "space_saving_ratio": None,
+            "encode_seconds": None,
+            "decode_seconds": None,
+            "mlp_projection_seconds": float(projection_seconds),
+            "cache_alignment": "concat",
+            "concat_projector_type": "direct_pre_rope_mlp",
+            "communication_mode": "local_direct",
+            "codec_order": "direct_mlp",
+            "rope_mode": "pre_rope",
+            "prefix_tokens": prefix_length,
+            "layer_streaming": False,
+            "transport_mode": None,
+        }
+        return torch.cat([base_ids, generated], dim=1)
+
     def _generate_with_concat_alignment(
         self,
         input_ids: torch.Tensor,
@@ -817,7 +950,16 @@ class CacheJPEGRosettaEvalWrapper:
             for key, value in lcf_latent_cache
         )
         encode_started = time.perf_counter()
-        payload = self.encode_cache(lcf_latent_cache)
+        adaptive_result = None
+        if self.adaptive_quant_table is not None:
+            payload, adaptive_result = encode_adaptive_quantized_cache(
+                self.adaptive_quant_table,
+                lcf_latent_cache,
+                representation=self.eval_codec_config.codec.entropy.representation,
+                backend=self.eval_codec_config.codec.entropy.backend,
+            )
+        else:
+            payload = self.encode_cache(lcf_latent_cache)
         if teacher_device.type == "cuda":
             torch.cuda.synchronize(teacher_device)
         encode_seconds = time.perf_counter() - encode_started
@@ -829,7 +971,20 @@ class CacheJPEGRosettaEvalWrapper:
         if teacher_device.type == "cuda":
             torch.cuda.synchronize(teacher_device)
         decode_started = time.perf_counter()
-        decoded_latent_cache = self.decode_cache(received_payload)
+        if self.adaptive_quant_table is not None:
+            if not isinstance(received_payload, AdaptiveQuantizedCachePayload):
+                raise TypeError(
+                    "Expected AdaptiveQuantizedCachePayload after transport, got "
+                    f"{type(received_payload)!r}."
+                )
+            decoded_latent_cache = decode_adaptive_quantized_cache(
+                received_payload,
+                self.adaptive_quant_table,
+                device=teacher_device,
+                dtype=lcf_latent_cache[0][0].dtype,
+            )
+        else:
+            decoded_latent_cache = self.decode_cache(received_payload)
         if teacher_device.type == "cuda":
             torch.cuda.synchronize(teacher_device)
         decode_seconds = time.perf_counter() - decode_started
@@ -906,10 +1061,30 @@ class CacheJPEGRosettaEvalWrapper:
             ),
             "cache_alignment": "concat",
             "concat_projector_type": self.concat_projector_type,
+            "adaptive_quant_table_enabled": self.adaptive_quant_table is not None,
+            "adaptive_quant_estimated_payload_bits": (
+                float(adaptive_result.estimated_payload_bits.item())
+                if adaptive_result is not None
+                else None
+            ),
+            "adaptive_quant_mean_alpha": (
+                float(adaptive_result.alpha.float().mean().item())
+                if adaptive_result is not None
+                else None
+            ),
+            "adaptive_quant_fixed_alpha": (
+                self.adaptive_quant_table.config.fixed_alpha
+                if self.adaptive_quant_table is not None
+                else None
+            ),
             "codec_order": (
-                "lcf_project_kv_cachejpeg_lcf_up"
-                if self.concat_projector_type == "lcf_projected_kv"
-                else "lcf_down_cachejpeg_lcf_up"
+                "lcf_project_kv_adaptive_quant_lcf_up"
+                if self.adaptive_quant_table is not None
+                else (
+                    "lcf_project_kv_cachejpeg_lcf_up"
+                    if self.concat_projector_type == "lcf_projected_kv"
+                    else "lcf_down_cachejpeg_lcf_up"
+                )
             ),
             "rope_mode": "pre_rope",
             "prefix_tokens": prefix_length,
@@ -1079,6 +1254,10 @@ class CacheJPEGRosettaEvalWrapper:
 
     def generate(self, input_ids: torch.Tensor, attention_mask: Optional[torch.Tensor] = None, **generation_config):
         if getattr(self, "cache_alignment", "fuser") == "concat":
+            if getattr(self, "concat_projector_type", "lcf_first") == "direct_pre_rope_mlp":
+                return self._generate_with_direct_mlp_concat(
+                    input_ids, attention_mask, generation_config
+                )
             streaming_config = getattr(
                 getattr(self, "eval_codec_config", None), "layer_streaming", None
             )

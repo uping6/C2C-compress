@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "source": "model",
+    "model": "/data/smy_data/local/models/Qwen2.5-1.5B-Instruct",
+    "layer": 27,
+    "num_layers": 28,
+    "num_prompts": 8,
+    "tokens_per_prompt": [
+      44,
+      42,
+      49,
+      42,
+      41,
+      41,
+      40,
+      40
+    ],
+    "max_length": 256,
+    "device": "cpu",
+    "dtype": "torch.bfloat16"
+  },
+  "K": {
+    "observations": 339,
+    "channels": 256,
+    "num_heads": 2,
+    "head_dim": 128,
+    "constant_channels": 0,
+    "ordered_off_diagonal_pairs": 65280,
+    "mean_absolute_correlation": 0.18368689752724823,
+    "ratio_abs_correlation_gt_0_5": 0.03799019607843137,
+    "ratio_abs_correlation_gt_0_8": 0.001439950980392157,
+    "mean_absolute_within_head": 0.1838465639283248,
+    "mean_absolute_cross_head": 0.1835284785199301,
+    "head_level_absolute_correlation": [
+      [
+        0.20260426612984095,
+        0.18352847851993012
+      ],
+      [
+        0.18352847851993007,
+        0.1778412591654286
+      ]
+    ]
+  },
+  "V": {
+    "observations": 339,
+    "channels": 256,
+    "num_heads": 2,
+    "head_dim": 128,
+    "constant_channels": 0,
+    "ordered_off_diagonal_pairs": 65280,
+    "mean_absolute_correlation": 0.15979611512530692,
+    "ratio_abs_correlation_gt_0_5": 0.008915441176470588,
+    "ratio_abs_correlation_gt_0_8": 0.0,
+    "mean_absolute_within_head": 0.15425645334937807,
+    "mean_absolute_cross_head": 0.16529249829361137,
+    "head_level_absolute_correlation": [
+      [
+        0.16294228366268623,
+        0.16529249829361142
+      ],
+      [
+        0.16529249829361128,
+        0.15878536595248577
+      ]
+    ]
+  }
+}
